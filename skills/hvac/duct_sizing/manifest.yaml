@@ -1,0 +1,65 @@
+skill_id: duct_sizing
+name: Duct Sizing
+version: 1.1.0
+domain: HVAC
+purpose: Preliminary duct sizing and pressure-loss calculation using the audited deterministic source engine.
+
+source:
+  repository: marshvac2811/duct-sizing-calculator
+  path: calculator.py
+  revision: 1410b71e16a4fe4b1c6b04f023291d7b0f458d68
+  controlled_snapshot: skills/hvac/duct_sizing/source_calculator.py
+
+execution:
+  type: deterministic_python
+  human_review_required: true
+
+inputs:
+  - name: airflow
+    unit: CFM
+    required: true
+  - name: method
+    required: true
+    allowed: [velocity, equal_friction]
+  - name: duct_type
+    required: true
+    allowed: [round, rectangular]
+  - name: target_velocity_ms
+    unit: m/s
+    required_for: round + velocity
+  - name: target_friction_pa_per_m
+    unit: Pa/m
+    required_for: round + equal_friction
+  - name: width_mm
+    unit: mm
+    required_for: rectangular
+  - name: height_mm
+    unit: mm
+    required_for: rectangular
+  - name: material
+    required: false
+    default: gss
+
+outputs:
+  - duct_size
+  - velocity
+  - pressure_loss
+  - friction
+  - warnings
+  - assumptions
+  - calculation_trace
+
+validation:
+  positive_inputs: [airflow, target_velocity_ms, target_friction_pa_per_m, width_mm, height_mm]
+  controlled_inputs: [method, duct_type, material]
+
+standards:
+  registry_required: true
+  current_source_references_are_typical_values: true
+
+assumptions:
+  registry_required: true
+  current_source_has_hard_coded_air_properties: true
+  current_source_has_reference_roughness_values: true
+
+classification: preliminary

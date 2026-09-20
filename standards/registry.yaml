@@ -1,0 +1,8 @@
+version: 1
+registry_name: engineering_standards_registry
+status: draft
+
+# This registry intentionally contains metadata, not invented standard values.
+# Standards/editions/clauses must be loaded from an authoritative project source
+# before a skill treats a standard-dependent parameter as governed.
+standards: []

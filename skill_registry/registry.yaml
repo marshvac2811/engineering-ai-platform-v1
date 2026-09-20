@@ -1,0 +1,214 @@
+version: 3
+registry_name: engineering_skill_registry
+status: executable_batch_v3
+
+skills:
+  - skill_id: preliminary_load_estimation
+    domain: HVAC
+    source_repository: hvac---load---estimator
+    source_path: .
+    execution: deterministic_python
+    classification: preliminary
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: duct_sizing
+    domain: HVAC
+    source_repository: duct-sizing-calculator
+    source_path: .
+    execution: deterministic_python
+    classification: preliminary
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: pump_head
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: pump-head
+    execution: deterministic_python_adapter
+    classification: preliminary
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: hvac_fault_diagnosis
+    domain: HVAC
+    source_repository: hvac-plant-troubleshooting
+    source_path: .
+    execution: deterministic_rule_engine
+    classification: diagnostic_support
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: cooling_tower
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: cooling-tower-calculator
+    execution: deterministic_browser_adapter
+    classification: preliminary_vendor_verification_required
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: refrigerant_pipe_sizing
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: refrigerant-pipe-sizing
+    execution: deterministic_browser_adapter
+    classification: preliminary_manufacturer_verification_required
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: vrf_sizing
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: vrf-sizing-tool
+    execution: deterministic_browser_adapter
+    classification: preliminary_manufacturer_verification_required
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: cleanroom_ach
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: cleanroom-ach-calculator
+    execution: deterministic_browser_adapter
+    classification: compliance_support
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: duct_leakage
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: duct-leakage-calculator
+    execution: deterministic_browser_adapter
+    classification: compliance_support
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: chiller_selection_advisor
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: chiller-selection-advisor
+    execution: deterministic_browser_adapter
+    classification: advisory
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: chiller_efficiency
+    domain: HVAC
+    source_repository: chiller-efficiency-calculator
+    source_path: .
+    execution: deterministic_calculation
+    classification: pending
+    integration_status: source_audit_pending
+    human_review_required: true
+
+  - skill_id: bms_points_generation
+    domain: BMS
+    source_repository: BMS-points-list
+    source_path: .
+    execution: deterministic_python
+    classification: planning
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: bms_controller_sizing
+    domain: BMS
+    source_repository: BMS-points-list
+    source_path: .
+    execution: deterministic_python
+    classification: planning
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: bms_cost_estimation
+    domain: BMS
+    source_repository: bms-cost-estimator
+    source_path: .
+    execution: deterministic_python
+    classification: budgetary
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: bms_alarm_evaluation
+    domain: BMS
+    source_repository: bms-dashboard
+    source_path: .
+    execution: deterministic_rule_engine
+    classification: monitoring_prototype
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: vfd_energy_savings
+    domain: ENERGY
+    source_repository: vfd-toolkit
+    source_path: .
+    execution: deterministic_python
+    classification: engineering_estimate
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: vfd_derating
+    domain: ENERGY
+    source_repository: vfd-toolkit
+    source_path: .
+    execution: deterministic_python
+    classification: manufacturer_dependent
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: harmonic_screening
+    domain: ENERGY
+    source_repository: vfd-toolkit
+    source_path: .
+    execution: deterministic_python
+    classification: screening_only
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: hvac_decarbonisation
+    domain: ENERGY
+    source_repository: hvac-decarb-tool
+    source_path: .
+    execution: deterministic_python
+    classification: scenario_model
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: energy_payback
+    domain: ENERGY
+    source_repository: hvac-boq-generator
+    source_path: energy-savings-payback-calculator
+    execution: deterministic_browser_adapter
+    classification: financial_estimate
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: hvac_boq
+    domain: COMMERCIAL
+    source_repository: hvac-boq-generator
+    source_path: boq
+    execution: deterministic_browser_calculation
+    classification: commercial
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: deviation_statement
+    domain: COMMERCIAL
+    source_repository: hvac-boq-generator
+    source_path: deviation-statement-generator
+    execution: deterministic_browser_calculation
+    classification: commercial
+    integration_status: integrated
+    human_review_required: true
+
+
+
+crm_pipeline:
+  domain: COMMERCIAL
+  source: marshvac2811/pipeline/pipeline.html
+  status: integrated
+  stages: [budgetary, tendering, quotation, followup, negotiation, won, lost]
+  categories: [Project Sales, Retrofit Jobs, Energy Optimization]
+  stakeholders: [Consultant, Builder, Developer, Contractor, End Client, Other]
+  canonical: true
+  external_adapters: [hubspot]

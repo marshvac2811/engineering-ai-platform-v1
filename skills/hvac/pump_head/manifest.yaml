@@ -1,0 +1,41 @@
+skill_id: pump_head
+name: Pump Head Calculator
+domain: HVAC
+version: 1.0.0
+purpose: Calculate preliminary Total Dynamic Head using the audited pump-head source calculator.
+source:
+  repository: marshvac2811/hvac-boq-generator
+  path: pump-head/index.html
+  source_modified: 2026-07-14T23:50:40Z
+execution:
+  type: deterministic_adapter
+  human_review_required: true
+classification: preliminary
+inputs:
+  flow_m3hr: required positive flow rate
+  diameter_mm: required positive internal pipe diameter
+  roughness_mm: required unless material is supplied
+  straight_length_m: required non-negative straight pipe length
+  fittings: optional list of name, ld_ratio, quantity
+  static_head_m: required non-negative static/elevation head
+  equipment_losses_m: optional list of component/head-loss pairs
+  margin_pct: required non-negative design margin
+outputs:
+  - velocity_ms
+  - reynolds_number
+  - friction_factor
+  - friction_head_m
+  - static_head_m
+  - equipment_losses_m
+  - subtotal_head_m
+  - margin_head_m
+  - total_dynamic_head_m
+  - total_dynamic_head_kpa
+  - total_dynamic_head_bar
+  - total_dynamic_head_ft
+  - total_dynamic_head_psi
+warnings:
+  - source uses fixed water kinematic viscosity of 1e-6 m2/s
+  - source material roughness values are user-selectable inputs/default references
+  - equipment losses should come from manufacturer pressure-drop data
+  - pump selection requires manufacturer performance-curve verification

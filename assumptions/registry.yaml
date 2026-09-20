@@ -1,0 +1,46 @@
+version: 1
+registry_name: engineering_assumption_registry
+status: draft
+
+# Values below are preserved from audited source calculators.
+# They are NOT presented as universal engineering constants or standards.
+assumptions:
+  - assumption_id: duct.air_density.source_default
+    parameter: air_density
+    value: 1.2
+    unit: kg/m3
+    domain: HVAC
+    source_skill: duct_sizing
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+  - assumption_id: duct.air_dynamic_viscosity.source_default
+    parameter: air_dynamic_viscosity
+    value: 1.81e-5
+    unit: Pa.s
+    domain: HVAC
+    source_skill: duct_sizing
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+  - assumption_id: pump.water_kinematic_viscosity.source_default
+    parameter: water_kinematic_viscosity
+    value: 1.0e-6
+    unit: m2/s
+    domain: HVAC
+    source_skill: pump_head
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+  - assumption_id: pump.gravity.source_default
+    parameter: gravity
+    value: 9.81
+    unit: m/s2
+    domain: HVAC
+    source_skill: pump_head
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
