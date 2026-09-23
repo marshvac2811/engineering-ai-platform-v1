@@ -1,0 +1,52 @@
+STEP 28 - SKILL CONTRACT GAP AUDIT
+========================================================================================================================
+Registry skills: 22
+Executable: 21
+Pending: ['chiller_efficiency']
+
+IMPORTANT: EMPTY/MISSING CONTRACT SECTIONS ARE REPORTED, NOT INVENTED.
+Implementation binding is currently checked against orchestrator/engine.py.
+
+SKILL ID                         DOMAIN       EXEC  CONTRACT_BIND ENGINE_BIND REQ     OPT     COND    STD     ASM     VAL     WARN    PF      OUT     AUDIT  
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+bms_alarm_evaluation             BMS          True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+bms_controller_sizing            BMS          True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+bms_cost_estimation              BMS          True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+bms_points_generation            BMS          True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+chiller_efficiency               HVAC         False False        False       EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+chiller_selection_advisor        HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+cleanroom_ach                    HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+cooling_tower                    HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+deviation_statement              COMMERCIAL   True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+duct_leakage                     HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+duct_sizing                      HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+energy_payback                   ENERGY       True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+harmonic_screening               ENERGY       True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+hvac_boq                         COMMERCIAL   True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+hvac_decarbonisation             ENERGY       True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+hvac_fault_diagnosis             HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+preliminary_load_estimation      HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+pump_head                        HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+refrigerant_pipe_sizing          HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+vfd_derating                     ENERGY       True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+vfd_energy_savings               ENERGY       True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+vrf_sizing                       HVAC         True  False        True        EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY   EMPTY  
+
+SECTION COUNTS
+========================================================================================================================
+required_inputs              PRESENT= 0 EMPTY=22 MISSING= 0
+optional_inputs              PRESENT= 0 EMPTY=22 MISSING= 0
+conditional_inputs           PRESENT= 0 EMPTY=22 MISSING= 0
+standards                    PRESENT= 0 EMPTY=22 MISSING= 0
+assumptions                  PRESENT= 0 EMPTY=22 MISSING= 0
+validation_rules             PRESENT= 0 EMPTY=22 MISSING= 0
+warning_rules                PRESENT= 0 EMPTY=22 MISSING= 0
+perfection_filter_rules      PRESENT= 0 EMPTY=22 MISSING= 0
+output_fields                PRESENT= 0 EMPTY=22 MISSING= 0
+audit_fields                 PRESENT= 0 EMPTY=22 MISSING= 0
+
+IMPLEMENTATION BINDING
+========================================================================================================================
+SkillDefinition binding populated: 0
+Current engine binding detected: 21
+Executable skills without current engine binding: 0

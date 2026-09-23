@@ -1,4 +1,4 @@
-from jobs.models import Job, JobStatus
+﻿from jobs.models import Job, JobStatus
 from jobs.supabase_store import SupabaseJobStore
 
 
@@ -94,6 +94,37 @@ def test_supabase_store_save_and_get_round_trip():
     assert len(restored.events) == 1
 
 
+
+def test_supabase_store_event_persistence_is_idempotent_across_round_trips():
+    client = FakeClient()
+    store = SupabaseJobStore(client)
+    job = Job.create(
+        tenant_id="test-tenant",
+        source="test",
+        inputs={"flow_m3hr": 100},
+        requested_skill_id="duct_sizing",
+    )
+    job.transition(JobStatus.QUEUED, "queued")
+
+    store.save(job)
+    restored_1 = store.get(job.job_id)
+    assert restored_1 is not None
+    assert len(restored_1.events) == 1
+
+    store.save(restored_1)
+    restored_2 = store.get(job.job_id)
+    assert restored_2 is not None
+    assert len(restored_2.events) == 1
+
+    store.save(restored_2)
+    restored_3 = store.get(job.job_id)
+    assert restored_3 is not None
+    assert len(restored_3.events) == 1
+
+    persisted_events = client.data["automation_job_events"]
+    assert len(persisted_events) == 1
+    assert persisted_events[0]["event_key"] == f"{job.job_id}:0"
+
 def test_supabase_store_claim_next_uses_worker_id():
     client = FakeClient()
     store = SupabaseJobStore(client)
@@ -104,3 +135,4 @@ def test_supabase_store_claim_next_uses_worker_id():
     claimed = store.claim_next("worker-a")
     assert claimed is not None
     assert claimed.job_id == job.job_id
+

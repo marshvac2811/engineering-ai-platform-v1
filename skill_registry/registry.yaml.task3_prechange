@@ -1,4 +1,4 @@
-﻿version: 3
+version: 3
 registry_name: engineering_skill_registry
 status: executable_batch_v3
 skills:
@@ -87,68 +87,9 @@ skills:
   classification: preliminary
   integration_status: integrated
   human_review_required: true
-  required_inputs:
-  - name: flow_m3hr
-    data_type: number
-    description: Design water flow rate.
-    unit: m3/hr
-    required: true
-    minimum: 0
-    question: What is the design water flow rate in m3/hr?
-  - name: diameter_mm
-    data_type: number
-    description: Pipe internal diameter.
-    unit: mm
-    required: true
-    minimum: 0
-    question: What is the pipe diameter in mm?
-  - name: straight_length_m
-    data_type: number
-    description: Straight pipe length.
-    unit: m
-    required: true
-    minimum: 0
-    question: What is the straight pipe length in metres?
-  - name: static_head_m
-    data_type: number
-    description: Static head.
-    unit: m
-    required: true
-    minimum: 0
-    question: What is the static head in metres?
-  - name: margin_pct
-    data_type: number
-    description: Design margin applied to calculated head.
-    unit: '%'
-    required: true
-    minimum: 0
-    question: What design margin percentage should be applied?
-  optional_inputs:
-  - name: roughness_mm
-    data_type: number
-    description: Pipe roughness; provide this or a valid pipe material.
-    unit: mm
-    minimum: 0
-  - name: material
-    data_type: string
-    description: Pipe material used to resolve source-reference roughness when roughness_mm is not supplied.
-    allowed_values:
-    - gi
-    - ms_cs
-    - copper
-    - upvc_pvc
-    - hdpe
-  - name: fittings
-    data_type: array
-    description: Fittings and quantities used for equivalent-length calculation.
-  - name: equipment_losses_m
-    data_type: array
-    description: Equipment/component losses in metres of head.
+  required_inputs: []
+  optional_inputs: []
   conditional_inputs: []
-  validation_rules:
-  - Provide roughness_mm or a valid material.
-  - fittings must be a list when supplied.
-  - equipment_losses_m must be a list when supplied.
   implementation_binding: skills.hvac.pump_head.adapter:PumpHeadSkill
 - skill_id: hvac_fault_diagnosis
   domain: HVAC
@@ -617,4 +558,3 @@ crm_pipeline:
   canonical: true
   external_adapters:
   - hubspot
-

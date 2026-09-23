@@ -1,0 +1,15 @@
+STEP 43S - COMPACT CONTRACT MAP
+============================================================
+bms_alarm_evaluation|fields=(none)|explicit_missing=(none)
+bms_controller_sizing|fields=(none)|explicit_missing=(none)
+bms_cost_estimation|fields=ahu_count,bms_software_cost,chiller_count,controllers_per_panel,cost_per_controller,cost_per_panel,cost_per_point,engineering_pct,misc_points,points_per_controller,pump_count,vfd_count|explicit_missing=(none)
+bms_points_generation|fields=(none)|explicit_missing=(none)
+cleanroom_ach|fields=(none)|explicit_missing=(none)
+cooling_tower|fields=direct_load_kw,load_method|explicit_missing=direct_load_kw
+duct_leakage|fields=(none)|explicit_missing=(none)
+harmonic_screening|fields=total_vfd_kva,transformer_kva|explicit_missing=(none)
+hvac_boq|fields=categories|explicit_missing=(none)
+hvac_fault_diagnosis|fields=rule_id,values|explicit_missing=rule_id
+pump_head|fields=(none)|explicit_missing=(none)
+refrigerant_pipe_sizing|fields=refrigerant|explicit_missing=(none)
+vfd_derating|fields=altitude_m,ambient_temp_c,motor_kw|explicit_missing=(none)

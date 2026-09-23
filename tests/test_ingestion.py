@@ -1,3 +1,6 @@
+from integrations.service import InMemoryIntegrationStore
+from crm.store import InMemoryCRMStore
+from jobs.store import InMemoryJobStore
 import base64, io, json, zipfile
 from pathlib import Path
 from api.app import APIApp
@@ -91,7 +94,7 @@ def call(app, method, path, body=None, tenant='tenant-a'):
 
 
 def test_api_attachment_ingestion_flow():
-    app=APIApp()
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore(), ingestion=IngestionService())
     status, job = call(app, 'POST', '/v1/jobs', {'source':'api','requested_skill_id':'duct_sizing','inputs':{}})
     assert status.startswith('201')
     jid=job['job_id']
@@ -101,3 +104,4 @@ def test_api_attachment_ingestion_flow():
     aid=job['attachments'][0]['attachment_id']
     status, result = call(app, 'POST', f'/v1/jobs/{jid}/attachments/{aid}', {})
     assert status.startswith('200') and result['status'] == 'extracted' and 'Airflow' in result['text']
+

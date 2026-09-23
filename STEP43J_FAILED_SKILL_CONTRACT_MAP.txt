@@ -1,0 +1,186 @@
+STEP 43J - COMPLETE FAILED SKILL CONTRACT MAP
+======================================================================
+
+--- bms_alarm_evaluation ---
+Implementation: skills.bms.alarm.adapter:BMSAlarmEvaluationSkill
+
+[run]
+004: if k not in i:errs.append(f'Missing required input: {k}')
+005: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+
+[Calculator/engine input references]
+
+--- bms_controller_sizing ---
+Implementation: skills.bms.points.adapters:BMSControllerSizingSkill
+
+[run]
+004: if k not in i:e.append(f'Missing required input: {k}')
+005: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+008: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Controller capacity must be checked against actual selected controller I/O and project architecture.'],source_revision=REV)
+
+[Calculator/engine input references]
+
+--- bms_cost_estimation ---
+Implementation: skills.bms.cost.adapter:BMSCostEstimationSkill
+
+[run]
+004: e += [f'Missing required input: {k}' for k in keys if k not in r.inputs]
+005: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+006: try:o=engine.estimate_cost(**{k:float(r.inputs[k]) for k in keys})
+
+[Calculator/engine input references]
+
+--- bms_points_generation ---
+Implementation: skills.bms.points.adapters:BMSPointsGenerationSkill
+
+[run]
+003: if not isinstance(i.get('equipment_counts'),dict):e.append('equipment_counts must be an object')
+005: if k not in i:e.append(f'Missing required input: {k}')
+006: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+
+[Calculator/engine input references]
+
+--- cleanroom_ach ---
+Implementation: skills.hvac.cleanroom_ach.adapter:CleanroomACHSKill
+
+[run]
+004: if k not in i:errs.append(f'Missing required input: {k}')
+005: if 'room_type' in i and i['room_type'] not in e.ROOM_TYPES:errs.append('Unknown room_type')
+006: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+009: warns=['Reference ACH values are source-tool planning data and must be verified against the applicable standard/edition and project authority.','This tool does not establish cleanroom classification compliance by itself.','Pressure relationship and outdoor-air values require project sequence/authority confirmation.']
+
+[Calculator/engine input references]
+
+--- cooling_tower ---
+Implementation: skills.hvac.cooling_tower.adapter:CoolingTowerSkill
+
+[run]
+004: if k not in r.inputs: errs.append(f'Missing required input: {k}')
+005: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+008: if r.inputs['load_method']=='chiller':
+010: if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)
+012: if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)
+013: warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']
+014: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)
+
+[Calculator/engine input references]
+
+--- duct_leakage ---
+Implementation: skills.hvac.duct_leakage.adapter:DuctLeakageSkill
+
+[run]
+004: if k not in i:errs.append(f'Missing required input: {k}')
+005: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+008: warns=['Leakage class is calculated using the source-tool SMACNA-formula implementation.','Project specification should govern the required leakage class over generic reference ranges.']
+
+[Calculator/engine input references]
+
+--- harmonic_screening ---
+Implementation: skills.energy.vfd.adapters:HarmonicScreeningSkill
+
+[validate]
+
+[run]
+002: e=self.validate(r); keys=['total_vfd_kva','transformer_kva']; e += [f'Missing required input: {k}' for k in keys if k not in r.inputs]
+003: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+004: try:o=engine.screen_harmonics_risk(**{k:float(r.inputs[k]) for k in keys})
+
+[Calculator/engine input references]
+
+--- hvac_boq ---
+Implementation: skills.commercial.boq.adapter:HVACBOQSkill
+
+[run]
+003: if not isinstance(r.inputs.get('categories'),list):errs.append('categories must be a list')
+004: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+
+[Calculator/engine input references]
+
+--- hvac_fault_diagnosis ---
+Implementation: skills.hvac.fault_diagnosis.adapter:HVAFaultDiagnosisSkill
+
+[validate]
+003: if 'rule_id' not in i:e.append('Missing required input: rule_id')
+004: if 'values' not in i or not isinstance(i.get('values'),dict):e.append('values must be an object/dict')
+005: if 'rule_id' in i and i['rule_id'] not in engine.RULES:e.append(f"Unknown rule: {i['rule_id']}")
+
+[run]
+003: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=SOURCE_REVISION)
+004: try:out=engine.evaluate_rule(r.inputs['rule_id'],r.inputs['values'])
+007: if not out['all_conditions_met']:warnings.append('Not all rule conditions are met; no source-rule conclusion is returned.')
+008: return SkillResult(self.skill_id,'draft_ready',engineering_result=out,warnings=warnings,calculation_trace=[{'step':1,'operation':'evaluate_explicit_AND_conditions','rule_id':r.inputs['rule_id']}],source_revision=SOURCE_REVISION)
+
+[Calculator/engine input references]
+
+--- pump_head ---
+Implementation: skills.hvac.pump_head.adapter:PumpHeadSkill
+
+[validate]
+007: if key not in i:
+008: errors.append(f"Missing required input: {key}")
+011: if float(i[key]) < 0:
+012: errors.append(f"{key} must be non-negative")
+014: errors.append(f"{key} must be numeric")
+015: if "roughness_mm" not in i:
+017: if material not in engine.PIPE_MATERIALS:
+019: if "fittings" in i and not isinstance(i["fittings"], list):
+020: errors.append("fittings must be a list")
+021: if "equipment_losses_m" in i and not isinstance(i["equipment_losses_m"], list):
+022: errors.append("equipment_losses_m must be a list")
+
+[run]
+003: if errors:
+007: roughness = float(i["roughness_mm"]) if "roughness_mm" in i else engine.PIPE_MATERIALS[material]["roughness_mm"]
+037: if v < 0.6:
+039: elif v > 3.0:
+041: elif not (1.0 <= v <= 2.5):
+044: if not request.standards_context.get("standards"):
+053: {"parameter": "roughness", "value": roughness, "unit": "mm", "source": "source_material_default" if material else "user_input"},
+065: human_review_required=True,
+
+[Calculator/engine input references]
+
+--- refrigerant_pipe_sizing ---
+Implementation: skills.hvac.refrigerant_pipe_sizing.adapter:RefrigerantPipeSizingSkill
+
+[run]
+004: if k not in r.inputs:errs.append(f'Missing required input: {k}')
+005: if 'refrigerant' in r.inputs and r.inputs['refrigerant'] not in e.PROPS:errs.append('Unsupported refrigerant')
+006: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+
+[Calculator/engine input references]
+
+--- vfd_derating ---
+Implementation: skills.energy.vfd.adapters:VFDDeratingSkill
+
+[validate]
+
+[run]
+002: e=self.validate(r); keys=['motor_kw','ambient_temp_c','altitude_m']; e += [f'Missing required input: {k}' for k in keys if k not in r.inputs]
+003: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+004: try:o=engine.calculate_sizing(**{k:float(r.inputs[k]) for k in keys})
+006: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Temperature/altitude factors are generic reference values from the source and must be checked against the selected VFD manufacturer/model datasheet.'],source_revision=REV)
+
+[Calculator/engine input references]
+
+--- vfd_energy_savings ---
+Implementation: skills.energy.vfd.adapters:VFDEnergySavingsSkill
+
+[validate]
+
+[run]
+003: e += [f'Missing required input: {k}' for k in keys if k not in r.inputs]
+004: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+005: try:o=engine.calculate_energy_savings(**{k:float(r.inputs[k]) for k in keys})
+
+[Calculator/engine input references]
+
+--- vrf_sizing ---
+Implementation: skills.hvac.vrf_sizing.adapter:VRFSizingSkill
+
+[run]
+003: if not isinstance(r.inputs.get('zones'),list) or not r.inputs.get('zones'):errs.append('zones must be a non-empty list')
+004: if 'combination_ratio' not in r.inputs:errs.append('Missing required input: combination_ratio')
+005: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+
+[Calculator/engine input references]

@@ -1,0 +1,1124 @@
+﻿ENGINEERING AI PLATFORM — STEP 25 SKILL FRAMEWORK DESIGN
+Generated: 2026-09-20 18:42:54
+
+PURPOSE
+Design the reusable machine-readable SkillDefinition contract before implementation.
+This is a READ-ONLY inspection/design operation.
+NO SOURCE FILES WERE MODIFIED.
+
+============================================================
+1. DESIGN OBJECTIVE
+============================================================
+
+Create one common SkillDefinition contract that allows the platform to handle
+all engineering skills through a reusable framework instead of manually coding
+a separate workflow for every vertical.
+
+Target lifecycle:
+
+USER / EMAIL / FILE / UPWORK
+        ↓
+AI UNDERSTANDING
+        ↓
+SKILL REGISTRY
+        ↓
+SKILL DEFINITION
+        ↓
+INPUT COLLECTION
+        ↓
+MISSING INFORMATION?
+     ↙           ↘
+   YES            NO
+    ↓             ↓
+QUESTIONS       VALIDATE
+    ↓             ↓
+USER ANSWERS     QUEUE
+                  ↓
+             ENGINE EXECUTION
+                  ↓
+          ENGINEERING VALIDATION
+                  ↓
+           PERFECTION FILTER
+                  ↓
+             HUMAN REVIEW
+                  ↓
+               APPROVE
+                  ↓
+              DISPATCH
+                  ↓
+            AUDIT / RESULT
+
+============================================================
+2. PROPOSED SkillDefinition CONTRACT
+============================================================
+
+Each executable skill should ultimately resolve to one definition containing:
+
+IDENTITY
+- skill_id
+- name
+- domain / vertical
+- purpose
+- description
+- version
+- lifecycle/classification
+- integration_status
+- executable flag
+
+INPUT CONTRACT
+- required_inputs
+- optional_inputs
+- conditional_inputs
+- input type
+- unit
+- description
+- allowed values
+- min/max constraints
+- nullable/optional behavior
+- source priority
+- confidence requirement
+
+QUESTION CONTRACT
+- human-readable question
+- question type
+- input field
+- unit prompt
+- allowed-value prompt
+- conditional question
+- attachment/document requirement
+
+ENGINE CONTRACT
+- execution type
+- implementation binding
+- deterministic calculator/module
+- adapter/wrapper
+- calculation trace capability
+- source revision
+
+GOVERNANCE CONTRACT
+- applicable standards
+- standard edition/version
+- source reference
+- governed assumptions
+- project overrides
+- assumption revision
+- audit/source status
+
+VALIDATION CONTRACT
+- required-field validation
+- type validation
+- unit validation
+- range validation
+- enum validation
+- cross-field validation
+- engineering consistency validation
+
+WARNING CONTRACT
+- engineering warnings
+- missing standards context
+- default-assumption warnings
+- manufacturer-verification warnings
+- preliminary-estimate warnings
+- compliance warnings
+
+PERFECTION FILTER
+- missing information checks
+- contradictory-input checks
+- suspicious-value checks
+- unit/context checks
+- standards-source checks
+- result completeness checks
+- trace completeness checks
+- human-review escalation conditions
+
+REVIEW CONTRACT
+- human_review_required
+- review role
+- mandatory-review conditions
+- approval requirements
+- reviewer comments
+- manufacturer verification where applicable
+
+OUTPUT CONTRACT
+- engineering_result
+- assumptions
+- standards
+- warnings
+- validation_errors
+- calculation_trace
+- human_review_required
+- source_revision
+- result status
+
+AUDIT CONTRACT
+- request_id
+- tenant_id
+- job_id
+- selected skill
+- input provenance
+- extracted facts
+- user-supplied facts
+- assumptions used
+- standards used
+- execution timestamp
+- lifecycle events
+- approval event
+- dispatch event
+
+============================================================
+3. INPUT REQUIREMENT MODEL
+============================================================
+
+The framework should support:
+
+1. Required input
+2. Optional input
+3. Conditional input
+4. Derived input
+5. AI-extracted input
+6. User-confirmed input
+7. Attachment-derived input
+8. Governed default
+9. Project override
+
+The framework must distinguish:
+
+MISSING
+≠
+DEFAULTED
+≠
+AI-INFERRED
+≠
+USER-CONFIRMED
+≠
+CALCULATED
+
+This distinction is essential for engineering auditability.
+
+============================================================
+4. DYNAMIC QUESTION MODEL
+============================================================
+
+Questions should be generated from SkillDefinition rather than maintaining a
+separate hard-coded question list for every skill.
+
+Example:
+
+Input:
+  climate_zone
+
+Definition:
+  type = enum
+  values = hot_dry, warm_humid, composite, moderate, cold
+
+Generated question:
+  "Which climate zone should be used?"
+
+Conditional questions must also be supported.
+
+Example:
+
+cooling_tower:
+  load_method = chiller
+      → ask chiller_tr
+      → ask chiller_cop
+
+  load_method = direct
+      → ask direct_load_kw
+
+============================================================
+5. AI RESPONSIBILITIES
+============================================================
+
+AI may:
+
+- understand natural-language requests
+- identify engineering domain
+- select a registered skill
+- extract facts from text
+- identify likely missing information
+- ask the questions defined by the skill
+- interpret uploaded documents
+- identify inconsistencies
+- explain engineering results
+- identify possible warnings
+- request human confirmation
+- prepare an engineering response
+
+AI must NOT silently invent:
+
+- engineering constants
+- standards
+- code requirements
+- manufacturer limits
+- design conditions
+- safety factors
+- missing project facts
+
+Those must come from governed sources, user/project data, or deterministic
+engineering definitions.
+
+============================================================
+6. DETERMINISTIC ENGINE RESPONSIBILITIES
+============================================================
+
+Existing calculators should remain responsible for:
+
+- engineering formulas
+- calculations
+- unit conversions
+- numerical validation
+- engineering result generation
+- calculation trace
+- deterministic warnings
+
+The framework should wrap these engines rather than rewrite them unnecessarily.
+
+============================================================
+7. STANDARDS MODEL
+============================================================
+
+Current standards registry:
+version: 1
+registry_name: engineering_standards_registry
+status: draft
+
+# This registry intentionally contains metadata, not invented standard values.
+# Standards/editions/clauses must be loaded from an authoritative project source
+# before a skill treats a standard-dependent parameter as governed.
+standards: []
+
+
+Design requirement:
+
+A skill may reference:
+
+- standard_id
+- title
+- edition
+- source
+- applicability
+- verification status
+
+The framework must support:
+
+AVAILABLE
+VERIFIED
+SOURCE_PENDING
+NOT_APPLICABLE
+USER_PROVIDED
+MANUFACTURER_REQUIRED
+
+No standard value should be invented merely because a skill expects one.
+
+============================================================
+8. ASSUMPTIONS MODEL
+============================================================
+
+Current assumptions registry:
+
+version: 1
+registry_name: engineering_assumption_registry
+status: draft
+
+# Values below are preserved from audited source calculators.
+# They are NOT presented as universal engineering constants or standards.
+assumptions:
+  - assumption_id: duct.air_density.source_default
+    parameter: air_density
+    value: 1.2
+    unit: kg/m3
+    domain: HVAC
+    source_skill: duct_sizing
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+  - assumption_id: duct.air_dynamic_viscosity.source_default
+    parameter: air_dynamic_viscosity
+    value: 1.81e-5
+    unit: Pa.s
+    domain: HVAC
+    source_skill: duct_sizing
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+  - assumption_id: pump.water_kinematic_viscosity.source_default
+    parameter: water_kinematic_viscosity
+    value: 1.0e-6
+    unit: m2/s
+    domain: HVAC
+    source_skill: pump_head
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+  - assumption_id: pump.gravity.source_default
+    parameter: gravity
+    value: 9.81
+    unit: m/s2
+    domain: HVAC
+    source_skill: pump_head
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+
+Design requirement:
+
+Each assumption should record:
+
+- assumption_id
+- value
+- unit
+- source
+- source revision
+- status
+- override_allowed
+- project override
+- audit trail
+
+Priority:
+
+PROJECT OVERRIDE
+      ↓
+GOVERNED ASSUMPTION
+      ↓
+NO ASSUMPTION / REQUEST USER INPUT
+
+============================================================
+9. PERFECTION FILTER DESIGN
+============================================================
+
+The Perfection Filter should be a common platform layer.
+
+It should check:
+
+A. Input completeness
+B. Input consistency
+C. Units
+D. Engineering ranges
+E. Cross-field relationships
+F. Standards availability
+G. Assumption provenance
+H. Calculation trace
+I. Result completeness
+J. Warning severity
+K. Human-review requirement
+L. Manufacturer verification requirement
+M. Dispatch readiness
+
+It must return structured findings rather than merely True/False.
+
+Suggested finding:
+
+- severity
+- category
+- field
+- message
+- evidence
+- action_required
+- blocking
+
+============================================================
+10. HUMAN REVIEW MODEL
+============================================================
+
+Human review should be determined by:
+
+1. SkillDefinition default
+2. Engineering risk
+3. validation findings
+4. standards status
+5. manufacturer verification requirement
+6. perfection-filter findings
+7. project configuration
+
+A skill should never bypass mandatory review merely because AI believes
+the result is correct.
+
+============================================================
+11. REGISTRY MODEL
+============================================================
+
+The registry should eventually become the authoritative discovery layer.
+
+Current registry:
+22 definitions
+
+Current executable engine:
+21 skills
+
+Pending:
+
+
+This pending skill must remain explicitly non-executable until its source audit
+and implementation are complete.
+
+============================================================
+12. CURRENT SKILL-BY-SKILL DISCOVERY
+============================================================
+
+
+
+------------------------------------------------------------
+SKILL: preliminary_load_estimation
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+skills\hvac\preliminary_load_estimation\__init__.py
+skills\hvac\preliminary_load_estimation\adapter.py
+skills\hvac\preliminary_load_estimation\source_calculator.py
+
+Detected required/validation declarations:
+Missing required input: {k}')
+
+Detected enum/allowed-value declarations:
+validators.governance import validate_governance_context, resolve_standards_context
+validate(self,r):
+validate_governance_context(r); i=r.inputs
+validate(r)
+validation_failed',validation_errors=e,source_revision=SOURCE_REVISION)
+validation_errors=[str(ex)],source_revision=SOURCE_REVISION)
+validation before design use.','Final equipment selection requires detailed load calculation and local design conditions.']
+
+Detected numeric/validation declarations:
+non-negative')
+>0:
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: duct_sizing
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+required=True,
+required: true
+required_for: round + velocity
+required_for: round + equal_friction
+required_for: rectangular
+required: false
+required_diameter_m = math.sqrt(4 * q_m3s / (math.pi * target_velocity_ms))
+required_diameter_mm = required_diameter_m * 1000
+required_diameter_mm)
+required_diameter_mm": round(required_diameter_mm, 1),
+required_diameter_m = (lo + hi) / 2
+
+Detected enum/allowed-value declarations:
+validators.basic import require_enum, require_positive
+validators.governance import resolve_assumption, resolve_standards_context, validate_governance_context
+validate(self, request: SkillRequest) -> list[str]:
+validate_governance_context(request)
+require_enum(request.inputs, "method", ["velocity", "equal_friction"])
+require_enum(request.inputs, "duct_type", ["round", "rectangular"])
+valid material: {material}. Allowed: {', '.join(sorted(engine.DUCT_MATERIALS))}"
+validate(request)
+validation_failed",
+validation_errors=errors,
+validation_errors=[str(exc)],
+supported.",
+allowed: [velocity, equal_friction]
+allowed: [round, rectangular]
+validation:
+valid positive numbers")
+
+Detected numeric/validation declarations:
+require_positive
+require_positive(request.inputs, ["airflow"])
+require_positive(request.inputs, ["width_mm", "height_mm"])
+require_positive(request.inputs, ["target_velocity_ms"])
+require_positive(request.inputs, ["target_friction_pa_per_m"])
+positive_inputs: [airflow, target_velocity_ms, target_friction_pa_per_m, width_mm, height_mm]
+> 0 and loss_at_diameter(mid) > 0:
+positive numbers")
+> 0:
+
+Human review indication: true
+
+
+------------------------------------------------------------
+SKILL: pump_head
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+Missing required input: {key}")
+required=True,
+required: true
+required positive flow rate
+required positive internal pipe diameter
+required unless material is supplied
+required non-negative straight pipe length
+required non-negative static/elevation head
+required non-negative design margin
+
+Detected enum/allowed-value declarations:
+validators.basic import require_positive
+validators.governance import resolve_assumption, resolve_standards_context, validate_governance_context
+validate(self, request: SkillRequest) -> list[str]:
+validate_governance_context(request)
+valid material")
+validate(request)
+validation_failed", validation_errors=errors, source_revision=SOURCE_REVISION)
+validation_errors=[str(exc)], source_revision=SOURCE_REVISION)
+supported.",
+valid")
+
+Detected numeric/validation declarations:
+require_positive
+require_positive(i, ["flow_m3hr", "diameter_mm"])
+non-negative")
+positive flow rate
+positive internal pipe diameter
+non-negative straight pipe length
+non-negative static/elevation head
+non-negative design margin
+non-negative, and diameter/roughness must be valid")
+> 0 else 0.0
+> 0:
+
+Human review indication: true
+
+
+------------------------------------------------------------
+SKILL: hvac_fault_diagnosis
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: cooling_tower
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+Missing required input: {k}')
+Missing required input: {k}'],source_revision=REV)
+Missing required input: direct_load_kw'],source_revision=REV)
+required=True,source_revision=REV)
+
+Detected enum/allowed-value declarations:
+validators.governance import validate_governance_context
+validate_governance_context(r)
+validation_failed',validation_errors=errs,source_revision=REV)
+validation_errors=[str(ex)],source_revision=REV)
+validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)
+validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)
+
+Detected numeric/validation declarations:
+non-negative')
+
+Human review indication: true
+
+
+------------------------------------------------------------
+SKILL: refrigerant_pipe_sizing
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+skills\hvac\refrigerant_pipe_sizing\__init__.py
+skills\hvac\refrigerant_pipe_sizing\adapter.py
+skills\hvac\refrigerant_pipe_sizing\source_calculator.py
+
+Detected required/validation declarations:
+Missing required input: {k}')
+required):
+required:return od,bore
+required_bore_mm':round(sbore,3),'suction_standard_od_mm':sod,'suction_actual_velocity_ms':round(sav,3),'liquid_required_bore_mm':round(lbore,3),'liquid_standard_od_mm':lod,'liquid_actual_
+
+Detected enum/allowed-value declarations:
+validators.governance import validate_governance_context
+validate_governance_context(r); req=['refrigerant','capacity_kw','suction_velocity','liquid_velocity','suction_length','liquid_length']
+supported refrigerant')
+validation_failed',validation_errors=errs,source_revision=REV)
+validation_errors=[str(ex)],source_revision=REV)
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: vrf_sizing
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+skills\hvac\vrf_sizing\__init__.py
+skills\hvac\vrf_sizing\adapter.py
+skills\hvac\vrf_sizing\source_calculator.py
+
+Detected required/validation declarations:
+Missing required input: combination_ratio')
+required_odu_hp':round(req,3),'selected_odu':selected,'combination_ratio_pct':cr,'checks':checks}
+
+Detected enum/allowed-value declarations:
+validators.governance import validate_governance_context
+validate_governance_context(r)
+validation_failed',validation_errors=errs,source_revision=REV)
+validation_errors=[str(ex)],source_revision=REV)
+
+Detected numeric/validation declarations:
+>0 else 0
+>0:
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: cleanroom_ach
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+skills\hvac\cleanroom_ach\__init__.py
+skills\hvac\cleanroom_ach\adapter.py
+skills\hvac\cleanroom_ach\source_calculator.py
+
+Detected required/validation declarations:
+Missing required input: {k}')
+
+Detected enum/allowed-value declarations:
+validators.governance import validate_governance_context
+validate_governance_context(r); i=r.inputs
+validation_failed',validation_errors=errs,source_revision=REV)
+validation_errors=[str(ex)],source_revision=REV)
+
+Detected numeric/validation declarations:
+positive'},'Delivery Room':{'achMin':20,'achMax':25,'achDefault':20,'oaAch':4,'pressure':'positive'},'ICU':{'achMin':6,'achMax':6,'achDefault':6,'oaAch':2,'pressure':'p
+positive'},'Pharmacy â€” Sterile Compounding':{'achMin':20,'achMax':40,'achDefault':30,'oaAch':None,'pressure':'positive'},'Corridor (Public)':{'achMin':2,'achMax':2,'a
+positive'},'Cleanroom â€” ISO 6':{'achMin':150,'achMax':240,'achDefault':190,'oaAch':None,'pressure':'positive'},'Cleanroom â€” ISO 7':{'achMin':60,'achMax':90,'achDefa
+positive'},'Cleanroom â€” ISO 8':{'achMin':20,'achMax':40,'achDefault':30,'oaAch':None,'pressure':'positive'}}
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: duct_leakage
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+skills\hvac\duct_leakage\__init__.py
+skills\hvac\duct_leakage\adapter.py
+skills\hvac\duct_leakage\source_calculator.py
+
+Detected required/validation declarations:
+Missing required input: {k}')
+required leakage class over generic reference ranges.']
+
+Detected enum/allowed-value declarations:
+validators.governance import validate_governance_context
+validate_governance_context(r); i=r.inputs
+validation_failed',validation_errors=errs,source_revision=REV)
+validation_errors=[str(ex)],source_revision=REV)
+
+Detected numeric/validation declarations:
+>0: per=3.141592653589793*dia/1000
+>0 and h>0:per=2*(w+h)/1000
+>=0 else 0
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: chiller_selection_advisor
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: chiller_efficiency
+------------------------------------------------------------
+Registry executable: False
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: bms_points_generation
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: bms_controller_sizing
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: bms_cost_estimation
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: bms_alarm_evaluation
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: vfd_energy_savings
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: vfd_derating
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: harmonic_screening
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: hvac_decarbonisation
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: energy_payback
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: hvac_boq
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+
+------------------------------------------------------------
+SKILL: deviation_statement
+------------------------------------------------------------
+Registry executable: True
+Implementation files:
+
+
+Detected required/validation declarations:
+
+
+Detected enum/allowed-value declarations:
+
+
+Detected numeric/validation declarations:
+
+
+Human review indication: registry/default/inspect
+
+============================================================
+13. COMPATIBILITY REQUIREMENT
+============================================================
+
+The new framework must support existing skill implementations without forcing
+an immediate rewrite of every calculator.
+
+Preferred migration pattern:
+
+SkillDefinition
+      ↓
+Common Skill Adapter / Wrapper
+      ↓
+Existing Skill Adapter
+      ↓
+Existing Deterministic Calculator
+
+This permits gradual migration and reduces regression risk.
+
+============================================================
+14. REGISTRY-AUTHORITY REQUIREMENT
+============================================================
+
+Current engine registration is manually maintained.
+
+Future design should allow:
+
+registry.yaml
+      ↓
+registry loader
+      ↓
+skill definition
+      ↓
+implementation binding
+      ↓
+runtime registration
+
+The framework should detect:
+
+- registered but not executable
+- executable but not registered
+- duplicate skill IDs
+- missing implementation
+- invalid definition
+- unsupported execution type
+
+============================================================
+15. TEST REQUIREMENTS
+============================================================
+
+Framework tests must eventually cover:
+
+- SkillDefinition loading
+- schema validation
+- required inputs
+- optional inputs
+- conditional inputs
+- question generation
+- AI fact extraction
+- missing-information lifecycle
+- skill selection
+- deterministic execution
+- standards governance
+- assumption governance
+- validation
+- perfection filter
+- human review
+- approval
+- dispatch
+- audit trail
+- tenant isolation
+- regression of existing 21 skills
+
+And every executable engineering vertical must receive an end-to-end test.
+
+============================================================
+16. IMPLEMENTATION PRINCIPLE
+============================================================
+
+DO NOT rewrite the 21 engineering calculators simply to fit the framework.
+
+Build the framework around the existing proven calculation engines.
+
+Implementation sequence:
+
+DESIGN
+  ↓
+SCHEMA
+  ↓
+LOADER
+  ↓
+VALIDATOR
+  ↓
+REGISTRY INTEGRATION
+  ↓
+COMPATIBILITY WRAPPER
+  ↓
+DYNAMIC INPUT COLLECTION
+  ↓
+ORCHESTRATOR INTEGRATION
+  ↓
+PERFECTION FILTER
+  ↓
+LIFECYCLE INTEGRATION
+  ↓
+REGRESSION TESTS
+  ↓
+ALL-VERTICAL E2E TESTS
+
+============================================================
+17. STEP 25 DECISION
+============================================================
+
+The proposed SkillDefinition becomes the central contract between:
+
+AI reasoning
+    ↕
+Engineering skill registry
+    ↕
+Deterministic engineering engines
+    ↕
+Governance / standards / assumptions
+    ↕
+Validation / perfection filter
+    ↕
+Human review
+    ↕
+Job lifecycle
+
+No source-code modification is authorized by this report.
+
+============================================================
+END STEP 25
+============================================================

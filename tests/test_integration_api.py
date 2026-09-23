@@ -1,3 +1,6 @@
+from integrations.service import InMemoryIntegrationStore
+from crm.store import InMemoryCRMStore
+from jobs.store import InMemoryJobStore
 import io
 import json
 import os
@@ -27,7 +30,7 @@ def call(app, method, path, payload=None, headers=None):
 
 
 def test_integration_connection_and_event_to_job():
-    app = APIApp()
+    app = APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     status, body = call(app, "POST", "/v1/integrations", {"provider": "gmail", "status": "connected"})
     assert status == "201 Created"
     assert body["provider"] == "gmail"
@@ -55,7 +58,7 @@ def test_integration_connection_and_event_to_job():
 def test_webhook_secret_allows_unauthenticated_context():
     os.environ["INTEGRATION_WEBHOOK_SECRET_GUMROAD"] = "secret-1"
     try:
-        app = APIApp()
+        app = APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
         body = json.dumps({"external_event_id": "sale-1", "payload": {"product_id": "p1"}}).encode()
         env = {
             "REQUEST_METHOD": "POST",
@@ -78,7 +81,7 @@ def test_webhook_secret_allows_unauthenticated_context():
 def test_gmail_oauth_start_requires_configured_client(monkeypatch):
     monkeypatch.setenv("GMAIL_CLIENT_ID", "client-1")
     monkeypatch.setenv("GMAIL_REDIRECT_URI", "https://example.com/v1/integrations/gmail/oauth/callback")
-    app = APIApp()
+    app = APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     status, body = call(app, "GET", "/v1/integrations/gmail/oauth/start", headers={"QUERY_STRING": "login_hint=trial%40example.com"})
     assert status == "200 OK"
     assert body["provider"] == "gmail"
@@ -147,13 +150,15 @@ class FakeGmailClient:
 
 
 def test_gmail_live_sync_normalizes_creates_job_and_downloads_attachment(tmp_path):
+    from ingestion.service import IngestionService
     from integrations.providers.gmail import TrialGmailTokenStore
     token_store = TrialGmailTokenStore(str(tmp_path / "gmail"))
     token_store.save("00000000-0000-0000-0000-000000000001", {"access_token": "a", "refresh_token": "r", "expires_at": 9999999999})
-    app = APIApp(gmail_client=FakeGmailClient(), gmail_token_store=token_store)
+    app = APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore(), ingestion=IngestionService(), gmail_client=FakeGmailClient(), gmail_token_store=token_store)
     status, body = call(app, "POST", "/v1/integrations/gmail/sync", {"q": "subject:(Load Calculation Request)", "download_attachments": True})
     assert status == "200 OK"
     assert body["messages_seen"] == 1
     assert body["results"][0]["job_created"] is True
     assert body["results"][0]["attachments_downloaded"][0]["filename"] == "floor-plan.pdf"
+
 

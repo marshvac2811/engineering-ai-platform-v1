@@ -1,3 +1,6 @@
+from integrations.service import InMemoryIntegrationStore
+from crm.store import InMemoryCRMStore
+from jobs.store import InMemoryJobStore
 import io
 import json
 
@@ -24,7 +27,7 @@ def call(app, method, path, body=None, tenant="tenant-a", user="user-a", role="o
 
 
 def test_control_plane_issue_api_key_and_authenticate():
-    app = APIApp()
+    app = APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     scopes = ["jobs:read", "jobs:write", "usage:read"]
     status, payload = call(app, "POST", "/v1/api-keys", {"name": "integration", "role": "engineer", "scopes": scopes})
     assert status == "201 Created"
@@ -40,7 +43,7 @@ def test_control_plane_issue_api_key_and_authenticate():
 
 
 def test_scope_enforcement_and_revocation():
-    app = APIApp()
+    app = APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     status, payload = call(app, "POST", "/v1/api-keys", {"name": "read-only", "role": "engineer", "scopes": ["jobs:read"]})
     assert status == "201 Created"
     secret = payload["secret"]
@@ -56,7 +59,7 @@ def test_scope_enforcement_and_revocation():
 
 
 def test_role_enforcement_and_usage_metering():
-    app = APIApp()
+    app = APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     status, _ = call(app, "POST", "/v1/jobs", {"source": "api", "requested_skill_id": "pump_head", "inputs": {}})
     assert status == "201 Created"
     job_id = call(app, "POST", "/v1/jobs", {"source": "api", "requested_skill_id": "pump_head", "inputs": {}})[1]["job_id"]

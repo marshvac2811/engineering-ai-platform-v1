@@ -1,0 +1,1122 @@
+﻿ENGINEERING AI PLATFORM — STEP 24 CONSOLIDATED FRAMEWORK INSPECTION
+Generated: 2026-09-20 18:41:13
+
+PURPOSE
+Read-only architecture inspection before designing the reusable Engineering Skill Framework.
+NO SOURCE FILES WERE MODIFIED BY THIS COMMAND.
+
+============================================================
+1. REGISTRY / ENGINE RECONCILIATION
+============================================================
+
+Registry skill count: 22
+Executable engine skill count: 21
+
+Registry skills:
+preliminary_load_estimation, duct_sizing, pump_head, hvac_fault_diagnosis, cooling_tower, refrigerant_pipe_sizing, vrf_sizing, cleanroom_ach, duct_leakage, chiller_selection_advisor, chiller_efficiency, bms_points_generation, bms_controller_sizing, bms_cost_estimation, bms_alarm_evaluation, vfd_energy_savings, vfd_derating, harmonic_screening, hvac_decarbonisation, energy_payback, hvac_boq, deviation_statement
+
+Executable engine skills:
+duct_sizing, pump_head, preliminary_load_estimation, hvac_fault_diagnosis, bms_points_generation, bms_controller_sizing, bms_cost_estimation, vfd_energy_savings, vfd_derating, harmonic_screening, hvac_decarbonisation, cooling_tower, refrigerant_pipe_sizing, vrf_sizing, cleanroom_ach, duct_leakage, chiller_selection_advisor, energy_payback, hvac_boq, deviation_statement, bms_alarm_evaluation
+
+Registry entries NOT executable in engine:
+chiller_efficiency
+
+Executable engine entries NOT present in registry:
+
+
+============================================================
+2. SKILL IMPLEMENTATION FILE INVENTORY
+============================================================
+
+Total Python/YAML/JSON skill-related files: 61
+
+Adapter files:
+skills\bms\alarm\adapter.py
+skills\bms\cost\adapter.py
+skills\bms\points\adapters.py
+skills\commercial\boq\adapter.py
+skills\commercial\deviation\adapter.py
+skills\energy\decarbonisation\adapter.py
+skills\energy\payback\adapter.py
+skills\energy\vfd\adapters.py
+skills\hvac\chiller_selection\adapter.py
+skills\hvac\cleanroom_ach\adapter.py
+skills\hvac\cooling_tower\adapter.py
+skills\hvac\duct_leakage\adapter.py
+skills\hvac\duct_sizing\adapter.py
+skills\hvac\fault_diagnosis\adapter.py
+skills\hvac\preliminary_load_estimation\adapter.py
+skills\hvac\pump_head\adapter.py
+skills\hvac\refrigerant_pipe_sizing\adapter.py
+skills\hvac\vrf_sizing\adapter.py
+
+Complete skill file inventory:
+skills\batch_build.py | 40039 bytes
+skills\batch_remaining.py | 29152 bytes
+skills\common.py | 1793 bytes
+skills\__init__.py | 0 bytes
+skills\bms\alarm\adapter.py | 1029 bytes
+skills\bms\alarm\source_calculator.py | 1839 bytes
+skills\bms\alarm\__init__.py | 45 bytes
+skills\bms\cost\adapter.py | 1174 bytes
+skills\bms\cost\source_calculator.py | 1927 bytes
+skills\bms\cost\__init__.py | 44 bytes
+skills\bms\points\adapters.py | 2106 bytes
+skills\bms\points\source_calculator.py | 3307 bytes
+skills\bms\points\__init__.py | 72 bytes
+skills\commercial\boq\adapter.py | 937 bytes
+skills\commercial\boq\source_calculator.py | 987 bytes
+skills\commercial\boq\__init__.py | 34 bytes
+skills\commercial\deviation\adapter.py | 968 bytes
+skills\commercial\deviation\source_calculator.py | 607 bytes
+skills\commercial\deviation\__init__.py | 45 bytes
+skills\energy\decarbonisation\adapter.py | 1102 bytes
+skills\energy\decarbonisation\source_calculator.py | 3885 bytes
+skills\energy\decarbonisation\__init__.py | 46 bytes
+skills\energy\payback\adapter.py | 1126 bytes
+skills\energy\payback\source_calculator.py | 1314 bytes
+skills\energy\payback\__init__.py | 40 bytes
+skills\energy\vfd\adapters.py | 2863 bytes
+skills\energy\vfd\source_calculator.py | 3360 bytes
+skills\energy\vfd\__init__.py | 84 bytes
+skills\hvac\__init__.py | 0 bytes
+skills\hvac\chiller_selection\adapter.py | 1126 bytes
+skills\hvac\chiller_selection\source_calculator.py | 2066 bytes
+skills\hvac\chiller_selection\__init__.py | 50 bytes
+skills\hvac\cleanroom_ach\adapter.py | 1219 bytes
+skills\hvac\cleanroom_ach\source_calculator.py | 1992 bytes
+skills\hvac\cleanroom_ach\__init__.py | 39 bytes
+skills\hvac\cooling_tower\adapter.py | 1553 bytes
+skills\hvac\cooling_tower\source_calculator.py | 1741 bytes
+skills\hvac\cooling_tower\__init__.py | 39 bytes
+skills\hvac\duct_leakage\adapter.py | 1014 bytes
+skills\hvac\duct_leakage\source_calculator.py | 1168 bytes
+skills\hvac\duct_leakage\__init__.py | 38 bytes
+skills\hvac\duct_sizing\adapter.py | 6470 bytes
+skills\hvac\duct_sizing\manifest.yaml | 1556 bytes
+skills\hvac\duct_sizing\source_calculator.py | 8409 bytes
+skills\hvac\duct_sizing\__init__.py | 0 bytes
+skills\hvac\fault_diagnosis\adapter.py | 1688 bytes
+skills\hvac\fault_diagnosis\source_calculator.py | 2672 bytes
+skills\hvac\fault_diagnosis\__init__.py | 44 bytes
+skills\hvac\preliminary_load_estimation\adapter.py | 2254 bytes
+skills\hvac\preliminary_load_estimation\source_calculator.py | 3213 bytes
+skills\hvac\preliminary_load_estimation\__init__.py | 52 bytes
+skills\hvac\pump_head\adapter.py | 5853 bytes
+skills\hvac\pump_head\manifest.yaml | 1438 bytes
+skills\hvac\pump_head\source_calculator.py | 4130 bytes
+skills\hvac\pump_head\__init__.py | 64 bytes
+skills\hvac\refrigerant_pipe_sizing\adapter.py | 1335 bytes
+skills\hvac\refrigerant_pipe_sizing\source_calculator.py | 2151 bytes
+skills\hvac\refrigerant_pipe_sizing\__init__.py | 48 bytes
+skills\hvac\vrf_sizing\adapter.py | 1233 bytes
+skills\hvac\vrf_sizing\source_calculator.py | 1394 bytes
+skills\hvac\vrf_sizing\__init__.py | 36 bytes
+
+============================================================
+3. TEST INVENTORY
+============================================================
+
+Test files: 19
+
+tests\test_api.py | 2416 bytes
+tests\test_batch_skills.py | 5296 bytes
+tests\test_contract.py | 758 bytes
+tests\test_crm.py | 1625 bytes
+tests\test_crm_api.py | 1286 bytes
+tests\test_duct_engine.py | 1269 bytes
+tests\test_governance.py | 1962 bytes
+tests\test_ingestion.py | 5868 bytes
+tests\test_integration_api.py | 6683 bytes
+tests\test_integrations.py | 2069 bytes
+tests\test_job_layer.py | 1921 bytes
+tests\test_migration_syntax.py | 479 bytes
+tests\test_openai_provider.py | 2085 bytes
+tests\test_orchestrator_intake.py | 3267 bytes
+tests\test_pump_and_orchestrator.py | 1263 bytes
+tests\test_saas_control_plane.py | 2666 bytes
+tests\test_supabase_ingestion.py | 3329 bytes
+tests\test_supabase_store.py | 3192 bytes
+tests\test_worker_and_tenant.py | 2518 bytes
+
+============================================================
+4. CORE ARCHITECTURE FILES
+============================================================
+
+
+===== .\orchestrator\engine.py =====
+from __future__ import annotations
+from typing import Dict
+from skills.common import SkillRequest, SkillResult
+from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+from skills.hvac.pump_head.adapter import PumpHeadSkill
+from skills.hvac.preliminary_load_estimation.adapter import PreliminaryLoadEstimationSkill
+from skills.hvac.fault_diagnosis.adapter import HVAFaultDiagnosisSkill
+from skills.bms.points.adapters import BMSPointsGenerationSkill,BMSControllerSizingSkill
+from skills.bms.cost.adapter import BMSCostEstimationSkill
+from skills.energy.vfd.adapters import VFDEnergySavingsSkill,VFDDeratingSkill,HarmonicScreeningSkill
+from skills.energy.decarbonisation.adapter import HVACDecarbonisationSkill
+from skills.hvac.cooling_tower.adapter import CoolingTowerSkill
+from skills.hvac.refrigerant_pipe_sizing.adapter import RefrigerantPipeSizingSkill
+from skills.hvac.vrf_sizing.adapter import VRFSizingSkill
+from skills.hvac.cleanroom_ach.adapter import CleanroomACHSKill
+from skills.hvac.duct_leakage.adapter import DuctLeakageSkill
+from skills.hvac.chiller_selection.adapter import ChillerSelectionAdvisorSkill
+from skills.energy.payback.adapter import EnergyPaybackSkill
+from skills.commercial.boq.adapter import HVACBOQSkill
+from skills.commercial.deviation.adapter import DeviationStatementSkill
+from skills.bms.alarm.adapter import BMSAlarmEvaluationSkill
+SKILLS={
+'duct_sizing':DuctSizingSkill(),'pump_head':PumpHeadSkill(),'preliminary_load_estimation':PreliminaryLoadEstimationSkill(),'hvac_fault_diagnosis':HVAFaultDiagnosisSkill(),
+'bms_points_generation':BMSPointsGenerationSkill(),'bms_controller_sizing':BMSControllerSizingSkill(),'bms_cost_estimation':BMSCostEstimationSkill(),
+'vfd_energy_savings':VFDEnergySavingsSkill(),'vfd_derating':VFDDeratingSkill(),'harmonic_screening':HarmonicScreeningSkill(),'hvac_decarbonisation':HVACDecarbonisationSkill(),
+'cooling_tower':CoolingTowerSkill(),'refrigerant_pipe_sizing':RefrigerantPipeSizingSkill(),'vrf_sizing':VRFSizingSkill(),'cleanroom_ach':CleanroomACHSKill(),'duct_leakage':DuctLeakageSkill(),'chiller_selection_advisor':ChillerSelectionAdvisorSkill(),
+'energy_payback':EnergyPaybackSkill(),'hvac_boq':HVACBOQSkill(),'deviation_statement':DeviationStatementSkill(),'bms_alarm_evaluation':BMSAlarmEvaluationSkill()}
+def execute(request:SkillRequest)->SkillResult:
+    skill=SKILLS.get(request.skill_id)
+    if skill is None:return SkillResult(request.skill_id,'skill_not_registered',validation_errors=[f'Skill is not executable in current batch adapter set: {request.skill_id}'])
+    return skill.run(request)
+def registered_skills():return sorted(SKILLS)
+
+
+===== .\orchestrator\intake.py =====
+"""Provider-neutral natural-language intake and engineering skill routing.
+
+This module deliberately keeps language understanding lightweight and auditable:
+- a pluggable IntentProvider interface can later be backed by Tasklet/OpenAI/etc.
+- the default provider is deterministic keyword routing + unit-aware extraction;
+- missing engineering inputs are discovered from the registered deterministic skill
+  itself, so this layer does not duplicate calculation rules.
+"""
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+import re
+from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
+
+from orchestrator.engine import SKILLS, execute
+from skills.common import SkillRequest
+
+
+@dataclass
+class IntentCandidate:
+    skill_id: str
+    score: int
+    rationale: List[str] = field(default_factory=list)
+
+
+@dataclass
+class OrchestrationPlan:
+    status: str
+    normalized_request: str
+    selected_skill_id: Optional[str]
+    confidence: float
+    candidates: List[IntentCandidate]
+    extracted_inputs: Dict[str, Any]
+    missing_inputs: List[str]
+    questions: List[str]
+    assumptions_context: Dict[str, Any] = field(default_factory=dict)
+    standards_context: Dict[str, Any] = field(default_factory=dict)
+    project_context: Dict[str, Any] = field(default_factory=dict)
+    rationale: List[str] = field(default_factory=list)
+    provider: str = "rule_based"
+
+    def to_dict(self) -> Dict[str, Any]:
+        data = asdict(self)
+        data["candidates"] = [asdict(c) for c in self.candidates]
+        return data
+
+
+class IntentProvider(Protocol):
+    name: str
+
+    def route(self, text: str, requested_skill_id: Optional[str] = None) -> Tuple[Optional[str], List[IntentCandidate], float]:
+        ...
+
+
+# The routing vocabulary is intentionally explicit so the first production
+# implementation can be audited. An LLM provider can replace this without
+# changing the job or skill interfaces.
+ROUTING_RULES: Dict[str, Sequence[str]] = {
+    "duct_sizing": ("duct", "duct size", "duct sizing", "cfm duct", "air velocity", "equal friction"),
+    "pump_head": ("pump head", "tdh", "total dynamic head", "pump sizing", "pump duty", "pipe head"),
+    "preliminary_load_estimation": ("cooling load", "hvac load", "tonnage", "tons of ac", "sq ft per ton", "air conditioning load"),
+    "hvac_fault_diagnosis": ("troubleshoot", "fault", "trip", "diagnose", "cavitation", "refrigerant shortage", "high pressure trip"),
+    "cooling_tower": ("cooling tower", "wet bulb", "approach", "blowdown", "makeup water"),
+    "refrigerant_pipe_sizing": ("refrigerant pipe", "suction line", "liquid line", "r410a", "r32", "r22", "r134a"),
+    "vrf_sizing": ("vrf", "vrv", "indoor unit", "outdoor unit", "combination ratio"),
+    "cleanroom_ach": ("cleanroom", "ach", "air changes", "isolation room", "operating room", "icu"),
+    "duct_leakage": ("duct leakage", "leakage class", "leakage test", "smacna leakage"),
+    "chiller_selection_advisor": ("chiller selection", "select chiller", "chiller type", "air cooled chiller", "water cooled chiller", "chiller efficiency"),
+    "bms_points_generation": ("bms points", "points list", "ai ao di do", "ddc points", "controller sizing"),
+    "bms_controller_sizing": ("bms controller", "ddc controller", "controller panel"),
+    "bms_cost_estimation": ("bms cost", "bms estimate", "bms budget", "bms pricing"),
+    "bms_alarm_evaluation": ("bms alarm", "alarm threshold", "point alarm", "sensor alarm"),
+    "vfd_energy_savings": ("vfd energy", "vfd savings", "speed reduction", "affinity law", "vfd saving"),
+    "vfd_derating": ("vfd derating", "vfd altitude", "vfd temperature", "drive sizing"),
+    "harmonic_screening": ("harmonics", "harmonic screening", "ieee 519", "vfd harmonic"),
+    "hvac_decarbonisation": ("decarbon", "decarbonisation", "carbon saving", "hvac retrofit", "asset life extension"),
+    "energy_payback": ("payback", "energy savings", "energy cost saving", "roi", "retrofit payback"),
+    "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate"),
+    "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance"),
+}
+
+FIELD_QUESTIONS = {
+    "airflow": "What is the airflow in CFM?",
+    "method": "Which duct sizing method should be used: velocity or equal friction?",
+    "duct_type": "Should the duct be round or rectangular?",
+    "target_velocity_ms": "What target duct velocity should I use in m/s?",
+    "target_friction_pa_per_m": "What target friction rate should I use in Pa/m?",
+    "width_mm": "What rectangular duct width should be checked, in mm?",
+    "height_mm": "What rectangular duct height should be checked, in mm?",
+    "material": "What duct material should be used (for example gss, pu_panel, fabric or flexible)?",
+    "flow_m3hr": "What design water flow is required, in mÂ³/hr?",
+    "diameter_mm": "What pipe internal diameter should be checked, in mm?",
+    "roughness_mm": "What pipe roughness should be used, in mm?",
+    "straight_length_m": "What is the straight pipe length, in metres?",
+    "static_head_m": "What is the static/elevation head, in metres?",
+    "margin_pct": "What design margin should be applied, in percent?",
+    "building_type": "What building type is this (office, retail, residential, hospital, etc.)?",
+    "area_sqft": "What floor area should be estimated, in square feet?",
+    "climate_zone": "Which climate zone should be used (hot_dry, warm_humid, composite, moderate or cold)?",
+    "occupancy": "What is the actual occupancy, if known?",
+    "rule_id": "Which diagnostic rule or fault condition should be evaluated?",
+    "values": "Please provide the measured fault-condition values for the selected diagnostic rule.",
+    "load_method": "For cooling tower sizing, should the load come from chiller data or a direct heat load?",
+    "range_c": "What cooling-tower range should be used, in Â°C?",
+    "wet_bulb_c": "What is the site design wet-bulb temperature, in Â°C?",
+    "approach_c": "What cooling-tower approach should be used, in Â°C?",
+    "coc": "What cycles of concentration (COC) should be used?",
+    "drift_pct": "What drift loss should be used, as percent of water flow?",
+    "chiller_tr": "What chiller capacity should be used, in TR?",
+    "chiller_cop": "What chiller COP should be used?",
+    "direct_load_kw": "What direct heat-rejection load should be used, in kW?",
+    "refrigerant": "Which refrigerant should be used (R410A, R32, R22 or R134a)?",
+    "capacity_kw": "What cooling capacity should be used, in kW?",
+    "suction_velocity": "What target suction-line velocity should be used, in m/s?",
+    "liquid_velocity": "What target liquid-line velocity should be used, in m/s?",
+    "suction_length": "What is the suction-line equivalent length, in metres?",
+    "liquid_length": "What is the liquid-line equivalent length, in metres?",
+    "zones": "Please provide the VRF zones with area and load factor for each zone.",
+    "combination_ratio": "What VRF indoor/outdoor combination ratio should be used, in percent?",
+    "total_pipe_length_m": "What is the total VRF piping length, in metres?",
+    "farthest_branch_length_m": "What is the farthest VRF branch length, in metres?",
+    "odu_idu_height_diff_m": "What is the ODU-to-IDU height difference, in metres?",
+    "idu_idu_height_diff_m": "What is the maximum IDU-to-IDU height difference, in metres?",
+    "sections": "Please provide the duct sections (rectangular or round) and their lengths so total surface area can be calculated.",
+    "test_pressure_pa": "What duct leakage test pressure should be used, in Pa?",
+    "measured_leakage_ls": "What measured leakage should be used, in L/s?",
+    "target_class": "What leakage class is specified (for example 3, 6, 12 or 24)?",
+    "total_load_tr": "What total chiller cooling load should be used, in TR?",
+    "water_available": "Is a suitable condenser-water source available?",
+    "space_available": "Is there ample space for the cooling tower/plant room?",
+    "efficiency_priority": "Is lowest kW/TR a high priority or standard priority?",
+    "efficiency_kw_per_tr": "What chiller efficiency should be used, in kW/TR?",
+    "annual_hours": "What are the annual operating hours?",
+    "load_factor_pct": "What average load factor should be used, in percent?",
+    "tariff_per_kwh": "What electricity tariff should be used, in â‚¹/kWh?",
+    "duty_modules": "How many duty chiller modules are required?",
+    "redundancy_level": "What redundancy is required: N, N+1 or N+2?",
+    "equipment_counts": "Please provide the BMS equipment counts by equipment type.",
+    "points_per_controller": "How many BMS points should each controller support?",
+    "controllers_per_panel": "How many controllers should each BMS panel contain?",
+    "total_points": "What total BMS I/O point count should be used?",
+    "ahu_count": "How many AHUs are included?",
+    "chiller_count": "How many chillers are included?",
+    "pump_count": "How many pumps are included?",
+    "vfd_count": "How many VFDs are included?",
+    "misc_points": "How many miscellaneous BMS points are included?",
+    "cost_per_point": "What cost per BMS point should be used?",
+    "cost_per_controller": "What cost per controller should be used?",
+    "cost_per_panel": "What cost per panel should be used?",
+    "bms_software_cost": "What BMS software cost should be used?",
+    "engineering_pct": "What BMS engineering percentage should be used?",
+    "point_type": "Is the BMS point analog or digital?",
+    "point_id": "What BMS point ID should be evaluated?",
+    "value": "What is the current point value/state?",
+    "motor_kw": "What motor power should be used, in kW?",
+    "speed_reduction_pct": "What speed reduction should be used, in percent?",
+    "static_head_fraction": "What fraction of head is static, in percent?",
+    "ambient_temp_c": "What ambient temperature should be used, in Â°C?",
+    "altitude_m": "What site altitude should be used, in metres?",
+    "total_vfd_kva": "What is the total VFD load, in kVA?",
+    "transformer_kva": "What is the transformer capacity, in kVA?",
+}
+
+
+def _extract_number(text: str, patterns: Sequence[str]) -> Optional[float]:
+    for pattern in patterns:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            try:
+                return float(m.group(1).replace(",", ""))
+            except ValueError:
+                continue
+    return None
+
+
+def extract_facts(text: str) -> Dict[str, Any]:
+    """Extract only unambiguous numeric/text facts from natural language."""
+    t = text.lower()
+    out: Dict[str, Any] = {}
+
+    mappings = {
+        "airflow": [r"([\d,.]+)\s*(?:cfm|cubic\s*feet\s*(?:per\s*minute|/min))"],
+        "area_sqft": [r"([\d,.]+)\s*(?:sq\.?\s*ft|sqft|square\s*feet)"],
+        "capacity_kw": [r"([\d,.]+)\s*kw\b"],
+        "capacity_old": [r"old\s*(?:capacity\s*)?([\d,.]+)\s*(?:tr|ton)"],
+        "capacity_new": [r"new\s*(?:capacity\s*)?([\d,.]+)\s*(?:tr|ton)"],
+        "total_load_tr": [r"([\d,.]+)\s*(?:tr|tons?)\b"],
+        "chiller_tr": [r"([\d,.]+)\s*(?:tr|tons?)\b"],
+        "flow_m3hr": [r"([\d,.]+)\s*m3\s*/?\s*h(?:r)?", r"([\d,.]+)\s*mÂ³\s*/?\s*h(?:r)?"],
+        "diameter_mm": [r"(?:dia(?:meter)?|pipe)\s*[:=]?\s*([\d,.]+)\s*mm", r"([\d,.]+)\s*mm\s*(?:pipe|dia(?:meter)?)"],
+        "width_mm": [r"(?:width|w)\s*[:=]?\s*([\d,.]+)\s*mm"],
+        "height_mm": [r"(?:height|(?<![a-z])h)\s*[:=]?\s*([\d,.]+)\s*mm"],
+        "target_velocity_ms": [r"(?:target\s*)?velocity\s*[:=]?\s*([\d,.]+)\s*m/s", r"(?:at\s+)?([\d,.]+)\s*m/s(?:\s+velocity)?\b"],
+        "target_friction_pa_per_m": [r"(?:friction|friction\s*rate)\s*[:=]?\s*([\d,.]+)\s*pa\s*/?\s*m"],
+        "straight_length_m": [r"(?:straight\s*(?:length|pipe)|pipe\s*length)\s*[:=]?\s*([\d,.]+)\s*m", r"([\d,.]+)\s*m\s*(?:straight\s*length|pipe\s*length)\b"],
+        "static_head_m": [r"(?:static|elevation)\s*(?:head|lift)\s*[:=]?\s*([\d,.]+)\s*m", r"([\d,.]+)\s*m\s*(?:static|elevation)\s*(?:head|lift)\b"],
+        "margin_pct": [r"(?:margin|allowance)\s*[:=]?\s*([\d,.]+)\s*%", r"([\d,.]+)\s*%\s*(?:margin|allowance)\b"],
+        "wet_bulb_c": [r"wet\s*bulb\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
+        "approach_c": [r"approach\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
+        "range_c": [r"(?:range|delta\s*t|Î”t)\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
+        "coc": [r"(?:coc|cycles?\s*of\s*concentration)\s*[:=]?\s*([\d,.]+)"],
+        "drift_pct": [r"drift\s*(?:loss)?\s*[:=]?\s*([\d,.]+)\s*%"],
+        "annual_hours": [r"([\d,.]+)\s*(?:annual\s*hours|hours\s*/\s*year|hr\s*/\s*yr)"],
+        "tariff_per_kwh": [r"(?:tariff|electricity\s*tariff)\s*[:=]?\s*(?:â‚¹|rs\.?\s*)?([\d,.]+)\s*/?\s*kwh"],
+        "load_factor_pct": [r"(?:load\s*factor)\s*[:=]?\s*([\d,.]+)\s*%"],
+        "speed_reduction_pct": [r"(?:speed\s*reduction)\s*[:=]?\s*([\d,.]+)\s*%"],
+        "static_head_fraction": [r"(?:static\s*head\s*fraction|static\s*head)\s*[:=]?\s*([\d,.]+)\s*%"],
+        "ambient_temp_c": [r"(?:ambient|temperature)\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
+        "altitude_m": [r"(?:altitude|elevation)\s*[:=]?\s*([\d,.]+)\s*m\b"],
+        "total_vfd_kva": [r"(?:vfd\s*load|total\s*vfd)\s*[:=]?\s*([\d,.]+)\s*kva"],
+        "transformer_kva": [r"(?:transformer|tx)\s*(?:capacity)?\s*[:=]?\s*([\d,.]+)\s*kva"],
+        "efficiency_kw_per_tr": [r"(?:efficiency|kw/tr|kW/TR)\s*[:=]?\s*([\d,.]+)"],
+        "combination_ratio": [r"(?:combination|comb)\s*ratio\s*[:=]?\s*([\d,.]+)\s*%?"],
+        "refrigerant": [r"\b(r410a|r32|r22|r134a)\b"],
+    }
+    for key, patterns in mappings.items():
+        value = _extract_number(t, patterns)
+        if value is not None:
+            out[key] = int(value) if value.is_integer() else value
+        else:
+            for p in patterns:
+                m = re.search(p, t, re.IGNORECASE)
+                if m and key == "refrigerant":
+                    out[key] = m.group(1).upper()
+                    break
+
+    if "rectangular" in t:
+        out["duct_type"] = "rectangular"
+    elif "round duct" in t:
+        out["duct_type"] = "round"
+    if "equal friction" in t:
+        out["method"] = "equal_friction"
+    elif "velocity method" in t or "velocity" in t:
+        out["method"] = "velocity"
+    if "direct heat" in t:
+        out["load_method"] = "direct"
+    elif "chiller data" in t or "from chiller" in t:
+        out["load_method"] = "chiller"
+    return out
+
+
+class RuleBasedIntentProvider:
+    name = "rule_based"
+
+    def route(self, text: str, requested_skill_id: Optional[str] = None) -> Tuple[Optional[str], List[IntentCandidate], float]:
+        if requested_skill_id:
+            if requested_skill_id not in SKILLS:
+                return None, [], 0.0
+            return requested_skill_id, [IntentCandidate(requested_skill_id, 999, ["Explicit skill_id supplied by caller."])], 1.0
+
+        t = text.lower()
+        candidates: List[IntentCandidate] = []
+        for skill_id, terms in ROUTING_RULES.items():
+            matched = [term for term in terms if term in t]
+            if matched:
+                score = sum(2 if " " in term else 1 for term in matched)
+                candidates.append(IntentCandidate(skill_id, score, [f"Matched phrase: {m}" for m in matched]))
+        candidates.sort(key=lambda c: (-c.score, c.skill_id))
+        if not candidates:
+            return None, [], 0.0
+        top = candidates[0]
+        second = candidates[1].score if len(candidates) > 1 else 0
+        confidence = min(0.99, 0.55 + 0.1 * top.score + (0.1 if top.score > second else 0))
+        if len(candidates) > 1 and top.score == second:
+            return None, candidates[:5], 0.45
+        return top.skill_id, candidates[:5], confidence
+
+
+def _missing_inputs(skill_id: str, inputs: Dict[str, Any], project_context: Dict[str, Any], standards_context: Dict[str, Any], assumptions_context: Dict[str, Any]) -> List[str]:
+    result = execute(SkillRequest(
+        skill_id=skill_id,
+        inputs=inputs,
+        project_context=project_context,
+        standards_context=standards_context,
+        assumptions_context=assumptions_context,
+        request_id="orchestrator-validation",
+    ))
+    missing: List[str] = []
+    for error in result.validation_errors:
+        prefix = "Missing required input: "
+        if error.startswith(prefix):
+            missing.append(error[len(prefix):].strip())
+        elif error.startswith("Provide roughness_mm"):
+            missing.append("roughness_mm")
+        elif error.startswith("Provide "):
+            missing.append(error.split("Provide ", 1)[1].strip().split(" or ", 1)[0])
+    return list(dict.fromkeys(missing))
+
+
+def build_plan(
+    text: str,
+    *,
+    requested_skill_id: Optional[str] = None,
+    provided_inputs: Optional[Dict[str, Any]] = None,
+    project_context: Optional[Dict[str, Any]] = None,
+    standards_context: Optional[Dict[str, Any]] = None,
+    assumptions_context: Optional[Dict[str, Any]] = None,
+    provider: Optional[IntentProvider] = None,
+) -> OrchestrationPlan:
+    provider = provider or RuleBasedIntentProvider()
+    project_context = project_context or {}
+    standards_context = standards_context or {}
+    assumptions_context = assumptions_context or {}
+    provided_inputs = dict(provided_inputs or {})
+
+    provider_extracted: Dict[str, Any] = {}
+    provider_rationale: List[str] = []
+    if requested_skill_id:
+        skill_id, candidates, confidence = provider.route(text, requested_skill_id)
+    elif hasattr(provider, "classify_and_extract"):
+        decision = provider.classify_and_extract(
+            text,
+            {
+                "provided_inputs": provided_inputs,
+                "project_context": project_context,
+                "standards_context": standards_context,
+                "assumptions_context": assumptions_context,
+            },
+        )
+        skill_id = decision.get("skill_id")
+        confidence = float(decision.get("confidence", 0.0))
+        provider_extracted = dict(decision.get("extracted_inputs") or {})
+        provider_rationale = [str(x) for x in decision.get("rationale") or []]
+        candidates = (
+            [IntentCandidate(skill_id, int(round(confidence * 1000)), provider_rationale)]
+            if skill_id
+            else []
+        )
+    else:
+        skill_id, candidates, confidence = provider.route(text, requested_skill_id)
+
+    extracted = extract_facts(text)
+    merged = {**provider_extracted, **extracted, **provided_inputs}
+
+    if skill_id is None:
+        status = "ambiguous" if candidates else "unroutable"
+        question = "Which engineering task should I perform?" if not candidates else "Which of these engineering tasks did you intend?"
+        return OrchestrationPlan(status, text.strip(), None, confidence, candidates, merged, [], [question], assumptions_context, standards_context, project_context, ["No unique engineering skill could be selected."])
+
+    missing = _missing_inputs(skill_id, merged, project_context, standards_context, assumptions_context)
+    questions = [FIELD_QUESTIONS.get(field, f"Please provide the engineering input: {field}.") for field in missing]
+    status = "awaiting_information" if missing else "ready_for_execution"
+    rationale = [f"Selected {skill_id} using {provider.name} intent routing."]
+    rationale.extend(provider_rationale)
+    if missing:
+        rationale.append("Required fields were determined by executing the registered deterministic skill validator.")
+
+    return OrchestrationPlan(status, text.strip(), skill_id, confidence, candidates, merged, missing, questions, assumptions_context, standards_context, project_context, rationale, provider.name)
+
+
+===== .\orchestrator\provider.py =====
+"""Provider-neutral intent-planning protocol.
+
+External LLM/agent providers should implement `IntentProvider`. The rest of the
+platform only depends on the structured routing contract, so changing providers
+does not change the engineering skills or job lifecycle.
+"""
+from __future__ import annotations
+from typing import Any, Dict, Optional, Protocol
+
+
+class StructuredIntentProvider(Protocol):
+    name: str
+
+    def classify_and_extract(self, text: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Return JSON-like data containing skill_id, confidence and inputs."""
+        ...
+
+
+class ProviderUnavailableError(RuntimeError):
+    pass
+
+
+===== .\orchestrator\provider_factory.py =====
+"""Environment-based provider selection with safe deterministic fallback."""
+from __future__ import annotations
+
+import os
+
+from orchestrator.provider import ProviderUnavailableError
+from orchestrator.intake import RuleBasedIntentProvider
+
+
+def build_intent_provider():
+    mode = os.getenv("ENGINEERING_AI_INTENT_PROVIDER", "rule_based").strip().lower()
+    if mode != "openai":
+        return RuleBasedIntentProvider()
+    try:
+        from orchestrator.openai_provider import OpenAIIntentProvider
+        return OpenAIIntentProvider()
+    except ProviderUnavailableError:
+        raise
+
+
+===== .\orchestrator\registry_loader.py =====
+from __future__ import annotations
+from pathlib import Path
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+REGISTRY_PATH = ROOT / "skill_registry" / "registry.yaml"
+
+def load_registry() -> dict:
+    with REGISTRY_PATH.open("r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+def skill_metadata(skill_id: str) -> dict:
+    for skill in load_registry().get("skills", []):
+        if skill.get("skill_id") == skill_id:
+            return skill
+    raise KeyError(f"Unknown skill: {skill_id}")
+
+
+===== .\skills\common.py =====
+"""Common request/result contracts for deterministic engineering skills."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+
+@dataclass
+class SkillRequest:
+    skill_id: str
+    inputs: Dict[str, Any]
+    project_context: Dict[str, Any] = field(default_factory=dict)
+    standards_context: Dict[str, Any] = field(default_factory=dict)
+    assumptions_context: Dict[str, Any] = field(default_factory=dict)
+    request_id: Optional[str] = None
+
+
+@dataclass
+class SkillResult:
+    skill_id: str
+    status: str
+    engineering_result: Dict[str, Any] = field(default_factory=dict)
+    assumptions: List[Dict[str, Any]] = field(default_factory=list)
+    standards: List[Dict[str, Any]] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+    validation_errors: List[str] = field(default_factory=list)
+    calculation_trace: List[Dict[str, Any]] = field(default_factory=list)
+    human_review_required: bool = True
+    source_revision: Optional[str] = None
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "skill_id": self.skill_id,
+            "status": self.status,
+            "engineering_result": self.engineering_result,
+            "assumptions": self.assumptions,
+            "standards": self.standards,
+            "warnings": self.warnings,
+            "validation_errors": self.validation_errors,
+            "calculation_trace": self.calculation_trace,
+            "human_review_required": self.human_review_required,
+            "source_revision": self.source_revision,
+            "created_at": self.created_at,
+        }
+
+
+===== .\validators\governance.py =====
+"""Validation and resolution helpers for governed assumptions and standards."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Dict, List
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+ASSUMPTIONS_PATH = ROOT / "assumptions" / "registry.yaml"
+STANDARDS_PATH = ROOT / "standards" / "registry.yaml"
+
+
+def _load_yaml(path: Path) -> dict:
+    with path.open("r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def load_assumption_registry() -> dict:
+    return _load_yaml(ASSUMPTIONS_PATH)
+
+
+def load_standard_registry() -> dict:
+    return _load_yaml(STANDARDS_PATH)
+
+
+def resolve_assumption(
+    assumption_id: str,
+    *,
+    override_context: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    override_context = override_context or {}
+    if assumption_id in override_context:
+        value = override_context[assumption_id]
+        return {
+            "assumption_id": assumption_id,
+            "value": value,
+            "source": "project_override",
+            "override": True,
+        }
+
+    for item in load_assumption_registry().get("assumptions", []):
+        if item.get("assumption_id") == assumption_id:
+            resolved = dict(item)
+            resolved["source"] = item.get("provenance", "registry")
+            resolved["override"] = False
+            return resolved
+
+    return {
+        "assumption_id": assumption_id,
+        "source": "unresolved",
+        "override": False,
+        "status": "not_registered",
+    }
+
+
+def resolve_standards_context(context: Dict[str, Any] | None = None) -> List[Dict[str, Any]]:
+    """Return caller-supplied governed standards context without inventing values."""
+    context = context or {}
+    standards = context.get("standards", [])
+    if standards is None:
+        return []
+    if not isinstance(standards, list):
+        raise TypeError("standards_context['standards'] must be a list")
+    return [dict(item) if isinstance(item, dict) else {"value": item} for item in standards]
+
+
+def validate_governance_context(request) -> List[str]:
+    errors: List[str] = []
+    if not isinstance(request.assumptions_context, dict):
+        errors.append("assumptions_context must be an object/dict")
+    if not isinstance(request.standards_context, dict):
+        errors.append("standards_context must be an object/dict")
+    else:
+        standards = request.standards_context.get("standards", [])
+        if standards is not None and not isinstance(standards, list):
+            errors.append("standards_context.standards must be a list")
+    return errors
+
+
+===== .\validators\basic.py =====
+"""Shared input validation helpers."""
+
+from __future__ import annotations
+
+from typing import Any, Dict, Iterable, List
+
+
+def require_positive(inputs: Dict[str, Any], fields: Iterable[str]) -> List[str]:
+    errors: List[str] = []
+    for field in fields:
+        value = inputs.get(field)
+        if value is None:
+            errors.append(f"Missing required input: {field}")
+            continue
+        try:
+            if float(value) <= 0:
+                errors.append(f"Input must be > 0: {field}")
+        except (TypeError, ValueError):
+            errors.append(f"Input must be numeric: {field}")
+    return errors
+
+
+def require_non_negative(inputs: Dict[str, Any], fields: Iterable[str]) -> List[str]:
+    errors: List[str] = []
+    for field in fields:
+        value = inputs.get(field)
+        if value is None:
+            errors.append(f"Missing required input: {field}")
+            continue
+        try:
+            if float(value) < 0:
+                errors.append(f"Input must be >= 0: {field}")
+        except (TypeError, ValueError):
+            errors.append(f"Input must be numeric: {field}")
+    return errors
+
+
+def require_enum(inputs: Dict[str, Any], field: str, allowed: Iterable[str]) -> List[str]:
+    value = inputs.get(field)
+    allowed_list = list(allowed)
+    if value is None:
+        return [f"Missing required input: {field}"]
+    if value not in set(allowed_list):
+        return [f"Invalid value for {field}: {value}. Allowed: {', '.join(allowed_list)}"]
+    return []
+
+
+===== .\assumptions\registry.yaml =====
+version: 1
+registry_name: engineering_assumption_registry
+status: draft
+
+# Values below are preserved from audited source calculators.
+# They are NOT presented as universal engineering constants or standards.
+assumptions:
+  - assumption_id: duct.air_density.source_default
+    parameter: air_density
+    value: 1.2
+    unit: kg/m3
+    domain: HVAC
+    source_skill: duct_sizing
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+  - assumption_id: duct.air_dynamic_viscosity.source_default
+    parameter: air_dynamic_viscosity
+    value: 1.81e-5
+    unit: Pa.s
+    domain: HVAC
+    source_skill: duct_sizing
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+  - assumption_id: pump.water_kinematic_viscosity.source_default
+    parameter: water_kinematic_viscosity
+    value: 1.0e-6
+    unit: m2/s
+    domain: HVAC
+    source_skill: pump_head
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+  - assumption_id: pump.gravity.source_default
+    parameter: gravity
+    value: 9.81
+    unit: m/s2
+    domain: HVAC
+    source_skill: pump_head
+    provenance: audited_source_default
+    status: controlled_source_default
+    override_allowed: true
+
+
+===== .\standards\registry.yaml =====
+version: 1
+registry_name: engineering_standards_registry
+status: draft
+
+# This registry intentionally contains metadata, not invented standard values.
+# Standards/editions/clauses must be loaded from an authoritative project source
+# before a skill treats a standard-dependent parameter as governed.
+standards: []
+
+
+===== .\skill_registry\registry.yaml =====
+version: 3
+registry_name: engineering_skill_registry
+status: executable_batch_v3
+
+skills:
+  - skill_id: preliminary_load_estimation
+    domain: HVAC
+    source_repository: hvac---load---estimator
+    source_path: .
+    execution: deterministic_python
+    classification: preliminary
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: duct_sizing
+    domain: HVAC
+    source_repository: duct-sizing-calculator
+    source_path: .
+    execution: deterministic_python
+    classification: preliminary
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: pump_head
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: pump-head
+    execution: deterministic_python_adapter
+    classification: preliminary
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: hvac_fault_diagnosis
+    domain: HVAC
+    source_repository: hvac-plant-troubleshooting
+    source_path: .
+    execution: deterministic_rule_engine
+    classification: diagnostic_support
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: cooling_tower
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: cooling-tower-calculator
+    execution: deterministic_browser_adapter
+    classification: preliminary_vendor_verification_required
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: refrigerant_pipe_sizing
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: refrigerant-pipe-sizing
+    execution: deterministic_browser_adapter
+    classification: preliminary_manufacturer_verification_required
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: vrf_sizing
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: vrf-sizing-tool
+    execution: deterministic_browser_adapter
+    classification: preliminary_manufacturer_verification_required
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: cleanroom_ach
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: cleanroom-ach-calculator
+    execution: deterministic_browser_adapter
+    classification: compliance_support
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: duct_leakage
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: duct-leakage-calculator
+    execution: deterministic_browser_adapter
+    classification: compliance_support
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: chiller_selection_advisor
+    domain: HVAC
+    source_repository: hvac-boq-generator
+    source_path: chiller-selection-advisor
+    execution: deterministic_browser_adapter
+    classification: advisory
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: chiller_efficiency
+    domain: HVAC
+    source_repository: chiller-efficiency-calculator
+    source_path: .
+    execution: deterministic_calculation
+    classification: pending
+    integration_status: source_audit_pending
+    human_review_required: true
+
+  - skill_id: bms_points_generation
+    domain: BMS
+    source_repository: BMS-points-list
+    source_path: .
+    execution: deterministic_python
+    classification: planning
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: bms_controller_sizing
+    domain: BMS
+    source_repository: BMS-points-list
+    source_path: .
+    execution: deterministic_python
+    classification: planning
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: bms_cost_estimation
+    domain: BMS
+    source_repository: bms-cost-estimator
+    source_path: .
+    execution: deterministic_python
+    classification: budgetary
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: bms_alarm_evaluation
+    domain: BMS
+    source_repository: bms-dashboard
+    source_path: .
+    execution: deterministic_rule_engine
+    classification: monitoring_prototype
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: vfd_energy_savings
+    domain: ENERGY
+    source_repository: vfd-toolkit
+    source_path: .
+    execution: deterministic_python
+    classification: engineering_estimate
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: vfd_derating
+    domain: ENERGY
+    source_repository: vfd-toolkit
+    source_path: .
+    execution: deterministic_python
+    classification: manufacturer_dependent
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: harmonic_screening
+    domain: ENERGY
+    source_repository: vfd-toolkit
+    source_path: .
+    execution: deterministic_python
+    classification: screening_only
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: hvac_decarbonisation
+    domain: ENERGY
+    source_repository: hvac-decarb-tool
+    source_path: .
+    execution: deterministic_python
+    classification: scenario_model
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: energy_payback
+    domain: ENERGY
+    source_repository: hvac-boq-generator
+    source_path: energy-savings-payback-calculator
+    execution: deterministic_browser_adapter
+    classification: financial_estimate
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: hvac_boq
+    domain: COMMERCIAL
+    source_repository: hvac-boq-generator
+    source_path: boq
+    execution: deterministic_browser_calculation
+    classification: commercial
+    integration_status: integrated
+    human_review_required: true
+
+  - skill_id: deviation_statement
+    domain: COMMERCIAL
+    source_repository: hvac-boq-generator
+    source_path: deviation-statement-generator
+    execution: deterministic_browser_calculation
+    classification: commercial
+    integration_status: integrated
+    human_review_required: true
+
+
+
+crm_pipeline:
+  domain: COMMERCIAL
+  source: marshvac2811/pipeline/pipeline.html
+  status: integrated
+  stages: [budgetary, tendering, quotation, followup, negotiation, won, lost]
+  categories: [Project Sales, Retrofit Jobs, Energy Optimization]
+  stakeholders: [Consultant, Builder, Developer, Contractor, End Client, Other]
+  canonical: true
+  external_adapters: [hubspot]
+
+
+============================================================
+5. FRAMEWORK GAPS TO DESIGN
+============================================================
+
+The following items must be evaluated before implementation:
+
+A. Machine-readable SkillDefinition
+B. Required / optional / conditional inputs
+C. Input units and allowed values
+D. Dynamic engineering questions
+E. Standards references and source/edition control
+F. Governed assumptions and project overrides
+G. Deterministic calculation-engine binding
+H. Validation rules
+I. Warning rules
+J. Perfection Filter
+K. Human-review rules
+L. Standard output contract
+M. Audit/lifecycle contract
+N. Registry-authoritative skill discovery
+O. Replacement/reduction of duplicated hard-coded routing
+P. Compatibility wrapper for existing calculators
+Q. AI provider integration
+R. Missing-information lifecycle
+S. Regression testing
+T. End-to-end testing across all executable verticals
+U. Explicit treatment of pending/non-executable skills
+V. Frontend/API integration
+W. Tenant/security regression coverage
+
+============================================================
+6. DESIGN CONSTRAINTS
+============================================================
+
+- Preserve existing deterministic engineering calculators unless inspection proves a defect.
+- Do not invent engineering standards or numerical design values.
+- Do not mark pending skills executable merely to satisfy counts.
+- AI may interpret requests, extract facts, select skills, identify missing information,
+  explain results, and detect inconsistencies.
+- Deterministic engineering engines remain responsible for calculations.
+- Standards and assumptions must remain auditable and governed.
+- Existing lifecycle, tenant isolation, approval, dispatch, and security behavior
+  must remain regression-tested.
+- Every framework modification must follow:
+  Understand → Inspect → Design → Backup → Modify → Compile → Test → Verify.
+
+============================================================
+7. NEXT DESIGN DECISION
+============================================================
+
+Use this inspection as the input for the Skill Framework design.
+
+The framework should sit between:
+
+AI / Intake
+    ↓
+Skill Registry
+    ↓
+Skill Definition
+    ↓
+Dynamic Input Collection
+    ↓
+Existing Engineering Skill
+    ↓
+Validation / Perfection Filter
+    ↓
+Review / Approval / Dispatch
+
+============================================================
+END STEP 24
+============================================================

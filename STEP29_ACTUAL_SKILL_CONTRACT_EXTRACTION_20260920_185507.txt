@@ -1,0 +1,900 @@
+STEP 29 - ACTUAL SKILL CONTRACT EXTRACTION
+========================================================================================================================
+Registry skills : 22
+Executable      : 21
+Pending         : ['chiller_efficiency']
+
+IMPORTANT: This report extracts evidence from existing source code.
+It does NOT invent missing requirements, standards, assumptions or rules.
+
+========================================================================================================================
+01. bms_alarm_evaluation
+Name                 : Bms Alarm Evaluation
+Domain               : BMS
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 7
+Source files:
+  - skills\bms\alarm\__init__.py
+  - skills\bms\alarm\adapter.py
+  - skills\bms\cost\__init__.py
+  - skills\bms\cost\adapter.py
+  - skills\bms\cost\source_calculator.py
+  - skills\bms\points\__init__.py
+  - skills\bms\points\adapters.py
+Classes:
+  - BMSAlarmEvaluationSkill
+  - BMSControllerSizingSkill
+  - BMSCostEstimationSkill
+  - BMSPointsGenerationSkill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\bms\alarm\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\bms\alarm\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\alarm\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+  - skills\bms\cost\adapter.py:11: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\cost\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\cost\adapter.py:14: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Budgetary framework only; market unit rates are user inputs and point counts are planning-stage estimates.'],source_revision=REV)
+  - skills\bms\points\adapters.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\points\adapters.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\points\adapters.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Generic planning-stage points template; final points must follow project scope, sequence of operations, gateway capabilities and owner requirements.'],source_revision=REV)
+  - skills\bms\points\adapters.py:22: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\points\adapters.py:24: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\points\adapters.py:25: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Controller capacity must be checked against actual selected controller I/O and project architecture.'],source_revision=REV)
+========================================================================================================================
+02. bms_controller_sizing
+Name                 : Bms Controller Sizing
+Domain               : BMS
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 7
+Source files:
+  - skills\bms\alarm\__init__.py
+  - skills\bms\alarm\adapter.py
+  - skills\bms\cost\__init__.py
+  - skills\bms\cost\adapter.py
+  - skills\bms\cost\source_calculator.py
+  - skills\bms\points\__init__.py
+  - skills\bms\points\adapters.py
+Classes:
+  - BMSAlarmEvaluationSkill
+  - BMSControllerSizingSkill
+  - BMSCostEstimationSkill
+  - BMSPointsGenerationSkill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\bms\alarm\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\bms\alarm\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\alarm\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+  - skills\bms\cost\adapter.py:11: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\cost\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\cost\adapter.py:14: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Budgetary framework only; market unit rates are user inputs and point counts are planning-stage estimates.'],source_revision=REV)
+  - skills\bms\points\adapters.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\points\adapters.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\points\adapters.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Generic planning-stage points template; final points must follow project scope, sequence of operations, gateway capabilities and owner requirements.'],source_revision=REV)
+  - skills\bms\points\adapters.py:22: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\points\adapters.py:24: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\points\adapters.py:25: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Controller capacity must be checked against actual selected controller I/O and project architecture.'],source_revision=REV)
+========================================================================================================================
+03. bms_cost_estimation
+Name                 : Bms Cost Estimation
+Domain               : BMS
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 7
+Source files:
+  - skills\bms\alarm\__init__.py
+  - skills\bms\alarm\adapter.py
+  - skills\bms\cost\__init__.py
+  - skills\bms\cost\adapter.py
+  - skills\bms\cost\source_calculator.py
+  - skills\bms\points\__init__.py
+  - skills\bms\points\adapters.py
+Classes:
+  - BMSAlarmEvaluationSkill
+  - BMSControllerSizingSkill
+  - BMSCostEstimationSkill
+  - BMSPointsGenerationSkill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\bms\alarm\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\bms\alarm\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\alarm\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+  - skills\bms\cost\adapter.py:11: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\cost\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\cost\adapter.py:14: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Budgetary framework only; market unit rates are user inputs and point counts are planning-stage estimates.'],source_revision=REV)
+  - skills\bms\points\adapters.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\points\adapters.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\points\adapters.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Generic planning-stage points template; final points must follow project scope, sequence of operations, gateway capabilities and owner requirements.'],source_revision=REV)
+  - skills\bms\points\adapters.py:22: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\points\adapters.py:24: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\points\adapters.py:25: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Controller capacity must be checked against actual selected controller I/O and project architecture.'],source_revision=REV)
+========================================================================================================================
+04. bms_points_generation
+Name                 : Bms Points Generation
+Domain               : BMS
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 7
+Source files:
+  - skills\bms\alarm\__init__.py
+  - skills\bms\alarm\adapter.py
+  - skills\bms\cost\__init__.py
+  - skills\bms\cost\adapter.py
+  - skills\bms\cost\source_calculator.py
+  - skills\bms\points\__init__.py
+  - skills\bms\points\adapters.py
+Classes:
+  - BMSAlarmEvaluationSkill
+  - BMSControllerSizingSkill
+  - BMSCostEstimationSkill
+  - BMSPointsGenerationSkill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\bms\alarm\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\bms\alarm\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\alarm\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+  - skills\bms\cost\adapter.py:11: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\cost\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\cost\adapter.py:14: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Budgetary framework only; market unit rates are user inputs and point counts are planning-stage estimates.'],source_revision=REV)
+  - skills\bms\points\adapters.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\points\adapters.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\points\adapters.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Generic planning-stage points template; final points must follow project scope, sequence of operations, gateway capabilities and owner requirements.'],source_revision=REV)
+  - skills\bms\points\adapters.py:22: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\bms\points\adapters.py:24: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\bms\points\adapters.py:25: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Controller capacity must be checked against actual selected controller I/O and project architecture.'],source_revision=REV)
+========================================================================================================================
+05. chiller_selection_advisor
+Name                 : Chiller Selection Advisor
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\hvac\chiller_selection\__init__.py
+  - skills\hvac\chiller_selection\adapter.py
+  - skills\hvac\chiller_selection\source_calculator.py
+Classes:
+  - ChillerSelectionAdvisorSkill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\chiller_selection\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\hvac\chiller_selection\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\hvac\chiller_selection\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+========================================================================================================================
+06. cleanroom_ach
+Name                 : Cleanroom Ach
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\hvac\cleanroom_ach\__init__.py
+  - skills\hvac\cleanroom_ach\adapter.py
+  - skills\hvac\cleanroom_ach\source_calculator.py
+Classes:
+  - CleanroomACHSKill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\cleanroom_ach\adapter.py:12: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\hvac\cleanroom_ach\adapter.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\hvac\cleanroom_ach\adapter.py:16: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+========================================================================================================================
+07. cooling_tower
+Name                 : Cooling Tower
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\hvac\cooling_tower\__init__.py
+  - skills\hvac\cooling_tower\adapter.py
+  - skills\hvac\cooling_tower\source_calculator.py
+Classes:
+  - CoolingTowerSkill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - load_method
+SkillResult fields detected:
+  - engineering_result
+  - human_review_required
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\cooling_tower\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\hvac\cooling_tower\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\hvac\cooling_tower\adapter.py:16: if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)
+  - skills\hvac\cooling_tower\adapter.py:18: if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)
+  - skills\hvac\cooling_tower\adapter.py:20: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)
+========================================================================================================================
+08. deviation_statement
+Name                 : Deviation Statement
+Domain               : COMMERCIAL
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\commercial\deviation\__init__.py
+  - skills\commercial\deviation\adapter.py
+  - skills\commercial\deviation\source_calculator.py
+Classes:
+  - DeviationStatementSkill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - rows
+SkillResult fields detected:
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\commercial\deviation\adapter.py:9: if not isinstance(r.inputs.get('rows'),list):errs.append('rows must be a list')
+  - skills\commercial\deviation\adapter.py:10: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\commercial\deviation\adapter.py:12: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\commercial\deviation\adapter.py:14: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+========================================================================================================================
+09. duct_leakage
+Name                 : Duct Leakage
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 5
+Source files:
+  - skills\hvac\duct_leakage\__init__.py
+  - skills\hvac\duct_leakage\adapter.py
+  - skills\hvac\duct_leakage\source_calculator.py
+  - skills\hvac\duct_sizing\adapter.py
+  - skills\hvac\duct_sizing\source_calculator.py
+Classes:
+  - DuctLeakageSkill
+  - DuctSizingSkill
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - airflow
+  - duct_type
+  - height_mm
+  - material
+  - method
+  - target_friction_pa_per_m
+  - target_velocity_ms
+  - width_mm
+SkillResult fields detected:
+  - assumptions
+  - calculation_trace
+  - engineering_result
+  - human_review_required
+  - skill_id
+  - source_revision
+  - standards
+  - status
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\duct_leakage\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\hvac\duct_leakage\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\hvac\duct_leakage\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+  - skills\hvac\duct_sizing\adapter.py:22: errors += require_positive(request.inputs, ["airflow"])
+  - skills\hvac\duct_sizing\adapter.py:23: errors += require_enum(request.inputs, "method", ["velocity", "equal_friction"])
+  - skills\hvac\duct_sizing\adapter.py:24: errors += require_enum(request.inputs, "duct_type", ["round", "rectangular"])
+  - skills\hvac\duct_sizing\adapter.py:26: method = request.inputs.get("method")
+  - skills\hvac\duct_sizing\adapter.py:27: duct_type = request.inputs.get("duct_type")
+  - skills\hvac\duct_sizing\adapter.py:30: errors += require_positive(request.inputs, ["width_mm", "height_mm"])
+  - skills\hvac\duct_sizing\adapter.py:32: errors += require_positive(request.inputs, ["target_velocity_ms"])
+  - skills\hvac\duct_sizing\adapter.py:34: errors += require_positive(request.inputs, ["target_friction_pa_per_m"])
+  - skills\hvac\duct_sizing\adapter.py:36: material = request.inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:46: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:53: inputs = request.inputs
+  - skills\hvac\duct_sizing\adapter.py:56: material = inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:85: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:118: return SkillResult(
+========================================================================================================================
+10. duct_sizing
+Name                 : Duct Sizing
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 5
+Source files:
+  - skills\hvac\duct_leakage\__init__.py
+  - skills\hvac\duct_leakage\adapter.py
+  - skills\hvac\duct_sizing\__init__.py
+  - skills\hvac\duct_sizing\adapter.py
+  - skills\hvac\duct_sizing\source_calculator.py
+Classes:
+  - DuctLeakageSkill
+  - DuctSizingSkill
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - airflow
+  - duct_type
+  - height_mm
+  - material
+  - method
+  - target_friction_pa_per_m
+  - target_velocity_ms
+  - width_mm
+SkillResult fields detected:
+  - assumptions
+  - calculation_trace
+  - engineering_result
+  - human_review_required
+  - skill_id
+  - source_revision
+  - standards
+  - status
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\duct_leakage\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\hvac\duct_leakage\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\hvac\duct_leakage\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+  - skills\hvac\duct_sizing\adapter.py:22: errors += require_positive(request.inputs, ["airflow"])
+  - skills\hvac\duct_sizing\adapter.py:23: errors += require_enum(request.inputs, "method", ["velocity", "equal_friction"])
+  - skills\hvac\duct_sizing\adapter.py:24: errors += require_enum(request.inputs, "duct_type", ["round", "rectangular"])
+  - skills\hvac\duct_sizing\adapter.py:26: method = request.inputs.get("method")
+  - skills\hvac\duct_sizing\adapter.py:27: duct_type = request.inputs.get("duct_type")
+  - skills\hvac\duct_sizing\adapter.py:30: errors += require_positive(request.inputs, ["width_mm", "height_mm"])
+  - skills\hvac\duct_sizing\adapter.py:32: errors += require_positive(request.inputs, ["target_velocity_ms"])
+  - skills\hvac\duct_sizing\adapter.py:34: errors += require_positive(request.inputs, ["target_friction_pa_per_m"])
+  - skills\hvac\duct_sizing\adapter.py:36: material = request.inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:46: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:53: inputs = request.inputs
+  - skills\hvac\duct_sizing\adapter.py:56: material = inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:85: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:118: return SkillResult(
+========================================================================================================================
+11. energy_payback
+Name                 : Energy Payback
+Domain               : ENERGY
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 7
+Source files:
+  - skills\energy\decarbonisation\adapter.py
+  - skills\energy\decarbonisation\source_calculator.py
+  - skills\energy\payback\__init__.py
+  - skills\energy\payback\adapter.py
+  - skills\energy\vfd\__init__.py
+  - skills\energy\vfd\adapters.py
+  - skills\energy\vfd\source_calculator.py
+Classes:
+  - EnergyPaybackSkill
+  - HVACDecarbonisationSkill
+  - HarmonicScreeningSkill
+  - VFDDeratingSkill
+  - VFDEnergySavingsSkill
+  - _Base
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - calculation_trace
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\energy\decarbonisation\adapter.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\decarbonisation\adapter.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\decarbonisation\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Scenario/impact model is assumption-driven; site data, current tariffs and governed emission factors should be verified before proposal use.'],source_revision=REV)
+  - skills\energy\payback\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\energy\payback\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\payback\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+  - skills\energy\vfd\adapters.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Savings model uses the source static-head correction and should be validated against measured system behavior.'],calculation_trace=[{'step':1,'operation':'apply_affinity_law_cube_relationship'},{'step':2,'operation':'apply_static_head_correction'},{'step':3,'operation':'annualize_energy_and_cost'}],source_revision=REV)
+  - skills\energy\vfd\adapters.py:20: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:22: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:23: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Temperature/altitude factors are generic reference values from the source and must be checked against the selected VFD manufacturer/model datasheet.'],source_revision=REV)
+  - skills\energy\vfd\adapters.py:28: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:30: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:31: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Screening heuristic only; not an IEEE 519 harmonic study.'],source_revision=REV)
+========================================================================================================================
+12. harmonic_screening
+Name                 : Harmonic Screening
+Domain               : ENERGY
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 2
+Source files:
+  - skills\batch_build.py
+  - skills\energy\vfd\adapters.py
+Classes:
+  - HarmonicScreeningSkill
+  - VFDDeratingSkill
+  - VFDEnergySavingsSkill
+  - _Base
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - rule_id
+  - values
+SkillResult fields detected:
+  - calculation_trace
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\batch_build.py:61: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=SOURCE_REVISION)
+  - skills\batch_build.py:64: except (ValueError,TypeError) as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=SOURCE_REVISION)
+  - skills\batch_build.py:66: return SkillResult(self.skill_id,'draft_ready',engineering_result=out,standards=resolve_standards_context(r.standards_context),warnings=warnings,calculation_trace=[{'step':1,'operation':'select_building_type_and_base_sqft_per_ton'},{'step':2,'operation':'apply_source_climate_multiplier'},{'step':3,'operation':'apply_occupancy_addon_if_applicable'},{'step':4,'operation':'round_up_to_half_ton'}],source_revision=SOURCE_REVISION)
+  - skills\batch_build.py:109: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=SOURCE_REVISION)
+  - skills\batch_build.py:111: except (ValueError,KeyError,TypeError) as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=SOURCE_REVISION)
+  - skills\batch_build.py:114: return SkillResult(self.skill_id,'draft_ready',engineering_result=out,warnings=warnings,calculation_trace=[{'step':1,'operation':'evaluate_explicit_AND_conditions','rule_id':r.inputs['rule_id']}],source_revision=SOURCE_REVISION)
+  - skills\batch_build.py:164: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\batch_build.py:166: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\batch_build.py:167: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Savings model uses the source static-head correction and should be validated against measured system behavior.'],calculation_trace=[{'step':1,'operation':'apply_affinity_law_cube_relationship'},{'step':2,'operation':'apply_static_head_correction'},{'step':3,'operation':'annualize_energy_and_cost'}],source_revision=REV)
+  - skills\batch_build.py:172: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\batch_build.py:174: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\batch_build.py:175: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Temperature/altitude factors are generic reference values from the source and must be checked against the selected VFD manufacturer/model datasheet.'],source_revision=REV)
+  - skills\batch_build.py:180: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\batch_build.py:182: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\batch_build.py:183: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Screening heuristic only; not an IEEE 519 harmonic study.'],source_revision=REV)
+  - skills\batch_build.py:233: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\batch_build.py:235: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\batch_build.py:236: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Generic planning-stage points template; final points must follow project scope, sequence of operations, gateway capabilities and owner requirements.'],source_revision=REV)
+  - skills\batch_build.py:243: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\batch_build.py:245: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\batch_build.py:246: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Controller capacity must be checked against actual selected controller I/O and project architecture.'],source_revision=REV)
+  - skills\batch_build.py:275: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\batch_build.py:277: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\batch_build.py:278: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Budgetary framework only; market unit rates are user inputs and point counts are planning-stage estimates.'],source_revision=REV)
+  - skills\batch_build.py:320: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\batch_build.py:322: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\batch_build.py:323: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Scenario/impact model is assumption-driven; site data, current tariffs and governed emission factors should be verified before proposal use.'],source_revision=REV)
+  - skills\batch_build.py:354: if skill is None:return SkillResult(request.skill_id,'skill_not_registered',validation_errors=[f'Skill is not executable in current batch adapter set: {request.skill_id}'])
+  - skills\energy\vfd\adapters.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Savings model uses the source static-head correction and should be validated against measured system behavior.'],calculation_trace=[{'step':1,'operation':'apply_affinity_law_cube_relationship'},{'step':2,'operation':'apply_static_head_correction'},{'step':3,'operation':'annualize_energy_and_cost'}],source_revision=REV)
+  - skills\energy\vfd\adapters.py:20: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:22: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:23: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Temperature/altitude factors are generic reference values from the source and must be checked against the selected VFD manufacturer/model datasheet.'],source_revision=REV)
+  - skills\energy\vfd\adapters.py:28: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:30: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:31: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Screening heuristic only; not an IEEE 519 harmonic study.'],source_revision=REV)
+========================================================================================================================
+13. hvac_boq
+Name                 : Hvac Boq
+Domain               : COMMERCIAL
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 6
+Source files:
+  - skills\commercial\boq\__init__.py
+  - skills\commercial\boq\adapter.py
+  - skills\hvac\duct_sizing\adapter.py
+  - skills\hvac\fault_diagnosis\adapter.py
+  - skills\hvac\fault_diagnosis\source_calculator.py
+  - skills\hvac\preliminary_load_estimation\source_calculator.py
+Classes:
+  - DuctSizingSkill
+  - HVACBOQSkill
+  - HVAFaultDiagnosisSkill
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - airflow
+  - categories
+  - duct_type
+  - height_mm
+  - material
+  - method
+  - rule_id
+  - target_friction_pa_per_m
+  - target_velocity_ms
+  - values
+  - width_mm
+SkillResult fields detected:
+  - assumptions
+  - calculation_trace
+  - engineering_result
+  - human_review_required
+  - skill_id
+  - source_revision
+  - standards
+  - status
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\commercial\boq\adapter.py:9: if not isinstance(r.inputs.get('categories'),list):errs.append('categories must be a list')
+  - skills\commercial\boq\adapter.py:10: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\commercial\boq\adapter.py:12: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\commercial\boq\adapter.py:14: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+  - skills\hvac\duct_sizing\adapter.py:22: errors += require_positive(request.inputs, ["airflow"])
+  - skills\hvac\duct_sizing\adapter.py:23: errors += require_enum(request.inputs, "method", ["velocity", "equal_friction"])
+  - skills\hvac\duct_sizing\adapter.py:24: errors += require_enum(request.inputs, "duct_type", ["round", "rectangular"])
+  - skills\hvac\duct_sizing\adapter.py:26: method = request.inputs.get("method")
+  - skills\hvac\duct_sizing\adapter.py:27: duct_type = request.inputs.get("duct_type")
+  - skills\hvac\duct_sizing\adapter.py:30: errors += require_positive(request.inputs, ["width_mm", "height_mm"])
+  - skills\hvac\duct_sizing\adapter.py:32: errors += require_positive(request.inputs, ["target_velocity_ms"])
+  - skills\hvac\duct_sizing\adapter.py:34: errors += require_positive(request.inputs, ["target_friction_pa_per_m"])
+  - skills\hvac\duct_sizing\adapter.py:36: material = request.inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:46: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:53: inputs = request.inputs
+  - skills\hvac\duct_sizing\adapter.py:56: material = inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:85: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:118: return SkillResult(
+  - skills\hvac\fault_diagnosis\adapter.py:15: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=SOURCE_REVISION)
+  - skills\hvac\fault_diagnosis\adapter.py:17: except (ValueError,KeyError,TypeError) as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=SOURCE_REVISION)
+  - skills\hvac\fault_diagnosis\adapter.py:20: return SkillResult(self.skill_id,'draft_ready',engineering_result=out,warnings=warnings,calculation_trace=[{'step':1,'operation':'evaluate_explicit_AND_conditions','rule_id':r.inputs['rule_id']}],source_revision=SOURCE_REVISION)
+========================================================================================================================
+14. hvac_decarbonisation
+Name                 : Hvac Decarbonisation
+Domain               : ENERGY
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 6
+Source files:
+  - skills\energy\decarbonisation\__init__.py
+  - skills\energy\decarbonisation\adapter.py
+  - skills\hvac\duct_sizing\adapter.py
+  - skills\hvac\fault_diagnosis\adapter.py
+  - skills\hvac\fault_diagnosis\source_calculator.py
+  - skills\hvac\preliminary_load_estimation\source_calculator.py
+Classes:
+  - DuctSizingSkill
+  - HVACDecarbonisationSkill
+  - HVAFaultDiagnosisSkill
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - airflow
+  - duct_type
+  - height_mm
+  - material
+  - method
+  - rule_id
+  - target_friction_pa_per_m
+  - target_velocity_ms
+  - values
+  - width_mm
+SkillResult fields detected:
+  - assumptions
+  - calculation_trace
+  - engineering_result
+  - human_review_required
+  - skill_id
+  - source_revision
+  - standards
+  - status
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\energy\decarbonisation\adapter.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\decarbonisation\adapter.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\decarbonisation\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Scenario/impact model is assumption-driven; site data, current tariffs and governed emission factors should be verified before proposal use.'],source_revision=REV)
+  - skills\hvac\duct_sizing\adapter.py:22: errors += require_positive(request.inputs, ["airflow"])
+  - skills\hvac\duct_sizing\adapter.py:23: errors += require_enum(request.inputs, "method", ["velocity", "equal_friction"])
+  - skills\hvac\duct_sizing\adapter.py:24: errors += require_enum(request.inputs, "duct_type", ["round", "rectangular"])
+  - skills\hvac\duct_sizing\adapter.py:26: method = request.inputs.get("method")
+  - skills\hvac\duct_sizing\adapter.py:27: duct_type = request.inputs.get("duct_type")
+  - skills\hvac\duct_sizing\adapter.py:30: errors += require_positive(request.inputs, ["width_mm", "height_mm"])
+  - skills\hvac\duct_sizing\adapter.py:32: errors += require_positive(request.inputs, ["target_velocity_ms"])
+  - skills\hvac\duct_sizing\adapter.py:34: errors += require_positive(request.inputs, ["target_friction_pa_per_m"])
+  - skills\hvac\duct_sizing\adapter.py:36: material = request.inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:46: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:53: inputs = request.inputs
+  - skills\hvac\duct_sizing\adapter.py:56: material = inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:85: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:118: return SkillResult(
+  - skills\hvac\fault_diagnosis\adapter.py:15: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=SOURCE_REVISION)
+  - skills\hvac\fault_diagnosis\adapter.py:17: except (ValueError,KeyError,TypeError) as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=SOURCE_REVISION)
+  - skills\hvac\fault_diagnosis\adapter.py:20: return SkillResult(self.skill_id,'draft_ready',engineering_result=out,warnings=warnings,calculation_trace=[{'step':1,'operation':'evaluate_explicit_AND_conditions','rule_id':r.inputs['rule_id']}],source_revision=SOURCE_REVISION)
+========================================================================================================================
+15. hvac_fault_diagnosis
+Name                 : Hvac Fault Diagnosis
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 4
+Source files:
+  - skills\hvac\duct_sizing\adapter.py
+  - skills\hvac\fault_diagnosis\adapter.py
+  - skills\hvac\fault_diagnosis\source_calculator.py
+  - skills\hvac\preliminary_load_estimation\source_calculator.py
+Classes:
+  - DuctSizingSkill
+  - HVAFaultDiagnosisSkill
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - airflow
+  - duct_type
+  - height_mm
+  - material
+  - method
+  - rule_id
+  - target_friction_pa_per_m
+  - target_velocity_ms
+  - values
+  - width_mm
+SkillResult fields detected:
+  - assumptions
+  - calculation_trace
+  - engineering_result
+  - human_review_required
+  - skill_id
+  - source_revision
+  - standards
+  - status
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\duct_sizing\adapter.py:22: errors += require_positive(request.inputs, ["airflow"])
+  - skills\hvac\duct_sizing\adapter.py:23: errors += require_enum(request.inputs, "method", ["velocity", "equal_friction"])
+  - skills\hvac\duct_sizing\adapter.py:24: errors += require_enum(request.inputs, "duct_type", ["round", "rectangular"])
+  - skills\hvac\duct_sizing\adapter.py:26: method = request.inputs.get("method")
+  - skills\hvac\duct_sizing\adapter.py:27: duct_type = request.inputs.get("duct_type")
+  - skills\hvac\duct_sizing\adapter.py:30: errors += require_positive(request.inputs, ["width_mm", "height_mm"])
+  - skills\hvac\duct_sizing\adapter.py:32: errors += require_positive(request.inputs, ["target_velocity_ms"])
+  - skills\hvac\duct_sizing\adapter.py:34: errors += require_positive(request.inputs, ["target_friction_pa_per_m"])
+  - skills\hvac\duct_sizing\adapter.py:36: material = request.inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:46: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:53: inputs = request.inputs
+  - skills\hvac\duct_sizing\adapter.py:56: material = inputs.get("material", "gss")
+  - skills\hvac\duct_sizing\adapter.py:85: return SkillResult(
+  - skills\hvac\duct_sizing\adapter.py:118: return SkillResult(
+  - skills\hvac\fault_diagnosis\adapter.py:15: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=SOURCE_REVISION)
+  - skills\hvac\fault_diagnosis\adapter.py:17: except (ValueError,KeyError,TypeError) as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=SOURCE_REVISION)
+  - skills\hvac\fault_diagnosis\adapter.py:20: return SkillResult(self.skill_id,'draft_ready',engineering_result=out,warnings=warnings,calculation_trace=[{'step':1,'operation':'evaluate_explicit_AND_conditions','rule_id':r.inputs['rule_id']}],source_revision=SOURCE_REVISION)
+========================================================================================================================
+16. preliminary_load_estimation
+Name                 : Preliminary Load Estimation
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\hvac\preliminary_load_estimation\__init__.py
+  - skills\hvac\preliminary_load_estimation\adapter.py
+  - skills\hvac\preliminary_load_estimation\source_calculator.py
+Classes:
+  - PreliminaryLoadEstimationSkill
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - calculation_trace
+  - engineering_result
+  - source_revision
+  - standards
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\preliminary_load_estimation\adapter.py:22: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=SOURCE_REVISION)
+  - skills\hvac\preliminary_load_estimation\adapter.py:25: except (ValueError,TypeError) as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=SOURCE_REVISION)
+  - skills\hvac\preliminary_load_estimation\adapter.py:27: return SkillResult(self.skill_id,'draft_ready',engineering_result=out,standards=resolve_standards_context(r.standards_context),warnings=warnings,calculation_trace=[{'step':1,'operation':'select_building_type_and_base_sqft_per_ton'},{'step':2,'operation':'apply_source_climate_multiplier'},{'step':3,'operation':'apply_occupancy_addon_if_applicable'},{'step':4,'operation':'round_up_to_half_ton'}],source_revision=SOURCE_REVISION)
+========================================================================================================================
+17. pump_head
+Name                 : Pump Head
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\hvac\pump_head\__init__.py
+  - skills\hvac\pump_head\adapter.py
+  - skills\hvac\pump_head\source_calculator.py
+Classes:
+  - PumpHeadSkill
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - assumptions
+  - calculation_trace
+  - engineering_result
+  - human_review_required
+  - skill_id
+  - source_revision
+  - standards
+  - status
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\pump_head\adapter.py:15: i = request.inputs
+  - skills\hvac\pump_head\adapter.py:18: errors += require_positive(i, ["flow_m3hr", "diameter_mm"])
+  - skills\hvac\pump_head\adapter.py:41: return SkillResult(skill_id=self.skill_id, status="input_validation_failed", validation_errors=errors, source_revision=SOURCE_REVISION)
+  - skills\hvac\pump_head\adapter.py:42: i = request.inputs
+  - skills\hvac\pump_head\adapter.py:63: return SkillResult(skill_id=self.skill_id, status="calculation_failed", validation_errors=[str(exc)], source_revision=SOURCE_REVISION)
+  - skills\hvac\pump_head\adapter.py:83: return SkillResult(
+========================================================================================================================
+18. refrigerant_pipe_sizing
+Name                 : Refrigerant Pipe Sizing
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\hvac\refrigerant_pipe_sizing\__init__.py
+  - skills\hvac\refrigerant_pipe_sizing\adapter.py
+  - skills\hvac\refrigerant_pipe_sizing\source_calculator.py
+Classes:
+  - RefrigerantPipeSizingSkill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - refrigerant
+SkillResult fields detected:
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\refrigerant_pipe_sizing\adapter.py:12: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\hvac\refrigerant_pipe_sizing\adapter.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\hvac\refrigerant_pipe_sizing\adapter.py:16: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+========================================================================================================================
+19. vfd_derating
+Name                 : Vfd Derating
+Domain               : ENERGY
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\energy\vfd\__init__.py
+  - skills\energy\vfd\adapters.py
+  - skills\energy\vfd\source_calculator.py
+Classes:
+  - HarmonicScreeningSkill
+  - VFDDeratingSkill
+  - VFDEnergySavingsSkill
+  - _Base
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - calculation_trace
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\energy\vfd\adapters.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Savings model uses the source static-head correction and should be validated against measured system behavior.'],calculation_trace=[{'step':1,'operation':'apply_affinity_law_cube_relationship'},{'step':2,'operation':'apply_static_head_correction'},{'step':3,'operation':'annualize_energy_and_cost'}],source_revision=REV)
+  - skills\energy\vfd\adapters.py:20: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:22: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:23: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Temperature/altitude factors are generic reference values from the source and must be checked against the selected VFD manufacturer/model datasheet.'],source_revision=REV)
+  - skills\energy\vfd\adapters.py:28: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:30: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:31: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Screening heuristic only; not an IEEE 519 harmonic study.'],source_revision=REV)
+========================================================================================================================
+20. vfd_energy_savings
+Name                 : Vfd Energy Savings
+Domain               : ENERGY
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\energy\vfd\__init__.py
+  - skills\energy\vfd\adapters.py
+  - skills\energy\vfd\source_calculator.py
+Classes:
+  - HarmonicScreeningSkill
+  - VFDDeratingSkill
+  - VFDEnergySavingsSkill
+  - _Base
+Relevant methods:
+  - run
+  - validate
+Validation/input fields detected:
+  - NONE DETECTED
+SkillResult fields detected:
+  - calculation_trace
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\energy\vfd\adapters.py:12: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:14: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Savings model uses the source static-head correction and should be validated against measured system behavior.'],calculation_trace=[{'step':1,'operation':'apply_affinity_law_cube_relationship'},{'step':2,'operation':'apply_static_head_correction'},{'step':3,'operation':'annualize_energy_and_cost'}],source_revision=REV)
+  - skills\energy\vfd\adapters.py:20: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:22: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:23: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Temperature/altitude factors are generic reference values from the source and must be checked against the selected VFD manufacturer/model datasheet.'],source_revision=REV)
+  - skills\energy\vfd\adapters.py:28: if e:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=e,source_revision=REV)
+  - skills\energy\vfd\adapters.py:30: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\energy\vfd\adapters.py:31: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=['Screening heuristic only; not an IEEE 519 harmonic study.'],source_revision=REV)
+========================================================================================================================
+21. vrf_sizing
+Name                 : Vrf Sizing
+Domain               : HVAC
+Execution type       : deterministic_calculation
+Current registry binding: NO
+Implementation files : 3
+Source files:
+  - skills\hvac\vrf_sizing\__init__.py
+  - skills\hvac\vrf_sizing\adapter.py
+  - skills\hvac\vrf_sizing\source_calculator.py
+Classes:
+  - VRFSizingSkill
+Relevant methods:
+  - run
+Validation/input fields detected:
+  - zones
+SkillResult fields detected:
+  - engineering_result
+  - source_revision
+  - validation_errors
+  - warnings
+Evidence lines:
+  - skills\hvac\vrf_sizing\adapter.py:9: if not isinstance(r.inputs.get('zones'),list) or not r.inputs.get('zones'):errs.append('zones must be a non-empty list')
+  - skills\hvac\vrf_sizing\adapter.py:11: if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)
+  - skills\hvac\vrf_sizing\adapter.py:13: except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)
+  - skills\hvac\vrf_sizing\adapter.py:15: return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,source_revision=REV)
+
+========================================================================================================================
+STEP 29 SUMMARY
+========================================================================================================================
+The extracted fields are evidence for the next SkillDefinition mapping step.
+No engineering constants, standards, assumptions, formulas or missing inputs have been invented.
+The pending chiller_efficiency skill remains outside executable extraction.

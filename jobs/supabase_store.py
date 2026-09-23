@@ -1,4 +1,4 @@
-"""Supabase/PostgREST-backed job store and queue primitives.
+﻿"""Supabase/PostgREST-backed job store and queue primitives.
 
 The store deliberately depends only on the small interface exposed by the
 Supabase Python client (`table`, `select`, `insert`, `update`, `upsert`,
@@ -47,7 +47,7 @@ class SupabaseJobStore(JobStore):
         for index, event in enumerate(job.events):
             event_rows.append({
                 "job_id": job.job_id,
-                "event_key": f"{job.job_id}:{index}:{event.created_at}",
+                "event_key": f"{job.job_id}:{index}",
                 "event_type": event.event_type,
                 "status": event.status,
                 "message": event.message,
@@ -172,3 +172,4 @@ def build_supabase_job_store_from_env() -> Optional[SupabaseJobStore]:
 
     client = create_client(url, key)
     return SupabaseJobStore(client)
+

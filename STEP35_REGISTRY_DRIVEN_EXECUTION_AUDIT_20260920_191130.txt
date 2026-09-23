@@ -1,0 +1,712 @@
+﻿=== STEP 35: REGISTRY-DRIVEN EXECUTION DESIGN AUDIT ===
+Generated: 20260920_191130
+
+--- ENGINE.PY ---
+from __future__ import annotations
+from typing import Dict
+from skills.common import SkillRequest, SkillResult
+from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+from skills.hvac.pump_head.adapter import PumpHeadSkill
+from skills.hvac.preliminary_load_estimation.adapter import PreliminaryLoadEstimationSkill
+from skills.hvac.fault_diagnosis.adapter import HVAFaultDiagnosisSkill
+from skills.bms.points.adapters import BMSPointsGenerationSkill,BMSControllerSizingSkill
+from skills.bms.cost.adapter import BMSCostEstimationSkill
+from skills.energy.vfd.adapters import VFDEnergySavingsSkill,VFDDeratingSkill,HarmonicScreeningSkill
+from skills.energy.decarbonisation.adapter import HVACDecarbonisationSkill
+from skills.hvac.cooling_tower.adapter import CoolingTowerSkill
+from skills.hvac.refrigerant_pipe_sizing.adapter import RefrigerantPipeSizingSkill
+from skills.hvac.vrf_sizing.adapter import VRFSizingSkill
+from skills.hvac.cleanroom_ach.adapter import CleanroomACHSKill
+from skills.hvac.duct_leakage.adapter import DuctLeakageSkill
+from skills.hvac.chiller_selection.adapter import ChillerSelectionAdvisorSkill
+from skills.energy.payback.adapter import EnergyPaybackSkill
+from skills.commercial.boq.adapter import HVACBOQSkill
+from skills.commercial.deviation.adapter import DeviationStatementSkill
+from skills.bms.alarm.adapter import BMSAlarmEvaluationSkill
+SKILLS={
+'duct_sizing':DuctSizingSkill(),'pump_head':PumpHeadSkill(),'preliminary_load_estimation':PreliminaryLoadEstimationSkill(),'hvac_fault_diagnosis':HVAFaultDiagnosisSkill(),
+'bms_points_generation':BMSPointsGenerationSkill(),'bms_controller_sizing':BMSControllerSizingSkill(),'bms_cost_estimation':BMSCostEstimationSkill(),
+'vfd_energy_savings':VFDEnergySavingsSkill(),'vfd_derating':VFDDeratingSkill(),'harmonic_screening':HarmonicScreeningSkill(),'hvac_decarbonisation':HVACDecarbonisationSkill(),
+'cooling_tower':CoolingTowerSkill(),'refrigerant_pipe_sizing':RefrigerantPipeSizingSkill(),'vrf_sizing':VRFSizingSkill(),'cleanroom_ach':CleanroomACHSKill(),'duct_leakage':DuctLeakageSkill(),'chiller_selection_advisor':ChillerSelectionAdvisorSkill(),
+'energy_payback':EnergyPaybackSkill(),'hvac_boq':HVACBOQSkill(),'deviation_statement':DeviationStatementSkill(),'bms_alarm_evaluation':BMSAlarmEvaluationSkill()}
+def execute(request:SkillRequest)->SkillResult:
+    skill=SKILLS.get(request.skill_id)
+    if skill is None:return SkillResult(request.skill_id,'skill_not_registered',validation_errors=[f'Skill is not executable in current batch adapter set: {request.skill_id}'])
+    return skill.run(request)
+def registered_skills():return sorted(SKILLS)
+
+
+--- ENGINE REFERENCES ACROSS PROJECT ---
+C:\engineering_ai\engineering_ai_platform_v1\api\app.py:198:<p>Engineering jobs, skills, review, dispatch and project operations will appear here.</p>
+C:\engineering_ai\engineering_ai_platform_v1\crm\supabase_store.py:35:).execute()
+C:\engineering_ai\engineering_ai_platform_v1\crm\supabase_store.py:46:.execute()
+C:\engineering_ai\engineering_ai_platform_v1\crm\supabase_store.py:61:.execute()
+C:\engineering_ai\engineering_ai_platform_v1\crm\supabase_store.py:77:.execute()
+C:\engineering_ai\engineering_ai_platform_v1\ingestion\storage.py:71:).execute()
+C:\engineering_ai\engineering_ai_platform_v1\ingestion\storage.py:85:).execute()
+C:\engineering_ai\engineering_ai_platform_v1\ingestion\storage.py:102:).execute()
+C:\engineering_ai\engineering_ai_platform_v1\integrations\supabase_store.py:30:).execute()
+C:\engineering_ai\engineering_ai_platform_v1\integrations\supabase_store.py:39:.execute()
+C:\engineering_ai\engineering_ai_platform_v1\integrations\supabase_store.py:57:.execute()
+C:\engineering_ai\engineering_ai_platform_v1\integrations\supabase_store.py:73:.execute()
+C:\engineering_ai\engineering_ai_platform_v1\integrations\supabase_store.py:90:response = self.client.table(self.events_table).insert(row).execute()
+C:\engineering_ai\engineering_ai_platform_v1\jobs\service.py:10:from orchestrator.engine import execute
+C:\engineering_ai\engineering_ai_platform_v1\jobs\service.py:11:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\jobs\service.py:154:result = execute(request)
+C:\engineering_ai\engineering_ai_platform_v1\jobs\supabase_store.py:44:self.client.table(self.jobs_table).upsert(row, on_conflict="job_id").execute()
+C:\engineering_ai\engineering_ai_platform_v1\jobs\supabase_store.py:61:).execute()
+C:\engineering_ai\engineering_ai_platform_v1\jobs\supabase_store.py:70:.execute()
+C:\engineering_ai\engineering_ai_platform_v1\jobs\supabase_store.py:81:response = query.order("created_at", desc=False).execute()
+C:\engineering_ai\engineering_ai_platform_v1\jobs\supabase_store.py:89:response = query.order("created_at", desc=False).execute()
+C:\engineering_ai\engineering_ai_platform_v1\jobs\supabase_store.py:97:).execute()
+C:\engineering_ai\engineering_ai_platform_v1\jobs\supabase_store.py:107:).execute()
+C:\engineering_ai\engineering_ai_platform_v1\jobs\supabase_store.py:113:).execute()
+C:\engineering_ai\engineering_ai_platform_v1\jobs\supabase_store.py:142:.execute()
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:3:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:4:from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:5:from skills.hvac.pump_head.adapter import PumpHeadSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:6:from skills.hvac.preliminary_load_estimation.adapter import PreliminaryLoadEstimationSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:7:from skills.hvac.fault_diagnosis.adapter import HVAFaultDiagnosisSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:8:from skills.bms.points.adapters import BMSPointsGenerationSkill,BMSControllerSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:9:from skills.bms.cost.adapter import BMSCostEstimationSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:10:from skills.energy.vfd.adapters import VFDEnergySavingsSkill,VFDDeratingSkill,HarmonicScreeningSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:11:from skills.energy.decarbonisation.adapter import HVACDecarbonisationSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:12:from skills.hvac.cooling_tower.adapter import CoolingTowerSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:13:from skills.hvac.refrigerant_pipe_sizing.adapter import RefrigerantPipeSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:14:from skills.hvac.vrf_sizing.adapter import VRFSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:15:from skills.hvac.cleanroom_ach.adapter import CleanroomACHSKill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:16:from skills.hvac.duct_leakage.adapter import DuctLeakageSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:17:from skills.hvac.chiller_selection.adapter import ChillerSelectionAdvisorSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:18:from skills.energy.payback.adapter import EnergyPaybackSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:19:from skills.commercial.boq.adapter import HVACBOQSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:20:from skills.commercial.deviation.adapter import DeviationStatementSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:21:from skills.bms.alarm.adapter import BMSAlarmEvaluationSkill
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:22:SKILLS={
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:28:def execute(request:SkillRequest)->SkillResult:
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:29:skill=SKILLS.get(request.skill_id)
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\engine.py:32:def registered_skills():return sorted(SKILLS)
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\intake.py:15:from orchestrator.engine import SKILLS, execute
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\intake.py:16:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\intake.py:247:if requested_skill_id not in SKILLS:
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\intake.py:270:result = execute(SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\openai_provider.py:18:from orchestrator.engine import SKILLS
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\openai_provider.py:77:skill_list = sorted(SKILLS)
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\openai_provider.py:111:if selected_skill_id and selected_skill_id not in SKILLS:
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\openai_provider.py:141:if requested_skill_id not in SKILLS:
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\provider.py:5:does not change the engineering skills or job lifecycle.
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\registry_loader.py:12:def skill_metadata(skill_id: str) -> dict:
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\registry_loader.py:13:for skill in load_registry().get("skills", []):
+C:\engineering_ai\engineering_ai_platform_v1\orchestrator\__init__.py:1:from .engine import execute, registered_skills
+C:\engineering_ai\engineering_ai_platform_v1\skills\bms\alarm\adapter.py:1:from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\bms\cost\adapter.py:1:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\bms\points\adapters.py:1:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\commercial\boq\adapter.py:1:from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\commercial\deviation\adapter.py:1:from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\energy\decarbonisation\adapter.py:1:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\energy\payback\adapter.py:1:from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\energy\vfd\adapters.py:1:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\chiller_selection\adapter.py:1:from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\cleanroom_ach\adapter.py:1:from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\cooling_tower\adapter.py:1:from skills.common import SkillRequest,SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\duct_leakage\adapter.py:1:from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\duct_sizing\adapter.py:7:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\duct_sizing\adapter.py:10:from skills.hvac.duct_sizing import source_calculator as engine
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\fault_diagnosis\adapter.py:1:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\preliminary_load_estimation\adapter.py:1:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\pump_head\adapter.py:3:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\refrigerant_pipe_sizing\adapter.py:1:from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\hvac\vrf_sizing\adapter.py:1:from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:10:write('skills/hvac/preliminary_load_estimation/source_calculator.py', r'''"""Controlled snapshot of hvac---load---estimator/calculator.py."""
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:40:write('skills/hvac/preliminary_load_estimation/adapter.py', r'''from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:68:write('skills/hvac/preliminary_load_estimation/__init__.py','from .adapter import PreliminaryLoadEstimationSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:71:write('skills/hvac/fault_diagnosis/source_calculator.py', r'''"""Controlled snapshot of hvac-plant-troubleshooting/diagnostic_rules.py."""
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:95:write('skills/hvac/fault_diagnosis/adapter.py', r'''from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:116:write('skills/hvac/fault_diagnosis/__init__.py','from .adapter import HVAFaultDiagnosisSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:119:write('skills/energy/vfd/source_calculator.py', r'''import math
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:153:write('skills/energy/vfd/adapters.py', r'''from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:185:write('skills/energy/vfd/__init__.py','from .adapters import VFDEnergySavingsSkill,VFDDeratingSkill,HarmonicScreeningSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:188:write('skills/bms/points/source_calculator.py', r'''import math
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:222:write('skills/bms/points/adapters.py', r'''from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:248:write('skills/bms/points/__init__.py','from .adapters import BMSPointsGenerationSkill,BMSControllerSizingSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:251:write('skills/bms/cost/source_calculator.py', r'''import math
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:265:write('skills/bms/cost/adapter.py', r'''from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:280:write('skills/bms/cost/__init__.py','from .adapter import BMSCostEstimationSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:283:write('skills/energy/decarbonisation/source_calculator.py', r'''GRID_EMISSION_FACTOR=0.716; EMBODIED_CARBON_PER_TR=150.0; TREE_ABSORPTION_RATE=21.0
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:309:write('skills/energy/decarbonisation/adapter.py', r'''from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:325:write('skills/energy/decarbonisation/__init__.py','from .adapter import HVACDecarbonisationSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:328:registry='''version: 2\nregistry_name: engineering_skill_registry\nstatus: batch_registered\n\nskills:\n'''
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:339:from skills.common import SkillRequest, SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:340:from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:341:from skills.hvac.pump_head.adapter import PumpHeadSkill
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:342:from skills.hvac.preliminary_load_estimation.adapter import PreliminaryLoadEstimationSkill
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:343:from skills.hvac.fault_diagnosis.adapter import HVAFaultDiagnosisSkill
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:344:from skills.bms.points.adapters import BMSPointsGenerationSkill,BMSControllerSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:345:from skills.bms.cost.adapter import BMSCostEstimationSkill
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:346:from skills.energy.vfd.adapters import VFDEnergySavingsSkill,VFDDeratingSkill,HarmonicScreeningSkill
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:347:from skills.energy.decarbonisation.adapter import HVACDecarbonisationSkill
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:348:SKILLS={
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:352:def execute(request:SkillRequest)->SkillResult:
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:353:skill=SKILLS.get(request.skill_id)
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:356:def registered_skills():return sorted(SKILLS)
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:360:write('tests/test_batch_skills.py', r'''from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:361:from orchestrator.engine import execute, registered_skills
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:367:skills=load_registry()['skills']
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:368:ids={s['skill_id'] for s in skills}
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:373:r=execute(req('preliminary_load_estimation',{'building_type':'office','area_sqft':5500,'climate_zone':'composite','occupancy':60}))
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:377:r=execute(req('hvac_fault_diagnosis',{'rule_id':'pump_cavitation','values':{'high_vibration':'yes','noise':'yes','low_suction_pressure':'yes'}}))
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:381:r=execute(req('vfd_energy_savings',{'motor_kw':22,'speed_reduction_pct':20,'static_head_fraction':20,'annual_hours':4000,'tariff_per_kwh':9}))
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:385:r=execute(req('vfd_derating',{'motor_kw':15,'ambient_temp_c':50,'altitude_m':1200}))
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:389:r=execute(req('harmonic_screening',{'total_vfd_kva':200,'transformer_kva':800}))
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:393:r=execute(req('bms_points_generation',{'equipment_counts':{'ahu':2,'pump':1},'points_per_controller':32,'controllers_per_panel':4}))
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:397:r=execute(req('bms_cost_estimation',{'ahu_count':2,'chiller_count':1,'pump_count':2,'vfd_count':2,'misc_points':4,'points_per_controller':32,'controllers_per_panel':4,'cost_per_point':100,'cost_per_controller':20000,'cost_per_panel':15000,'bms_software_cost':50000,'engineering_pct':10}))
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:401:r=execute(req('hvac_decarbonisation',{'annual_energy_kwh':100000,'tariff':10,'efficiency_gain_pct':10,'om_program_cost':100000,'capacity_tr':100,'replacement_cost':5000000,'life_extension_years':3}))
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:405:assert len(registered_skills())==11
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_build.py:411:text += '''\n\n## Batch skill integration checkpoint\n\nThe registry now represents the audited skill inventory together. The following audited skills have executable local adapters in this checkpoint: preliminary_load_estimation, duct_sizing, pump_head, hvac_fault_diagnosis, bms_points_generation, bms_controller_sizing, bms_cost_estimation, vfd_energy_savings, vfd_derating, harmonic_screening, hvac_decarbonisation.\n\nSeveral audited browser/HTML skills remain registered but intentionally marked `source_adapter_pending` because their deterministic JavaScript source has not yet been extracted into the common Python execution contract. This avoids inventing or rewriting engineering formulas.\n\nNo GitHub repository is modified by this package.\n'''
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:8:w('skills/hvac/cooling_tower/source_calculator.py', r'''TR_TO_KW=3.517
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:36:w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:57:w('skills/hvac/cooling_tower/__init__.py','from .adapter import CoolingTowerSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:60:w('skills/hvac/refrigerant_pipe_sizing/source_calculator.py', r'''import math
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:87:w('skills/hvac/refrigerant_pipe_sizing/adapter.py', r'''from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:104:w('skills/hvac/refrigerant_pipe_sizing/__init__.py','from .adapter import RefrigerantPipeSizingSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:107:w('skills/hvac/vrf_sizing/source_calculator.py', r'''import math
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:130:w('skills/hvac/vrf_sizing/adapter.py', r'''from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:146:w('skills/hvac/vrf_sizing/__init__.py','from .adapter import VRFSizingSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:149:w('skills/hvac/cleanroom_ach/source_calculator.py', r'''ROOM_TYPES={
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:158:w('skills/hvac/cleanroom_ach/adapter.py', r'''from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:175:w('skills/hvac/cleanroom_ach/__init__.py','from .adapter import CleanroomACHSKill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:178:w('skills/hvac/duct_leakage/source_calculator.py', r'''M2_TO_FT2=10.7639; PA_TO_INWG=1/249.089; LS_TO_CFM=2.11888
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:195:w('skills/hvac/duct_leakage/adapter.py', r'''from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:211:w('skills/hvac/duct_leakage/__init__.py','from .adapter import DuctLeakageSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:214:w('skills/hvac/chiller_selection/source_calculator.py', r'''def chiller_type(tr):
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:232:w('skills/hvac/chiller_selection/adapter.py', r'''from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:248:w('skills/hvac/chiller_selection/__init__.py','from .adapter import ChillerSelectionAdvisorSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:251:w('skills/energy/payback/source_calculator.py', r'''def calc(i):
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:259:w('skills/energy/payback/adapter.py', r'''from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:275:w('skills/energy/payback/__init__.py','from .adapter import EnergyPaybackSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:278:w('skills/commercial/boq/source_calculator.py', r'''def calc(i):
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:290:w('skills/commercial/boq/adapter.py', r'''from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:305:w('skills/commercial/boq/__init__.py','from .adapter import HVACBOQSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:308:w('skills/commercial/deviation/source_calculator.py', r'''def calc(i):
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:320:w('skills/commercial/deviation/adapter.py', r'''from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:335:w('skills/commercial/deviation/__init__.py','from .adapter import DeviationStatementSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:338:w('skills/bms/alarm/source_calculator.py', r'''ANALOG=[{'id':'AHU1_SAT','normal_min':12,'normal_max':16,'alarm_low':10,'alarm_high':18},{'id':'AHU1_RAT','normal_min':22,'normal_max':26,'alarm_low':18,'alarm_high':30},{'id':'AHU2_SAT','normal_min':12,'normal_max':16,'alarm_low':10,'alarm_high':18},{'id':'AHU2_RAT','normal_min':22,'normal_max':26,'alarm_low':18,'alarm_high':30},{'id':'CH1_CHWST','normal_min':6,'normal_max':8,'alarm_low':4,'alarm_high':12},{'id':'CH1_CHWRT','normal_min':11,'normal_max':14,'alarm_low':8,'alarm_high':18},{'id':'CH2_CHWST','normal_min':6,'normal_max':8,'alarm_low':4,'alarm_high':12},{'id':'PP1_DP','normal_min':2.5,'normal_max':3.5,'alarm_low':1.5,'alarm_high':4.5},{'id':'DUCT_SP','normal_min':200,'normal_max':350,'alarm_low':100,'alarm_high':450},{'id':'CT_LEVEL','normal_min':60,'normal_max':90,'alarm_low':30,'alarm_high':95}]
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:352:w('skills/bms/alarm/adapter.py', r'''from skills.common import SkillResult
+C:\engineering_ai\engineering_ai_platform_v1\skills\batch_remaining.py:368:w('skills/bms/alarm/__init__.py','from .adapter import BMSAlarmEvaluationSkill\n')
+C:\engineering_ai\engineering_ai_platform_v1\skills\common.py:1:"""Common request/result contracts for deterministic engineering skills."""
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:15:ImplementationBinding("duct_sizing", "skills.hvac.duct_sizing.adapter", "DuctSizingSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:16:ImplementationBinding("pump_head", "skills.hvac.pump_head.adapter", "PumpHeadSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:17:ImplementationBinding("preliminary_load_estimation", "skills.hvac.preliminary_load_estimation.adapter", "PreliminaryLoadEstimationSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:18:ImplementationBinding("hvac_fault_diagnosis", "skills.hvac.fault_diagnosis.adapter", "HVAFaultDiagnosisSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:19:ImplementationBinding("bms_points_generation", "skills.bms.points.adapters", "BMSPointsGenerationSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:20:ImplementationBinding("bms_controller_sizing", "skills.bms.points.adapters", "BMSControllerSizingSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:21:ImplementationBinding("bms_cost_estimation", "skills.bms.cost.adapter", "BMSCostEstimationSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:22:ImplementationBinding("vfd_energy_savings", "skills.energy.vfd.adapters", "VFDEnergySavingsSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:23:ImplementationBinding("vfd_derating", "skills.energy.vfd.adapters", "VFDDeratingSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:24:ImplementationBinding("harmonic_screening", "skills.energy.vfd.adapters", "HarmonicScreeningSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:25:ImplementationBinding("hvac_decarbonisation", "skills.energy.decarbonisation.adapter", "HVACDecarbonisationSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:26:ImplementationBinding("cooling_tower", "skills.hvac.cooling_tower.adapter", "CoolingTowerSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:27:ImplementationBinding("refrigerant_pipe_sizing", "skills.hvac.refrigerant_pipe_sizing.adapter", "RefrigerantPipeSizingSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:28:ImplementationBinding("vrf_sizing", "skills.hvac.vrf_sizing.adapter", "VRFSizingSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:29:ImplementationBinding("cleanroom_ach", "skills.hvac.cleanroom_ach.adapter", "CleanroomACHSKill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:30:ImplementationBinding("duct_leakage", "skills.hvac.duct_leakage.adapter", "DuctLeakageSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:31:ImplementationBinding("chiller_selection_advisor", "skills.hvac.chiller_selection.adapter", "ChillerSelectionAdvisorSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:32:ImplementationBinding("energy_payback", "skills.energy.payback.adapter", "EnergyPaybackSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:33:ImplementationBinding("hvac_boq", "skills.commercial.boq.adapter", "HVACBOQSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:34:ImplementationBinding("deviation_statement", "skills.commercial.deviation.adapter", "DeviationStatementSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\implementation_bindings.py:35:ImplementationBinding("bms_alarm_evaluation", "skills.bms.alarm.adapter", "BMSAlarmEvaluationSkill"),
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:15:{'skill_id': 'bms_alarm_evaluation', 'name': 'Bms Alarm Evaluation', 'domain': 'BMS', 'purpose': 'Engineering workflow for bms alarm evaluation.', 'version': '1', 'classification': 'monitoring_prototype', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}]}, 'output_fields': ['engineering_result', 'warnings', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:27:{'skill_id': 'chiller_selection_advisor', 'name': 'Chiller Selection Advisor', 'domain': 'HVAC', 'purpose': 'Engineering workflow for chiller selection advisor.', 'version': '1', 'classification': 'advisory', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}]}, 'output_fields': ['engineering_result', 'warnings', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:30:{'skill_id': 'cleanroom_ach', 'name': 'Cleanroom Ach', 'domain': 'HVAC', 'purpose': 'Engineering workflow for cleanroom ach.', 'version': '1', 'classification': 'compliance_support', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}]}, 'output_fields': ['engineering_result', 'warnings', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:33:{'skill_id': 'cooling_tower', 'name': 'Cooling Tower', 'domain': 'HVAC', 'purpose': 'Engineering workflow for cooling tower.', 'version': '1', 'classification': 'preliminary_vendor_verification_required', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}, {'file': 'skills/hvac/cooling_tower/adapter.py', 'line': 20, 'evidence': "SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)"}]}, 'output_fields': ['engineering_result', 'warnings', 'human_review_required', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:36:{'skill_id': 'deviation_statement', 'name': 'Deviation Statement', 'domain': 'COMMERCIAL', 'purpose': 'Engineering workflow for deviation statement.', 'version': '1', 'classification': 'commercial', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}]}, 'output_fields': ['engineering_result', 'warnings', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:39:{'skill_id': 'duct_leakage', 'name': 'Duct Leakage', 'domain': 'HVAC', 'purpose': 'Engineering workflow for duct leakage.', 'version': '1', 'classification': 'compliance_support', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}]}, 'output_fields': ['engineering_result', 'warnings', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:42:{'skill_id': 'duct_sizing', 'name': 'Duct Sizing', 'domain': 'HVAC', 'purpose': 'Engineering workflow for duct sizing.', 'version': '1', 'classification': 'preliminary', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [{'type': 'REQUIRE_POSITIVE', 'file': 'skills/hvac/duct_sizing/adapter.py', 'line': 22, 'evidence': 'require_positive(request.inputs, ["airflow"])', 'status': 'SOURCE_CONFIRMED'}, {'type': 'REQUIRE_ENUM', 'file': 'skills/hvac/duct_sizing/adapter.py', 'line': 23, 'evidence': 'require_enum(request.inputs, "method", ["velocity", "equal_friction"])', 'status': 'SOURCE_CONFIRMED'}, {'type': 'REQUIRE_ENUM', 'file': 'skills/hvac/duct_sizing/adapter.py', 'line': 24, 'evidence': 'require_enum(request.inputs, "duct_type", ["round", "rectangular"])', 'status': 'SOURCE_CONFIRMED'}, {'type': 'VALIDATE', 'file': 'skills/hvac/duct_sizing/adapter.py', 'line': 44, 'evidence': 'self.validate(request)', 'status': 'SOURCE_CONFIRMED'}, {'type': 'REQUIRE_POSITIVE', 'file': 'skills/hvac/duct_sizing/adapter.py', 'line': 30, 'evidence': 'require_positive(request.inputs, ["width_mm", "height_mm"])', 'status': 'SOURCE_CONFIRMED'}, {'type': 'REQUIRE_POSITIVE', 'file': 'skills/hvac/duct_sizing/adapter.py', 'line': 32, 'evidence': 'require_positive(request.inputs, ["target_velocity_ms"])', 'status': 'SOURCE_CONFIRMED'}, {'type': 'REQUIRE_POSITIVE', 'file': 'skills/hvac/duct_sizing/adapter.py', 'line': 34, 'evidence': 'require_positive(request.inputs, ["target_friction_pa_per_m"])', 'status': 'SOURCE_CONFIRMED'}], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/hvac/duct_sizing/adapter.py', 'line': 118, 'evidence': 'SkillResult(\n            skill_id=self.skill_id,\n            status="draft_ready",\n            engineering_result={**result, "input_airflow_cfm": airflow_cfm},\n            assumptions=assumptions,\n            standards=standards,\n            warnings=warnings,\n            calculation_trace=trace,\n            human_review_required=True,\n            source_revision=SOURCE_REVISION,\n        )'}]}, 'output_fields': ['skill_id', 'status', 'engineering_result', 'assumptions', 'standards', 'warnings', 'calculation_trace', 'human_review_required', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:45:{'skill_id': 'energy_payback', 'name': 'Energy Payback', 'domain': 'ENERGY', 'purpose': 'Engineering workflow for energy payback.', 'version': '1', 'classification': 'financial_estimate', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}]}, 'output_fields': ['engineering_result', 'warnings', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:48:{'skill_id': 'harmonic_screening', 'name': 'Harmonic Screening', 'domain': 'ENERGY', 'purpose': 'Engineering workflow for harmonic screening.', 'version': '1', 'classification': 'screening_only', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [{'type': 'VALIDATE', 'file': 'skills/energy/vfd/adapters.py', 'line': 10, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}, {'type': 'VALIDATE', 'file': 'skills/energy/vfd/adapters.py', 'line': 19, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}, {'type': 'VALIDATE', 'file': 'skills/energy/vfd/adapters.py', 'line': 27, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': False, 'roles': [], 'conditions': []}, 'output_fields': ['engineering_result', 'warnings', 'calculation_trace', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:51:{'skill_id': 'hvac_boq', 'name': 'Hvac Boq', 'domain': 'COMMERCIAL', 'purpose': 'Engineering workflow for hvac boq.', 'version': '1', 'classification': 'commercial', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}]}, 'output_fields': ['engineering_result', 'warnings', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:57:{'skill_id': 'hvac_fault_diagnosis', 'name': 'Hvac Fault Diagnosis', 'domain': 'HVAC', 'purpose': 'Engineering workflow for hvac fault diagnosis.', 'version': '1', 'classification': 'diagnostic_support', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [{'type': 'VALIDATE', 'file': 'skills/hvac/fault_diagnosis/adapter.py', 'line': 14, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': False, 'roles': [], 'conditions': []}, 'output_fields': ['engineering_result', 'warnings', 'calculation_trace', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:60:{'skill_id': 'preliminary_load_estimation', 'name': 'Preliminary Load Estimation', 'domain': 'HVAC', 'purpose': 'Engineering workflow for preliminary load estimation.', 'version': '1', 'classification': 'preliminary', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [{'type': 'VALIDATE', 'file': 'skills/hvac/preliminary_load_estimation/adapter.py', 'line': 21, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': False, 'roles': [], 'conditions': []}, 'output_fields': ['engineering_result', 'standards', 'warnings', 'calculation_trace', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:63:{'skill_id': 'pump_head', 'name': 'Pump Head', 'domain': 'HVAC', 'purpose': 'Engineering workflow for pump head.', 'version': '1', 'classification': 'preliminary', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [{'type': 'REQUIRE_POSITIVE', 'file': 'skills/hvac/pump_head/adapter.py', 'line': 18, 'evidence': 'require_positive(i, ["flow_m3hr", "diameter_mm"])', 'status': 'SOURCE_CONFIRMED'}, {'type': 'VALIDATE', 'file': 'skills/hvac/pump_head/adapter.py', 'line': 39, 'evidence': 'self.validate(request)', 'status': 'SOURCE_CONFIRMED'}], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/hvac/pump_head/adapter.py', 'line': 83, 'evidence': 'SkillResult(\n            skill_id=self.skill_id,\n            status="draft_ready",\n            engineering_result=result,\n            assumptions=[\n                {**viscosity, "parameter": "water_kinematic_viscosity", "unit": "m2/s"},\n                {**gravity, "parameter": "gravity", "unit": "m/s2"},\n                {"parameter": "roughness", "value": roughness, "unit": "mm", "source": "source_material_default" if material else "user_input"},\n            ],\n            standards=standards,\n            warnings=warnings,\n            calculation_trace=[\n                {"step": 1, "operation": "convert_units", "flow_to_m3s": float(i["flow_m3hr"]) / 3600.0, "diameter_to_m": float(i["diameter_mm"]) / 1000.0},\n                {"step": 2, "operation": "calculate_velocity_reynolds_friction_factor", "method": "Darcy-Weisbach + Swamee-Jain"},\n                {"step": 3, "operation": "calculate_fitting_equivalent_length"},\n                {"step": 4, "operation": "calculate_friction_static_equipment_subtotal"},\n                {"step": 5, "operation": "resolve_governance", "standards_count": len(standards)},\n                {"step": 6, "operation": "apply_design_margin_and_unit_conversions"},\n            ],\n            human_review_required=True,\n            source_revision=SOURCE_REVISION,\n        )'}]}, 'output_fields': ['skill_id', 'status', 'engineering_result', 'assumptions', 'standards', 'warnings', 'calculation_trace', 'human_review_required', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:66:{'skill_id': 'refrigerant_pipe_sizing', 'name': 'Refrigerant Pipe Sizing', 'domain': 'HVAC', 'purpose': 'Engineering workflow for refrigerant pipe sizing.', 'version': '1', 'classification': 'preliminary_manufacturer_verification_required', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}]}, 'output_fields': ['engineering_result', 'warnings', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:69:{'skill_id': 'vfd_derating', 'name': 'Vfd Derating', 'domain': 'ENERGY', 'purpose': 'Engineering workflow for vfd derating.', 'version': '1', 'classification': 'manufacturer_dependent', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [{'type': 'VALIDATE', 'file': 'skills/energy/vfd/adapters.py', 'line': 10, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}, {'type': 'VALIDATE', 'file': 'skills/energy/vfd/adapters.py', 'line': 19, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}, {'type': 'VALIDATE', 'file': 'skills/energy/vfd/adapters.py', 'line': 27, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': False, 'roles': [], 'conditions': []}, 'output_fields': ['engineering_result', 'warnings', 'calculation_trace', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:72:{'skill_id': 'vfd_energy_savings', 'name': 'Vfd Energy Savings', 'domain': 'ENERGY', 'purpose': 'Engineering workflow for vfd energy savings.', 'version': '1', 'classification': 'engineering_estimate', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [{'type': 'VALIDATE', 'file': 'skills/energy/vfd/adapters.py', 'line': 10, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}, {'type': 'VALIDATE', 'file': 'skills/energy/vfd/adapters.py', 'line': 19, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}, {'type': 'VALIDATE', 'file': 'skills/energy/vfd/adapters.py', 'line': 27, 'evidence': 'self.validate(r)', 'status': 'SOURCE_CONFIRMED'}], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': False, 'roles': [], 'conditions': []}, 'output_fields': ['engineering_result', 'warnings', 'calculation_trace', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\mapped_definitions.py:75:{'skill_id': 'vrf_sizing', 'name': 'Vrf Sizing', 'domain': 'HVAC', 'purpose': 'Engineering workflow for vrf sizing.', 'version': '1', 'classification': 'preliminary_manufacturer_verification_required', 'integration_status': 'integrated', 'executable': True, 'execution_type': 'deterministic_calculation', 'implementation_binding': '', 'required_inputs': [], 'optional_inputs': [], 'conditional_inputs': [], 'standards': [], 'assumptions': [], 'validation_rules': [], 'warning_rules': [], 'perfection_filter_rules': [], 'review': {'required': True, 'roles': [], 'conditions': [{'file': 'skills/batch_remaining.py', 'line': 36, 'evidence': "w('skills/hvac/cooling_tower/adapter.py', r'''from skills.common import SkillRequest,SkillResult\nfrom validators.governance import validate_governance_context\nfrom . import source_calculator as e\nREV='ed5447d4be48ebe71112f454b3c139136d4bfa9c'\nclass CoolingTowerSkill:\n skill_id='cooling_tower'; version='1.0.0'\n def run(self,r):\n  errs=validate_governance_context(r)\n  for k in ['load_method','range_c','wet_bulb_c','approach_c','coc','drift_pct']:\n   if k not in r.inputs: errs.append(f'Missing required input: {k}')\n  if errs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=errs,source_revision=REV)\n  try:o=e.calculate(r.inputs)\n  except Exception as ex:return SkillResult(self.skill_id,'calculation_failed',validation_errors=[str(ex)],source_revision=REV)\n  if r.inputs['load_method']=='chiller':\n   for k in ['chiller_tr','chiller_cop']:\n    if k not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=[f'Missing required input: {k}'],source_revision=REV)\n  else:\n   if 'direct_load_kw' not in r.inputs:return SkillResult(self.skill_id,'input_validation_failed',validation_errors=['Missing required input: direct_load_kw'],source_revision=REV)\n  warns=['Preliminary cooling-tower sizing support; final tower selection requires vendor performance-curve verification.','Design wet-bulb temperature must be project/site specific.','Water-treatment and water-quality constraints are not modeled.']\n  return SkillResult(self.skill_id,'draft_ready',engineering_result=o,warnings=warns,human_review_required=True,source_revision=REV)\n''')"}]}, 'output_fields': ['engineering_result', 'warnings', 'source_revision', 'validation_errors'], 'audit_fields': [], 'source_revision': ''}
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\registry.py:62:if "skills" not in data:
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\registry.py:63:raise RegistryValidationError("Registry requires 'skills'.")
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\registry.py:65:if not isinstance(data["skills"], list):
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\registry.py:66:raise RegistryValidationError("Registry 'skills' must be a list.")
+C:\engineering_ai\engineering_ai_platform_v1\skill_framework\registry.py:178:for index, raw in enumerate(data["skills"]):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step28_contract_audit_runner.py:66:lines.append(f"Registry skills: {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step28_contract_audit_runner.py:126:f"Executable skills without current engine binding: "
+C:\engineering_ai\engineering_ai_platform_v1\tests\step28_contract_audit_runner.py:165:print("Registry skills:", len(registry.skill_ids))
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:14:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:41:for p in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:56:for p in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:221:lines.append(f"Registry skills : {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:304:print("=== STEP 29 EXECUTABLE SKILLS ===")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:333:"Executable skills with no source file discovered:",
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:338:print("All 21 executable skills have source evidence.")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:13:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:19:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:25:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:347:lines.append(f"Registry skills : {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step31_detailed_contract_evidence.py:14:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step31_detailed_contract_evidence.py:20:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:13:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:20:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:564:lines.append(f"Registry skills       : {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:565:lines.append(f"Executable skills     : {len(registry.executable_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:566:lines.append(f"Pending skills        : {registry.pending_ids}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:591:print(f"Registry skills       : {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:592:print(f"Executable skills     : {len(registry.executable_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:593:print(f"Pending skills        : {registry.pending_ids}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32_evidence_backed_mapping.py:21:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32_evidence_backed_mapping.py:29:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:2:from orchestrator.engine import execute, registered_skills
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:8:skills=load_registry()["skills"]
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:9:ids={s["skill_id"] for s in skills}
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:18:def test_load_and_hvac_skills():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:19:r=execute(req("preliminary_load_estimation",{"building_type":"office","area_sqft":5500,"climate_zone":"composite","occupancy":60})); assert r.status=="draft_ready" and r.engineering_result["recommended_tonnage"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:20:r=execute(req("cooling_tower",{"load_method":"chiller","chiller_tr":200,"chiller_cop":5,"range_c":5.5,"wet_bulb_c":28,"approach_c":4.5,"coc":4,"drift_pct":0.02})); assert r.engineering_result["makeup_m3hr"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:21:r=execute(req("refrigerant_pipe_sizing",{"refrigerant":"R410A","capacity_kw":14,"suction_velocity":10,"liquid_velocity":1.2,"suction_length":25,"liquid_length":25})); assert r.engineering_result["suction_standard_od_mm"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:22:r=execute(req("vrf_sizing",{"zones":[{"name":"A","area":40,"load_factor":130},{"name":"B","area":120,"load_factor":150}],"combination_ratio":120,"total_pipe_length_m":100,"farthest_branch_length_m":40,"odu_idu_height_diff_m":20,"idu_idu_height_diff_m":8})); assert r.engineering_result["required_odu_hp"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:23:r=execute(req("cleanroom_ach",{"room_type":"Operating Room","length_m":7,"width_m":6,"height_m":3.2})); assert r.engineering_result["supply_cmh"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:24:r=execute(req("duct_leakage",{"sections":[{"width_mm":600,"height_mm":400,"length_m":20}],"test_pressure_pa":1000,"measured_leakage_ls":20,"target_class":6})); assert "calculated_leakage_class" in r.engineering_result
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:25:r=execute(req("chiller_selection_advisor",{"total_load_tr":300,"efficiency_kw_per_tr":0.7,"annual_hours":3000,"load_factor_pct":70,"tariff_per_kwh":8.5,"duty_modules":2,"redundancy_level":1,"water_available":"yes","space_available":"ample","efficiency_priority":"high"})); assert r.engineering_result["suggested_type"]
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:26:r=execute(req("hvac_fault_diagnosis",{"rule_id":"pump_cavitation","values":{"high_vibration":"yes","noise":"yes","low_suction_pressure":"yes"}})); assert r.engineering_result["conclusion"]=="Cavitation"
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:28:def test_energy_skills():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:29:r=execute(req("vfd_energy_savings",{"motor_kw":22,"speed_reduction_pct":20,"static_head_fraction":20,"annual_hours":4000,"tariff_per_kwh":9})); assert r.engineering_result["annual_savings_kwh_corrected"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:30:r=execute(req("vfd_derating",{"motor_kw":15,"ambient_temp_c":50,"altitude_m":1200})); assert r.engineering_result["recommended_vfd_kw"]>=15
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:31:r=execute(req("harmonic_screening",{"total_vfd_kva":200,"transformer_kva":800})); assert r.engineering_result["risk_level"]=="Moderate"
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:32:r=execute(req("hvac_decarbonisation",{"annual_energy_kwh":100000,"tariff":10,"efficiency_gain_pct":10,"om_program_cost":100000,"capacity_tr":100,"replacement_cost":5000000,"life_extension_years":3})); assert r.engineering_result["annual_energy_saved_kwh"]==10000.0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:33:r=execute(req("energy_payback",{"capacity_old":200,"efficiency_old":0.8,"capacity_new":180,"efficiency_new":0.6,"annual_hours":3000,"load_factor_pct":70,"tariff_per_kwh":8.5,"investment":2000000,"incremental_om":50000,"project_life_years":10})); assert r.engineering_result["net_annual_savings"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:35:def test_bms_skills():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:36:r=execute(req("bms_points_generation",{"equipment_counts":{"ahu":2,"pump":1},"points_per_controller":32,"controllers_per_panel":4})); assert r.engineering_result["summary"]["total_points"]==25
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:37:r=execute(req("bms_cost_estimation",{"ahu_count":2,"chiller_count":1,"pump_count":2,"vfd_count":2,"misc_points":4,"points_per_controller":32,"controllers_per_panel":4,"cost_per_point":100,"cost_per_controller":20000,"cost_per_panel":15000,"bms_software_cost":50000,"engineering_pct":10})); assert r.engineering_result["total_project_cost"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:38:r=execute(req("bms_alarm_evaluation",{"point_type":"analog","point_id":"AHU1_SAT","value":20})); assert r.engineering_result["alarm_status"]=="Alarm"
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:40:def test_commercial_skills():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:41:r=execute(req("hvac_boq",{"categories":[{"name":"Duct","items":[{"description":"GI duct","unit":"kg","qty":100,"rate":200}]}],"contingency_pct":5,"overhead_pct":10,"tax_pct":18})); assert r.engineering_result["grand_total"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:42:r=execute(req("deviation_statement",{"rows":[{"clause":"A","specified":"100","offered":"100","status":"comply","remarks":""},{"clause":"B","specified":"200","offered":"180","status":"deviate","remarks":"Alternative"},{"clause":"C","specified":"-","offered":"-","status":"na","remarks":""}]})); assert r.engineering_result["deviate"]==1 and r.engineering_result["compliance_pct"]==50
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:45:assert len(registered_skills())==21
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_contract.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_contract.py:2:from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_duct_engine.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_duct_engine.py:2:from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_governance.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_governance.py:2:from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_governance.py:3:from skills.hvac.pump_head.adapter import PumpHeadSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_orchestrator_intake.py:2:from orchestrator.engine import registered_skills
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_orchestrator_intake.py:69:assert len(registered_skills())==21
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:2:from skills.hvac.pump_head.adapter import PumpHeadSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:3:from orchestrator.engine import execute
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:38:result = execute(req)
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_skilldefinition_contract_validation.py:64:def test_all_registry_skills_load_as_skill_definitions():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_skill_registry_authoritative.py:39:skills:
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_skill_registry_authoritative.py:57:skills:
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_supabase_ingestion.py:56:def execute(self):
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_supabase_store.py:33:def execute(self):
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_supabase_store.py:56:def execute(self):
+
+--- REGISTRY API ---
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List
+
+import yaml
+
+from .skill_definition import SkillDefinition, definition_from_dict, validate_definition_dict
+
+
+class RegistryValidationError(ValueError):
+    """Raised when the authoritative skill registry is invalid."""
+
+
+@dataclass(frozen=True)
+class RegistryEntry:
+    definition: SkillDefinition
+    raw: dict
+
+
+@dataclass(frozen=True)
+class SkillRegistry:
+    version: int
+    status: str
+    entries: Dict[str, RegistryEntry]
+
+    @property
+    def skill_ids(self) -> List[str]:
+        return sorted(self.entries)
+
+    @property
+    def executable_ids(self) -> List[str]:
+        return sorted(
+            skill_id
+            for skill_id, entry in self.entries.items()
+            if entry.definition.executable
+        )
+
+    @property
+    def pending_ids(self) -> List[str]:
+        return sorted(
+            skill_id
+            for skill_id, entry in self.entries.items()
+            if not entry.definition.executable
+        )
+
+    def get(self, skill_id: str) -> SkillDefinition:
+        try:
+            return self.entries[skill_id].definition
+        except KeyError as exc:
+            raise KeyError(f"Skill is not registered: {skill_id}") from exc
+
+
+def _validate_top_level(data: dict) -> None:
+    if not isinstance(data, dict):
+        raise RegistryValidationError("Registry root must be an object.")
+
+    if "version" not in data:
+        raise RegistryValidationError("Registry requires 'version'.")
+
+    if "skills" not in data:
+        raise RegistryValidationError("Registry requires 'skills'.")
+
+    if not isinstance(data["skills"], list):
+        raise RegistryValidationError("Registry 'skills' must be a list.")
+
+
+def _display_name(raw: dict) -> str:
+    if raw.get("name"):
+        return str(raw["name"])
+
+    return str(raw["skill_id"]).replace("_", " ").strip().title()
+
+
+def _purpose(raw: dict) -> str:
+    if raw.get("purpose"):
+        return str(raw["purpose"])
+
+    return (
+        "Engineering workflow for "
+        + str(raw["skill_id"]).replace("_", " ")
+        + "."
+    )
+
+
+def _executable_status(raw: dict) -> bool:
+    """
+    Preserve an explicit executable flag when present.
+
+    For the existing authoritative registry format, integration_status is
+    the source of executable status:
+        integrated -> executable
+        source_audit_pending -> pending
+
+    Unknown non-integrated statuses remain non-executable rather than being
+    assumed executable.
+    """
+    if "executable" in raw:
+        return bool(raw["executable"])
+
+    return str(raw.get("integration_status", "")).strip().lower() == "integrated"
+
+
+def _definition_payload(raw: dict) -> dict:
+    """
+    Adapt the existing registry representation to SkillDefinition.
+
+    This mapper does not invent engineering calculations, standards,
+    assumptions, input requirements, or engineering constants.
+    """
+    payload = dict(raw)
+
+    payload["name"] = _display_name(raw)
+    payload["purpose"] = _purpose(raw)
+
+    payload.setdefault("version", str(raw.get("version", "1")))
+    payload.setdefault("classification", raw.get("classification", "pending"))
+    payload.setdefault(
+        "integration_status",
+        raw.get("integration_status", "registry_only"),
+    )
+    payload["executable"] = _executable_status(raw)
+
+    payload.setdefault(
+        "execution_type",
+        raw.get("execution_type", "deterministic_calculation"),
+    )
+    payload.setdefault(
+        "implementation_binding",
+        raw.get("implementation_binding", ""),
+    )
+
+    payload.setdefault("required_inputs", [])
+    payload.setdefault("optional_inputs", [])
+    payload.setdefault("conditional_inputs", [])
+    payload.setdefault("standards", [])
+    payload.setdefault("assumptions", [])
+    payload.setdefault("validation_rules", [])
+    payload.setdefault("warning_rules", [])
+    payload.setdefault("perfection_filter_rules", [])
+
+    payload.setdefault(
+        "review",
+        {
+            "required": bool(raw.get("human_review_required", False)),
+            "roles": [],
+            "conditions": [],
+        },
+    )
+
+    payload.setdefault("output_fields", [])
+    payload.setdefault("audit_fields", [])
+    payload.setdefault("source_revision", raw.get("source_revision", ""))
+
+    return payload
+
+
+def load_skill_registry(path: str | Path) -> SkillRegistry:
+    registry_path = Path(path)
+
+    if not registry_path.exists():
+        raise RegistryValidationError(
+            f"Skill registry file not found: {registry_path}"
+        )
+
+    try:
+        data = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise RegistryValidationError(
+            f"Invalid YAML in skill registry: {exc}"
+        ) from exc
+
+    _validate_top_level(data)
+
+    entries: Dict[str, RegistryEntry] = {}
+
+    for index, raw in enumerate(data["skills"]):
+        if not isinstance(raw, dict):
+            raise RegistryValidationError(
+                f"Registry skill entry {index} must be an object."
+            )
+
+        payload = _definition_payload(raw)
+        errors = validate_definition_dict(payload)
+
+        if errors:
+            raise RegistryValidationError(
+                f"Invalid definition for registry entry {index}: "
+                + "; ".join(errors)
+            )
+
+        skill_id = payload["skill_id"]
+
+        if skill_id in entries:
+            raise RegistryValidationError(
+                f"Duplicate skill_id in registry: {skill_id}"
+            )
+
+        definition = definition_from_dict(payload)
+
+        entries[skill_id] = RegistryEntry(
+            definition=definition,
+            raw=raw,
+        )
+
+    return SkillRegistry(
+        version=int(data["version"]),
+        status=str(data.get("status", "")),
+        entries=entries,
+    )
+
+
+
+--- COMPATIBILITY BINDINGS ---
+from dataclasses import dataclass
+from typing import Dict, Tuple
+
+
+@dataclass(frozen=True)
+class ImplementationBinding:
+    skill_id: str
+    implementation_path: str
+    implementation_class: str
+
+
+# Compatibility map derived from the existing orchestrator/engine.py
+# This layer does not replace or modify the existing orchestrator.
+IMPLEMENTATION_BINDINGS: Tuple[ImplementationBinding, ...] = (
+    ImplementationBinding("duct_sizing", "skills.hvac.duct_sizing.adapter", "DuctSizingSkill"),
+    ImplementationBinding("pump_head", "skills.hvac.pump_head.adapter", "PumpHeadSkill"),
+    ImplementationBinding("preliminary_load_estimation", "skills.hvac.preliminary_load_estimation.adapter", "PreliminaryLoadEstimationSkill"),
+    ImplementationBinding("hvac_fault_diagnosis", "skills.hvac.fault_diagnosis.adapter", "HVAFaultDiagnosisSkill"),
+    ImplementationBinding("bms_points_generation", "skills.bms.points.adapters", "BMSPointsGenerationSkill"),
+    ImplementationBinding("bms_controller_sizing", "skills.bms.points.adapters", "BMSControllerSizingSkill"),
+    ImplementationBinding("bms_cost_estimation", "skills.bms.cost.adapter", "BMSCostEstimationSkill"),
+    ImplementationBinding("vfd_energy_savings", "skills.energy.vfd.adapters", "VFDEnergySavingsSkill"),
+    ImplementationBinding("vfd_derating", "skills.energy.vfd.adapters", "VFDDeratingSkill"),
+    ImplementationBinding("harmonic_screening", "skills.energy.vfd.adapters", "HarmonicScreeningSkill"),
+    ImplementationBinding("hvac_decarbonisation", "skills.energy.decarbonisation.adapter", "HVACDecarbonisationSkill"),
+    ImplementationBinding("cooling_tower", "skills.hvac.cooling_tower.adapter", "CoolingTowerSkill"),
+    ImplementationBinding("refrigerant_pipe_sizing", "skills.hvac.refrigerant_pipe_sizing.adapter", "RefrigerantPipeSizingSkill"),
+    ImplementationBinding("vrf_sizing", "skills.hvac.vrf_sizing.adapter", "VRFSizingSkill"),
+    ImplementationBinding("cleanroom_ach", "skills.hvac.cleanroom_ach.adapter", "CleanroomACHSKill"),
+    ImplementationBinding("duct_leakage", "skills.hvac.duct_leakage.adapter", "DuctLeakageSkill"),
+    ImplementationBinding("chiller_selection_advisor", "skills.hvac.chiller_selection.adapter", "ChillerSelectionAdvisorSkill"),
+    ImplementationBinding("energy_payback", "skills.energy.payback.adapter", "EnergyPaybackSkill"),
+    ImplementationBinding("hvac_boq", "skills.commercial.boq.adapter", "HVACBOQSkill"),
+    ImplementationBinding("deviation_statement", "skills.commercial.deviation.adapter", "DeviationStatementSkill"),
+    ImplementationBinding("bms_alarm_evaluation", "skills.bms.alarm.adapter", "BMSAlarmEvaluationSkill"),
+)
+
+
+def binding_map() -> Dict[str, ImplementationBinding]:
+    return {item.skill_id: item for item in IMPLEMENTATION_BINDINGS}
+
+
+--- SKILL REQUEST / RESULT ---
+"""Common request/result contracts for deterministic engineering skills."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+
+@dataclass
+class SkillRequest:
+    skill_id: str
+    inputs: Dict[str, Any]
+    project_context: Dict[str, Any] = field(default_factory=dict)
+    standards_context: Dict[str, Any] = field(default_factory=dict)
+    assumptions_context: Dict[str, Any] = field(default_factory=dict)
+    request_id: Optional[str] = None
+
+
+@dataclass
+class SkillResult:
+    skill_id: str
+    status: str
+    engineering_result: Dict[str, Any] = field(default_factory=dict)
+    assumptions: List[Dict[str, Any]] = field(default_factory=list)
+    standards: List[Dict[str, Any]] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+    validation_errors: List[str] = field(default_factory=list)
+    calculation_trace: List[Dict[str, Any]] = field(default_factory=list)
+    human_review_required: bool = True
+    source_revision: Optional[str] = None
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "skill_id": self.skill_id,
+            "status": self.status,
+            "engineering_result": self.engineering_result,
+            "assumptions": self.assumptions,
+            "standards": self.standards,
+            "warnings": self.warnings,
+            "validation_errors": self.validation_errors,
+            "calculation_trace": self.calculation_trace,
+            "human_review_required": self.human_review_required,
+            "source_revision": self.source_revision,
+            "created_at": self.created_at,
+        }
+
+
+--- EXISTING ORCHESTRATOR / INTAKE TEST REFERENCES ---
+C:\engineering_ai\engineering_ai_platform_v1\tests\step28_contract_audit_runner.py:41:# Current architecture keeps implementation bindings in orchestrator/engine.py.
+C:\engineering_ai\engineering_ai_platform_v1\tests\step28_contract_audit_runner.py:66:lines.append(f"Registry skills: {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step28_contract_audit_runner.py:71:lines.append("Implementation binding is currently checked against orchestrator/engine.py.")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step28_contract_audit_runner.py:126:f"Executable skills without current engine binding: "
+C:\engineering_ai\engineering_ai_platform_v1\tests\step28_contract_audit_runner.py:165:print("Registry skills:", len(registry.skill_ids))
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:14:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:25:"SkillRequest",
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:41:for p in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:56:for p in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:221:lines.append(f"Registry skills : {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:304:print("=== STEP 29 EXECUTABLE SKILLS ===")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:333:"Executable skills with no source file discovered:",
+C:\engineering_ai\engineering_ai_platform_v1\tests\step29_contract_extractor.py:338:print("All 21 executable skills have source evidence.")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:13:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:19:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:25:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:138:if fn in {"SkillResult", "SkillRequest"}:
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:325:lines.append("SkillResult / SkillRequest USAGE")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step30_exact_contract_inspector.py:347:lines.append(f"Registry skills : {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step31_detailed_contract_evidence.py:14:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step31_detailed_contract_evidence.py:20:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:13:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:20:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:564:lines.append(f"Registry skills       : {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:565:lines.append(f"Executable skills     : {len(registry.executable_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:566:lines.append(f"Pending skills        : {registry.pending_ids}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:591:print(f"Registry skills       : {len(registry.skill_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:592:print(f"Executable skills     : {len(registry.executable_ids)}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32a_contract_mapping_audit.py:593:print(f"Pending skills        : {registry.pending_ids}")
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32_evidence_backed_mapping.py:21:SKILLS_ROOT = ROOT / "skills"
+C:\engineering_ai\engineering_ai_platform_v1\tests\step32_evidence_backed_mapping.py:29:for path in SKILLS_ROOT.rglob("*.py"):
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:2:from orchestrator.engine import execute, registered_skills
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:5:def req(sid,inputs): return SkillRequest(skill_id=sid,inputs=inputs)
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:8:skills=load_registry()["skills"]
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:9:ids={s["skill_id"] for s in skills}
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:18:def test_load_and_hvac_skills():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:19:r=execute(req("preliminary_load_estimation",{"building_type":"office","area_sqft":5500,"climate_zone":"composite","occupancy":60})); assert r.status=="draft_ready" and r.engineering_result["recommended_tonnage"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:20:r=execute(req("cooling_tower",{"load_method":"chiller","chiller_tr":200,"chiller_cop":5,"range_c":5.5,"wet_bulb_c":28,"approach_c":4.5,"coc":4,"drift_pct":0.02})); assert r.engineering_result["makeup_m3hr"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:21:r=execute(req("refrigerant_pipe_sizing",{"refrigerant":"R410A","capacity_kw":14,"suction_velocity":10,"liquid_velocity":1.2,"suction_length":25,"liquid_length":25})); assert r.engineering_result["suction_standard_od_mm"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:22:r=execute(req("vrf_sizing",{"zones":[{"name":"A","area":40,"load_factor":130},{"name":"B","area":120,"load_factor":150}],"combination_ratio":120,"total_pipe_length_m":100,"farthest_branch_length_m":40,"odu_idu_height_diff_m":20,"idu_idu_height_diff_m":8})); assert r.engineering_result["required_odu_hp"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:23:r=execute(req("cleanroom_ach",{"room_type":"Operating Room","length_m":7,"width_m":6,"height_m":3.2})); assert r.engineering_result["supply_cmh"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:24:r=execute(req("duct_leakage",{"sections":[{"width_mm":600,"height_mm":400,"length_m":20}],"test_pressure_pa":1000,"measured_leakage_ls":20,"target_class":6})); assert "calculated_leakage_class" in r.engineering_result
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:25:r=execute(req("chiller_selection_advisor",{"total_load_tr":300,"efficiency_kw_per_tr":0.7,"annual_hours":3000,"load_factor_pct":70,"tariff_per_kwh":8.5,"duty_modules":2,"redundancy_level":1,"water_available":"yes","space_available":"ample","efficiency_priority":"high"})); assert r.engineering_result["suggested_type"]
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:26:r=execute(req("hvac_fault_diagnosis",{"rule_id":"pump_cavitation","values":{"high_vibration":"yes","noise":"yes","low_suction_pressure":"yes"}})); assert r.engineering_result["conclusion"]=="Cavitation"
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:28:def test_energy_skills():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:29:r=execute(req("vfd_energy_savings",{"motor_kw":22,"speed_reduction_pct":20,"static_head_fraction":20,"annual_hours":4000,"tariff_per_kwh":9})); assert r.engineering_result["annual_savings_kwh_corrected"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:30:r=execute(req("vfd_derating",{"motor_kw":15,"ambient_temp_c":50,"altitude_m":1200})); assert r.engineering_result["recommended_vfd_kw"]>=15
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:31:r=execute(req("harmonic_screening",{"total_vfd_kva":200,"transformer_kva":800})); assert r.engineering_result["risk_level"]=="Moderate"
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:32:r=execute(req("hvac_decarbonisation",{"annual_energy_kwh":100000,"tariff":10,"efficiency_gain_pct":10,"om_program_cost":100000,"capacity_tr":100,"replacement_cost":5000000,"life_extension_years":3})); assert r.engineering_result["annual_energy_saved_kwh"]==10000.0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:33:r=execute(req("energy_payback",{"capacity_old":200,"efficiency_old":0.8,"capacity_new":180,"efficiency_new":0.6,"annual_hours":3000,"load_factor_pct":70,"tariff_per_kwh":8.5,"investment":2000000,"incremental_om":50000,"project_life_years":10})); assert r.engineering_result["net_annual_savings"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:35:def test_bms_skills():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:36:r=execute(req("bms_points_generation",{"equipment_counts":{"ahu":2,"pump":1},"points_per_controller":32,"controllers_per_panel":4})); assert r.engineering_result["summary"]["total_points"]==25
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:37:r=execute(req("bms_cost_estimation",{"ahu_count":2,"chiller_count":1,"pump_count":2,"vfd_count":2,"misc_points":4,"points_per_controller":32,"controllers_per_panel":4,"cost_per_point":100,"cost_per_controller":20000,"cost_per_panel":15000,"bms_software_cost":50000,"engineering_pct":10})); assert r.engineering_result["total_project_cost"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:38:r=execute(req("bms_alarm_evaluation",{"point_type":"analog","point_id":"AHU1_SAT","value":20})); assert r.engineering_result["alarm_status"]=="Alarm"
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:40:def test_commercial_skills():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:41:r=execute(req("hvac_boq",{"categories":[{"name":"Duct","items":[{"description":"GI duct","unit":"kg","qty":100,"rate":200}]}],"contingency_pct":5,"overhead_pct":10,"tax_pct":18})); assert r.engineering_result["grand_total"]>0
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:42:r=execute(req("deviation_statement",{"rows":[{"clause":"A","specified":"100","offered":"100","status":"comply","remarks":""},{"clause":"B","specified":"200","offered":"180","status":"deviate","remarks":"Alternative"},{"clause":"C","specified":"-","offered":"-","status":"na","remarks":""}]})); assert r.engineering_result["deviate"]==1 and r.engineering_result["compliance_pct"]==50
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_batch_skills.py:45:assert len(registered_skills())==21
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_contract.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_contract.py:2:from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_contract.py:7:request = SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_contract.py:21:request = SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_duct_engine.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_duct_engine.py:2:from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_duct_engine.py:7:request = SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_duct_engine.py:27:request = SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_governance.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_governance.py:2:from skills.hvac.duct_sizing.adapter import DuctSizingSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_governance.py:3:from skills.hvac.pump_head.adapter import PumpHeadSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_governance.py:15:request = SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_governance.py:35:base = SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_governance.py:39:override = SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_orchestrator_intake.py:2:from orchestrator.engine import registered_skills
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_orchestrator_intake.py:69:assert len(registered_skills())==21
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:1:from skills.common import SkillRequest
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:2:from skills.hvac.pump_head.adapter import PumpHeadSkill
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:3:from orchestrator.engine import execute
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:7:req = SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:27:req = SkillRequest(
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_pump_and_orchestrator.py:38:result = execute(req)
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_skilldefinition_contract_validation.py:64:def test_all_registry_skills_load_as_skill_definitions():
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_skill_registry_authoritative.py:39:skills:
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_skill_registry_authoritative.py:57:skills:
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_supabase_ingestion.py:56:def execute(self):
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_supabase_store.py:33:def execute(self):
+C:\engineering_ai\engineering_ai_platform_v1\tests\test_supabase_store.py:56:def execute(self):
+
+--- STEP 35 SUMMARY ---
+Hard-coded SKILLS dictionary entries detected: 0
+Project execution/registry references detected: 271
+Source modified: NO

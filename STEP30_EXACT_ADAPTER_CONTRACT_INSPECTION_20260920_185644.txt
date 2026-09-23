@@ -1,0 +1,987 @@
+STEP 30 - EXACT ADAPTER CONTRACT INSPECTION
+========================================================================================================================
+Purpose: inspect existing adapter implementation contracts.
+No engineering implementation or formula is modified.
+No missing engineering requirement is invented.
+
+========================================================================================================================
+01. bms_alarm_evaluation
+Name       : Bms Alarm Evaluation
+Domain     : BMS
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\batch_remaining.py
+  - skills\bms\alarm\adapter.py
+
+CLASSES
+  - BMSAlarmEvaluationSkill
+
+METHODS
+  - run
+  - w
+  - write
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\bms\alarm\adapter.py:15 SkillResult
+      engineering_result = o
+      warnings = warns
+      source_revision = REV
+  - skills\bms\alarm\adapter.py:11 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\bms\alarm\adapter.py:13 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+02. bms_controller_sizing
+Name       : Bms Controller Sizing
+Domain     : BMS
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\bms\points\adapters.py
+
+CLASSES
+  - BMSControllerSizingSkill
+  - BMSPointsGenerationSkill
+
+METHODS
+  - run
+  - write
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\bms\points\adapters.py:15 SkillResult
+      engineering_result = o
+      warnings = ['Generic planning-stage points template; final points must follow project scope, sequence of operations, gateway capabilities and owner requirements.']
+      source_revision = REV
+  - skills\bms\points\adapters.py:25 SkillResult
+      engineering_result = o
+      warnings = ['Controller capacity must be checked against actual selected controller I/O and project architecture.']
+      source_revision = REV
+  - skills\bms\points\adapters.py:12 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\bms\points\adapters.py:22 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\bms\points\adapters.py:14 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+  - skills\bms\points\adapters.py:24 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+03. bms_cost_estimation
+Name       : Bms Cost Estimation
+Domain     : BMS
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\bms\cost\adapter.py
+
+CLASSES
+  - BMSCostEstimationSkill
+
+METHODS
+  - run
+  - write
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - skills\bms\cost\adapter.py:12 r.inputs[k]
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\bms\cost\adapter.py:14 SkillResult
+      engineering_result = o
+      warnings = ['Budgetary framework only; market unit rates are user inputs and point counts are planning-stage estimates.']
+      source_revision = REV
+  - skills\bms\cost\adapter.py:11 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\bms\cost\adapter.py:13 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+04. bms_points_generation
+Name       : Bms Points Generation
+Domain     : BMS
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\bms\points\adapters.py
+
+CLASSES
+  - BMSControllerSizingSkill
+  - BMSPointsGenerationSkill
+
+METHODS
+  - run
+  - write
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\bms\points\adapters.py:15 SkillResult
+      engineering_result = o
+      warnings = ['Generic planning-stage points template; final points must follow project scope, sequence of operations, gateway capabilities and owner requirements.']
+      source_revision = REV
+  - skills\bms\points\adapters.py:25 SkillResult
+      engineering_result = o
+      warnings = ['Controller capacity must be checked against actual selected controller I/O and project architecture.']
+      source_revision = REV
+  - skills\bms\points\adapters.py:12 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\bms\points\adapters.py:22 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\bms\points\adapters.py:14 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+  - skills\bms\points\adapters.py:24 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+05. chiller_selection_advisor
+Name       : Chiller Selection Advisor
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\batch_remaining.py
+  - skills\hvac\chiller_selection\adapter.py
+
+CLASSES
+  - ChillerSelectionAdvisorSkill
+
+METHODS
+  - run
+  - w
+  - write
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\chiller_selection\adapter.py:15 SkillResult
+      engineering_result = o
+      warnings = warns
+      source_revision = REV
+  - skills\hvac\chiller_selection\adapter.py:11 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\hvac\chiller_selection\adapter.py:13 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+06. cleanroom_ach
+Name       : Cleanroom Ach
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\hvac\cleanroom_ach\__init__.py
+  - skills\hvac\cleanroom_ach\adapter.py
+  - skills\hvac\cleanroom_ach\source_calculator.py
+
+CLASSES
+  - CleanroomACHSKill
+
+METHODS
+  - calc
+  - run
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\cleanroom_ach\adapter.py:16 SkillResult
+      engineering_result = o
+      warnings = warns
+      source_revision = REV
+  - skills\hvac\cleanroom_ach\adapter.py:12 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\hvac\cleanroom_ach\adapter.py:14 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+07. cooling_tower
+Name       : Cooling Tower
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\hvac\cooling_tower\__init__.py
+  - skills\hvac\cooling_tower\adapter.py
+  - skills\hvac\cooling_tower\source_calculator.py
+
+CLASSES
+  - CoolingTowerSkill
+
+METHODS
+  - calculate
+  - run
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - skills\hvac\cooling_tower\adapter.py:14 r.inputs['load_method']
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\cooling_tower\adapter.py:20 SkillResult
+      engineering_result = o
+      warnings = warns
+      human_review_required = True
+      source_revision = REV
+  - skills\hvac\cooling_tower\adapter.py:11 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\hvac\cooling_tower\adapter.py:13 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+  - skills\hvac\cooling_tower\adapter.py:18 SkillResult
+      validation_errors = ['Missing required input: direct_load_kw']
+      source_revision = REV
+  - skills\hvac\cooling_tower\adapter.py:16 SkillResult
+      validation_errors = [f'Missing required input: {k}']
+      source_revision = REV
+========================================================================================================================
+08. deviation_statement
+Name       : Deviation Statement
+Domain     : COMMERCIAL
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\batch_remaining.py
+  - skills\commercial\deviation\adapter.py
+
+CLASSES
+  - DeviationStatementSkill
+
+METHODS
+  - run
+  - w
+  - write
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\commercial\deviation\adapter.py:14 SkillResult
+      engineering_result = o
+      warnings = warns
+      source_revision = REV
+  - skills\commercial\deviation\adapter.py:10 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\commercial\deviation\adapter.py:12 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+09. duct_leakage
+Name       : Duct Leakage
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\hvac\duct_leakage\__init__.py
+  - skills\hvac\duct_leakage\adapter.py
+  - skills\hvac\duct_leakage\source_calculator.py
+
+CLASSES
+  - DuctLeakageSkill
+
+METHODS
+  - calc
+  - run
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\duct_leakage\adapter.py:15 SkillResult
+      engineering_result = o
+      warnings = warns
+      source_revision = REV
+  - skills\hvac\duct_leakage\adapter.py:11 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\hvac\duct_leakage\adapter.py:13 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+10. duct_sizing
+Name       : Duct Sizing
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\hvac\duct_sizing\__init__.py
+  - skills\hvac\duct_sizing\adapter.py
+  - skills\hvac\duct_sizing\source_calculator.py
+
+CLASSES
+  - DuctSizingSkill
+
+METHODS
+  - _round_up_to_standard
+  - _source_function_name
+  - _velocity_note
+  - calculate_fittings_loss
+  - calculate_rectangular_equivalent
+  - friction_factor
+  - loss_at_diameter
+  - pressure_loss_per_m
+  - run
+  - size_duct_equal_friction_method
+  - size_duct_velocity_method
+  - validate
+
+VALIDATION METHODS
+  - skills\hvac\duct_sizing\adapter.py:19 validate(self, request)
+
+DIRECT INPUT ACCESS
+  - skills\hvac\duct_sizing\adapter.py:58 inputs["method"]
+  - skills\hvac\duct_sizing\adapter.py:59 inputs["duct_type"]
+  - skills\hvac\duct_sizing\adapter.py:54 inputs["airflow"]
+  - skills\hvac\duct_sizing\adapter.py:80 inputs["width_mm"]
+  - skills\hvac\duct_sizing\adapter.py:81 inputs["height_mm"]
+  - skills\hvac\duct_sizing\adapter.py:70 inputs["target_velocity_ms"]
+  - skills\hvac\duct_sizing\adapter.py:75 inputs["target_friction_pa_per_m"]
+
+VALIDATION RULE CALLS
+  - skills\hvac\duct_sizing\adapter.py:22 require_positive(request.inputs, ["airflow"])
+  - skills\hvac\duct_sizing\adapter.py:23 require_enum(request.inputs, "method", ["velocity", "equal_friction"])
+  - skills\hvac\duct_sizing\adapter.py:24 require_enum(request.inputs, "duct_type", ["round", "rectangular"])
+  - skills\hvac\duct_sizing\adapter.py:30 require_positive(request.inputs, ["width_mm", "height_mm"])
+  - skills\hvac\duct_sizing\adapter.py:32 require_positive(request.inputs, ["target_velocity_ms"])
+  - skills\hvac\duct_sizing\adapter.py:34 require_positive(request.inputs, ["target_friction_pa_per_m"])
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\duct_sizing\adapter.py:118 SkillResult
+      skill_id = self.skill_id
+      status = "draft_ready"
+      engineering_result = {**result, "input_airflow_cfm": airflow_cfm}
+      assumptions = assumptions
+      standards = standards
+      warnings = warnings
+      calculation_trace = trace
+      human_review_required = True
+      source_revision = SOURCE_REVISION
+  - skills\hvac\duct_sizing\adapter.py:46 SkillResult
+      skill_id = self.skill_id
+      status = "input_validation_failed"
+      validation_errors = errors
+      source_revision = SOURCE_REVISION
+  - skills\hvac\duct_sizing\adapter.py:85 SkillResult
+      skill_id = self.skill_id
+      status = "calculation_failed"
+      validation_errors = [str(exc)]
+      source_revision = SOURCE_REVISION
+========================================================================================================================
+11. energy_payback
+Name       : Energy Payback
+Domain     : ENERGY
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\batch_remaining.py
+  - skills\energy\payback\adapter.py
+
+CLASSES
+  - EnergyPaybackSkill
+
+METHODS
+  - run
+  - w
+  - write
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\energy\payback\adapter.py:15 SkillResult
+      engineering_result = o
+      warnings = warns
+      source_revision = REV
+  - skills\energy\payback\adapter.py:11 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\energy\payback\adapter.py:13 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+12. harmonic_screening
+Name       : Harmonic Screening
+Domain     : ENERGY
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\energy\vfd\adapters.py
+
+CLASSES
+  - HarmonicScreeningSkill
+  - VFDDeratingSkill
+  - VFDEnergySavingsSkill
+  - _Base
+
+METHODS
+  - run
+  - validate
+  - write
+
+VALIDATION METHODS
+  - skills\energy\vfd\adapters.py:6 validate(self, r)
+
+DIRECT INPUT ACCESS
+  - skills\energy\vfd\adapters.py:13 r.inputs[k]
+  - skills\energy\vfd\adapters.py:21 r.inputs[k]
+  - skills\energy\vfd\adapters.py:29 r.inputs[k]
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\energy\vfd\adapters.py:15 SkillResult
+      engineering_result = o
+      warnings = ['Savings model uses the source static-head correction and should be validated against measured system behavior.']
+      calculation_trace = [{'step':1,'operation':'apply_affinity_law_cube_relationship'},{'step':2,'operation':'apply_static_head_correction'},{'step':3,'operation':'annualize_energy_and_cost'}]
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:23 SkillResult
+      engineering_result = o
+      warnings = ['Temperature/altitude factors are generic reference values from the source and must be checked against the selected VFD manufacturer/model datasheet.']
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:31 SkillResult
+      engineering_result = o
+      warnings = ['Screening heuristic only; not an IEEE 519 harmonic study.']
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:12 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:20 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:28 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:14 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:22 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:30 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+13. hvac_boq
+Name       : Hvac Boq
+Domain     : COMMERCIAL
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\batch_remaining.py
+  - skills\commercial\boq\adapter.py
+
+CLASSES
+  - HVACBOQSkill
+
+METHODS
+  - run
+  - w
+  - write
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\commercial\boq\adapter.py:14 SkillResult
+      engineering_result = o
+      warnings = warns
+      source_revision = REV
+  - skills\commercial\boq\adapter.py:10 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\commercial\boq\adapter.py:12 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+14. hvac_decarbonisation
+Name       : Hvac Decarbonisation
+Domain     : ENERGY
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\energy\decarbonisation\adapter.py
+
+CLASSES
+  - HVACDecarbonisationSkill
+
+METHODS
+  - run
+  - write
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\energy\decarbonisation\adapter.py:15 SkillResult
+      engineering_result = o
+      warnings = ['Scenario/impact model is assumption-driven; site data, current tariffs and governed emission factors should be verified before proposal use.']
+      source_revision = REV
+  - skills\energy\decarbonisation\adapter.py:12 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\decarbonisation\adapter.py:14 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+15. hvac_fault_diagnosis
+Name       : Hvac Fault Diagnosis
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\hvac\fault_diagnosis\adapter.py
+
+CLASSES
+  - HVAFaultDiagnosisSkill
+
+METHODS
+  - run
+  - validate
+  - write
+
+VALIDATION METHODS
+  - skills\hvac\fault_diagnosis\adapter.py:7 validate(self, r)
+
+DIRECT INPUT ACCESS
+  - skills\hvac\fault_diagnosis\adapter.py:16 r.inputs['rule_id']
+  - skills\hvac\fault_diagnosis\adapter.py:16 r.inputs['values']
+  - skills\hvac\fault_diagnosis\adapter.py:20 r.inputs['rule_id']
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\fault_diagnosis\adapter.py:20 SkillResult
+      engineering_result = out
+      warnings = warnings
+      calculation_trace = [{'step':1,'operation':'evaluate_explicit_AND_conditions','rule_id':r.inputs['rule_id']}]
+      source_revision = SOURCE_REVISION
+  - skills\hvac\fault_diagnosis\adapter.py:15 SkillResult
+      validation_errors = e
+      source_revision = SOURCE_REVISION
+  - skills\hvac\fault_diagnosis\adapter.py:17 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = SOURCE_REVISION
+========================================================================================================================
+16. preliminary_load_estimation
+Name       : Preliminary Load Estimation
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\hvac\preliminary_load_estimation\__init__.py
+  - skills\hvac\preliminary_load_estimation\adapter.py
+  - skills\hvac\preliminary_load_estimation\source_calculator.py
+
+CLASSES
+  - PreliminaryLoadEstimationSkill
+
+METHODS
+  - _round_up_to_half
+  - _suggest_equipment
+  - estimate_load
+  - run
+  - validate
+
+VALIDATION METHODS
+  - skills\hvac\preliminary_load_estimation\adapter.py:7 validate(self, r)
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\preliminary_load_estimation\adapter.py:27 SkillResult
+      engineering_result = out
+      standards = resolve_standards_context(r.standards_context)
+      warnings = warnings
+      calculation_trace = [{'step':1,'operation':'select_building_type_and_base_sqft_per_ton'},{'step':2,'operation':'apply_source_climate_multiplier'},{'step':3,'operation':'apply_occupancy_addon_if_applicable'},{'step':4,'operation':'round_up_to_half_ton'}]
+      source_revision = SOURCE_REVISION
+  - skills\hvac\preliminary_load_estimation\adapter.py:22 SkillResult
+      validation_errors = e
+      source_revision = SOURCE_REVISION
+  - skills\hvac\preliminary_load_estimation\adapter.py:25 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = SOURCE_REVISION
+========================================================================================================================
+17. pump_head
+Name       : Pump Head
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\hvac\pump_head\__init__.py
+  - skills\hvac\pump_head\adapter.py
+  - skills\hvac\pump_head\source_calculator.py
+
+CLASSES
+  - PumpHeadSkill
+
+METHODS
+  - calculate
+  - run
+  - validate
+
+VALIDATION METHODS
+  - skills\hvac\pump_head\adapter.py:14 validate(self, request)
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - skills\hvac\pump_head\adapter.py:18 require_positive(i, ["flow_m3hr", "diameter_mm"])
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\pump_head\adapter.py:83 SkillResult
+      skill_id = self.skill_id
+      status = "draft_ready"
+      engineering_result = result
+      assumptions = [
+                {**viscosity, "parameter": "water_kinematic_viscosity", "unit": "m2/s"},
+                {**gravity, "parameter": "gravity", "unit": "m/s2"},
+                {"parameter": "roughness", "value": roughness, "unit": "mm", "source": "source_material_default" if material else "user_input"},
+            ]
+      standards = standards
+      warnings = warnings
+      calculation_trace = [
+                {"step": 1, "operation": "convert_units", "flow_to_m3s": float(i["flow_m3hr"]) / 3600.0, "diameter_to_m": float(i["diameter_mm"]) / 1000.0},
+                {"step": 2, "operation": "calculate_velocity_reynolds_friction_factor", "method": "Darcy-Weisbach + Swamee-Jain"},
+                {"step": 3, "operation": "calculate_fitting_equivalent_length"},
+                {"step": 4, "operation": "calculate_friction_static_equipment_subtotal"},
+                {"step": 5, "operation": "resolve_governance", "standards_count": len(standards)},
+                {"step": 6, "operation": "apply_design_margin_and_unit_conversions"},
+            ]
+      human_review_required = True
+      source_revision = SOURCE_REVISION
+  - skills\hvac\pump_head\adapter.py:41 SkillResult
+      skill_id = self.skill_id
+      status = "input_validation_failed"
+      validation_errors = errors
+      source_revision = SOURCE_REVISION
+  - skills\hvac\pump_head\adapter.py:63 SkillResult
+      skill_id = self.skill_id
+      status = "calculation_failed"
+      validation_errors = [str(exc)]
+      source_revision = SOURCE_REVISION
+========================================================================================================================
+18. refrigerant_pipe_sizing
+Name       : Refrigerant Pipe Sizing
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\hvac\refrigerant_pipe_sizing\__init__.py
+  - skills\hvac\refrigerant_pipe_sizing\adapter.py
+  - skills\hvac\refrigerant_pipe_sizing\source_calculator.py
+
+CLASSES
+  - RefrigerantPipeSizingSkill
+
+METHODS
+  - calc
+  - dp
+  - ff
+  - run
+  - tube
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - skills\hvac\refrigerant_pipe_sizing\adapter.py:11 r.inputs['refrigerant']
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\refrigerant_pipe_sizing\adapter.py:16 SkillResult
+      engineering_result = o
+      warnings = warns
+      source_revision = REV
+  - skills\hvac\refrigerant_pipe_sizing\adapter.py:12 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\hvac\refrigerant_pipe_sizing\adapter.py:14 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+19. vfd_derating
+Name       : Vfd Derating
+Domain     : ENERGY
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\energy\vfd\adapters.py
+
+CLASSES
+  - HarmonicScreeningSkill
+  - VFDDeratingSkill
+  - VFDEnergySavingsSkill
+  - _Base
+
+METHODS
+  - run
+  - validate
+  - write
+
+VALIDATION METHODS
+  - skills\energy\vfd\adapters.py:6 validate(self, r)
+
+DIRECT INPUT ACCESS
+  - skills\energy\vfd\adapters.py:13 r.inputs[k]
+  - skills\energy\vfd\adapters.py:21 r.inputs[k]
+  - skills\energy\vfd\adapters.py:29 r.inputs[k]
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\energy\vfd\adapters.py:15 SkillResult
+      engineering_result = o
+      warnings = ['Savings model uses the source static-head correction and should be validated against measured system behavior.']
+      calculation_trace = [{'step':1,'operation':'apply_affinity_law_cube_relationship'},{'step':2,'operation':'apply_static_head_correction'},{'step':3,'operation':'annualize_energy_and_cost'}]
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:23 SkillResult
+      engineering_result = o
+      warnings = ['Temperature/altitude factors are generic reference values from the source and must be checked against the selected VFD manufacturer/model datasheet.']
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:31 SkillResult
+      engineering_result = o
+      warnings = ['Screening heuristic only; not an IEEE 519 harmonic study.']
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:12 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:20 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:28 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:14 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:22 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:30 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+20. vfd_energy_savings
+Name       : Vfd Energy Savings
+Domain     : ENERGY
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\batch_build.py
+  - skills\energy\vfd\adapters.py
+
+CLASSES
+  - HarmonicScreeningSkill
+  - VFDDeratingSkill
+  - VFDEnergySavingsSkill
+  - _Base
+
+METHODS
+  - run
+  - validate
+  - write
+
+VALIDATION METHODS
+  - skills\energy\vfd\adapters.py:6 validate(self, r)
+
+DIRECT INPUT ACCESS
+  - skills\energy\vfd\adapters.py:13 r.inputs[k]
+  - skills\energy\vfd\adapters.py:21 r.inputs[k]
+  - skills\energy\vfd\adapters.py:29 r.inputs[k]
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\energy\vfd\adapters.py:15 SkillResult
+      engineering_result = o
+      warnings = ['Savings model uses the source static-head correction and should be validated against measured system behavior.']
+      calculation_trace = [{'step':1,'operation':'apply_affinity_law_cube_relationship'},{'step':2,'operation':'apply_static_head_correction'},{'step':3,'operation':'annualize_energy_and_cost'}]
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:23 SkillResult
+      engineering_result = o
+      warnings = ['Temperature/altitude factors are generic reference values from the source and must be checked against the selected VFD manufacturer/model datasheet.']
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:31 SkillResult
+      engineering_result = o
+      warnings = ['Screening heuristic only; not an IEEE 519 harmonic study.']
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:12 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:20 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:28 SkillResult
+      validation_errors = e
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:14 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:22 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+  - skills\energy\vfd\adapters.py:30 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+========================================================================================================================
+21. vrf_sizing
+Name       : Vrf Sizing
+Domain     : HVAC
+Execution  : deterministic_calculation
+
+SOURCE FILES
+  - skills\hvac\vrf_sizing\__init__.py
+  - skills\hvac\vrf_sizing\adapter.py
+  - skills\hvac\vrf_sizing\source_calculator.py
+
+CLASSES
+  - VRFSizingSkill
+
+METHODS
+  - calc
+  - run
+  - step
+
+VALIDATION METHODS
+  - NONE DETECTED
+
+DIRECT INPUT ACCESS
+  - NONE DETECTED
+
+VALIDATION RULE CALLS
+  - NONE DETECTED
+
+SkillResult / SkillRequest USAGE
+  - skills\hvac\vrf_sizing\adapter.py:15 SkillResult
+      engineering_result = o
+      warnings = warns
+      source_revision = REV
+  - skills\hvac\vrf_sizing\adapter.py:11 SkillResult
+      validation_errors = errs
+      source_revision = REV
+  - skills\hvac\vrf_sizing\adapter.py:13 SkillResult
+      validation_errors = [str(ex)]
+      source_revision = REV
+
+========================================================================================================================
+STEP 30 VERIFICATION
+========================================================================================================================
+Registry skills : 22
+Executable      : 21
+Pending         : ['chiller_efficiency']
+
+All 21 executable registry entries were inspected against source files.
+The report is evidence only and is not yet a SkillDefinition migration.

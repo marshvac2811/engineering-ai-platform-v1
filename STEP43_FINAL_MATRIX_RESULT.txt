@@ -1,0 +1,28 @@
+STEP 43 FINAL MATRIX RESULT
+Started: 2026-09-20T20:18:07
+Executable: 21
+PASS: 11
+FAIL: 10
+Pending excluded: ['chiller_efficiency']
+
+FAIL | bms_alarm_evaluation | calculation_failed
+PASS | bms_controller_sizing | 
+PASS | bms_cost_estimation | 
+PASS | bms_points_generation | 
+FAIL | chiller_selection_advisor | input_validation_failed
+FAIL | cleanroom_ach | input_validation_failed
+PASS | cooling_tower | 
+FAIL | deviation_statement | input_validation_failed
+FAIL | duct_leakage | input_validation_failed
+PASS | duct_sizing | 
+FAIL | energy_payback | input_validation_failed
+PASS | harmonic_screening | 
+PASS | hvac_boq | 
+FAIL | hvac_decarbonisation | input_validation_failed
+PASS | hvac_fault_diagnosis | 
+PASS | preliminary_load_estimation | 
+FAIL | pump_head | input_validation_failed
+FAIL | refrigerant_pipe_sizing | input_validation_failed
+PASS | vfd_derating | 
+FAIL | vfd_energy_savings | input_validation_failed
+PASS | vrf_sizing | 

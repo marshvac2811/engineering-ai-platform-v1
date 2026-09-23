@@ -1,0 +1,341 @@
+STEP 32 - EVIDENCE-BACKED SKILLDEFINITION MAPPING
+========================================================================================================================
+
+Mapping policy: do not invent engineering requirements.
+Only source-confirmed identity/review/validation/output metadata
+is mapped automatically. Ambiguous engineering input contracts
+remain unresolved for subsequent controlled mapping.
+
+------------------------------------------------------------------------------------------------------------------------
+bms_alarm_evaluation
+  name                : Bms Alarm Evaluation
+  domain              : BMS
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : True
+  source input evidence: 0
+  conditional evidence : 0
+  governance evidence  : 24
+------------------------------------------------------------------------------------------------------------------------
+bms_controller_sizing
+  name                : Bms Controller Sizing
+  domain              : BMS
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : False
+  source input evidence: 0
+  conditional evidence : 0
+  governance evidence  : 17
+------------------------------------------------------------------------------------------------------------------------
+bms_cost_estimation
+  name                : Bms Cost Estimation
+  domain              : BMS
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : False
+  source input evidence: 1
+  conditional evidence : 0
+  governance evidence  : 13
+------------------------------------------------------------------------------------------------------------------------
+bms_points_generation
+  name                : Bms Points Generation
+  domain              : BMS
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : False
+  source input evidence: 0
+  conditional evidence : 0
+  governance evidence  : 17
+------------------------------------------------------------------------------------------------------------------------
+chiller_selection_advisor
+  name                : Chiller Selection Advisor
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : True
+  source input evidence: 0
+  conditional evidence : 0
+  governance evidence  : 24
+------------------------------------------------------------------------------------------------------------------------
+cleanroom_ach
+  name                : Cleanroom Ach
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : True
+  source input evidence: 0
+  conditional evidence : 0
+  governance evidence  : 24
+------------------------------------------------------------------------------------------------------------------------
+cooling_tower
+  name                : Cooling Tower
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 5
+  review_required     : True
+  source input evidence: 1
+  conditional evidence : 4
+  governance evidence  : 26
+------------------------------------------------------------------------------------------------------------------------
+deviation_statement
+  name                : Deviation Statement
+  domain              : COMMERCIAL
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : True
+  source input evidence: 1
+  conditional evidence : 1
+  governance evidence  : 24
+------------------------------------------------------------------------------------------------------------------------
+duct_leakage
+  name                : Duct Leakage
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : True
+  source input evidence: 0
+  conditional evidence : 0
+  governance evidence  : 24
+------------------------------------------------------------------------------------------------------------------------
+duct_sizing
+  name                : Duct Sizing
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 7
+  output_fields       : 10
+  review_required     : True
+  source input evidence: 11
+  conditional evidence : 0
+  governance evidence  : 22
+------------------------------------------------------------------------------------------------------------------------
+energy_payback
+  name                : Energy Payback
+  domain              : ENERGY
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : True
+  source input evidence: 0
+  conditional evidence : 1
+  governance evidence  : 24
+------------------------------------------------------------------------------------------------------------------------
+harmonic_screening
+  name                : Harmonic Screening
+  domain              : ENERGY
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 3
+  output_fields       : 5
+  review_required     : False
+  source input evidence: 3
+  conditional evidence : 0
+  governance evidence  : 19
+------------------------------------------------------------------------------------------------------------------------
+hvac_boq
+  name                : Hvac Boq
+  domain              : COMMERCIAL
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : True
+  source input evidence: 1
+  conditional evidence : 1
+  governance evidence  : 24
+------------------------------------------------------------------------------------------------------------------------
+hvac_decarbonisation
+  name                : Hvac Decarbonisation
+  domain              : ENERGY
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : False
+  source input evidence: 0
+  conditional evidence : 0
+  governance evidence  : 13
+------------------------------------------------------------------------------------------------------------------------
+hvac_fault_diagnosis
+  name                : Hvac Fault Diagnosis
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 1
+  output_fields       : 5
+  review_required     : False
+  source input evidence: 3
+  conditional evidence : 0
+  governance evidence  : 13
+------------------------------------------------------------------------------------------------------------------------
+preliminary_load_estimation
+  name                : Preliminary Load Estimation
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 1
+  output_fields       : 6
+  review_required     : False
+  source input evidence: 0
+  conditional evidence : 0
+  governance evidence  : 16
+------------------------------------------------------------------------------------------------------------------------
+pump_head
+  name                : Pump Head
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 2
+  output_fields       : 10
+  review_required     : True
+  source input evidence: 0
+  conditional evidence : 0
+  governance evidence  : 19
+------------------------------------------------------------------------------------------------------------------------
+refrigerant_pipe_sizing
+  name                : Refrigerant Pipe Sizing
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : True
+  source input evidence: 1
+  conditional evidence : 2
+  governance evidence  : 24
+------------------------------------------------------------------------------------------------------------------------
+vfd_derating
+  name                : Vfd Derating
+  domain              : ENERGY
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 3
+  output_fields       : 5
+  review_required     : False
+  source input evidence: 3
+  conditional evidence : 0
+  governance evidence  : 19
+------------------------------------------------------------------------------------------------------------------------
+vfd_energy_savings
+  name                : Vfd Energy Savings
+  domain              : ENERGY
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 3
+  output_fields       : 5
+  review_required     : False
+  source input evidence: 3
+  conditional evidence : 0
+  governance evidence  : 19
+------------------------------------------------------------------------------------------------------------------------
+vrf_sizing
+  name                : Vrf Sizing
+  domain              : HVAC
+  executable          : True
+  implementation_bind : UNRESOLVED
+  required_inputs     : 0
+  optional_inputs     : 0
+  conditional_inputs  : 0
+  validation_rules    : 0
+  output_fields       : 4
+  review_required     : True
+  source input evidence: 1
+  conditional evidence : 2
+  governance evidence  : 24
+
+========================================================================================================================
+GLOBAL VERIFICATION
+========================================================================================================================
+Registry total       : 22
+Executable registry  : 21
+Mapped definitions   : 21
+Pending registry     : ['chiller_efficiency']
+
+Pending skill excluded: chiller_efficiency
+Existing engineering implementations modified: NO
+Existing orchestrator modified: NO
+Registry YAML modified: NO
+
+IMPORTANT: Empty required/optional/conditional input sections do
+not mean the engineering skill has no inputs. They mean Step 32
+has not promoted ambiguous source evidence into an authoritative
+contract.

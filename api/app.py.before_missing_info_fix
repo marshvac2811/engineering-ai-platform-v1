@@ -1,4 +1,4 @@
-﻿"""Minimal provider-neutral WSGI API for the engineering job service.
+"""Minimal provider-neutral WSGI API for the engineering job service.
 
 This boundary intentionally contains no engineering calculations. In production,
 X-Tenant-ID should be derived from the authenticated Supabase JWT rather than
@@ -17,7 +17,6 @@ from jobs.service import JobService
 from jobs.store import InMemoryJobStore
 from jobs.supabase_store import build_supabase_job_store_from_env
 from ingestion.factory import build_ingestion_service
-from orchestrator.registry_loader import load_registry
 from orchestrator.intake import build_plan
 from orchestrator.provider_factory import build_intent_provider
 from orchestrator.provider import ProviderUnavailableError
@@ -41,14 +40,13 @@ from integrations.providers.gmail import (
 class APIApp:
     def __init__(self, service_factory: Callable[[str], JobService] | None = None, *,
                  development_authenticator=None, api_keys=None, usage_store=None,
-                 gmail_client=None, gmail_token_store=None, gmail_state_store=None,
-                 store=None, ingestion=None, crm_store=None, integration_store=None) -> None:
-        self.store = store or build_supabase_job_store_from_env() or InMemoryJobStore()
-        self.ingestion = ingestion or build_ingestion_service()
+                 gmail_client=None, gmail_token_store=None, gmail_state_store=None) -> None:
+        self.store = build_supabase_job_store_from_env() or InMemoryJobStore()
+        self.ingestion = build_ingestion_service()
         self.api_keys = api_keys or InMemoryApiKeyStore()
         self.usage = usage_store or InMemoryUsageStore()
-        self.crm_store = crm_store or build_supabase_crm_store_from_env() or InMemoryCRMStore()
-        self.integration_store = integration_store or build_supabase_integration_store_from_env() or InMemoryIntegrationStore()
+        self.crm_store = build_supabase_crm_store_from_env() or InMemoryCRMStore()
+        self.integration_store = build_supabase_integration_store_from_env() or InMemoryIntegrationStore()
         self.gmail_token_store = gmail_token_store or TrialGmailTokenStore()
         self.gmail_state_store = gmail_state_store or GmailOAuthStateStore()
         self.gmail_client = gmail_client or GmailAPIClient(
@@ -190,124 +188,19 @@ h2{margin-top:0}
 <div id="account">Loading account...</div>
 </div>
 <div class="card">
-<h2>Engineering Skills</h2>
-<div id="skills-status">Loading engineering skills...</div>
-<div id="skills"></div>
-<div id="skill-detail" style="display:none;margin-top:20px"></div>
-</div>
-
-<div class="card">
 <h2>Engineering Jobs</h2>
 <div id="jobs">Loading jobs...</div>
 <div id="job-detail" style="display:none;margin-top:20px"></div>
 </div>
 
 <div class="card">
-<h2>Engineering Request</h2>
-<p>Submit an engineering request for automatic skill selection, input validation, execution, human review and dispatch.</p>
-
-<label for="intake-message"><strong>Engineering Request</strong></label>
-<textarea id="intake-message" rows="5" style="width:100%;box-sizing:border-box;padding:10px;margin-top:8px;border:1px solid #ccc;border-radius:8px" placeholder="Example: Size a round duct for 8000 CFM using velocity at 7 m/s"></textarea>
-
-<div style="margin-top:14px">
-<label for="intake-skill"><strong>Skill Selection</strong></label>
-<select id="intake-skill" style="width:100%;box-sizing:border-box;padding:10px;margin-top:8px;border:1px solid #ccc;border-radius:8px">
-<option value="">Auto-detect</option>
-</select>
-</div>
-
-<div style="margin-top:14px">
-<label for="intake-inputs"><strong>Optional Inputs (JSON)</strong></label>
-<textarea id="intake-inputs" rows="5" style="width:100%;box-sizing:border-box;padding:10px;margin-top:8px;border:1px solid #ccc;border-radius:8px" placeholder='{"example":"value"}'></textarea>
-</div>
-
-<div style="margin-top:14px">
-<label for="intake-context"><strong>Project Context (JSON)</strong></label>
-<textarea id="intake-context" rows="5" style="width:100%;box-sizing:border-box;padding:10px;margin-top:8px;border:1px solid #ccc;border-radius:8px" placeholder='{"project":"Example project","location":"Gurgaon"}'></textarea>
-</div>
-
-<div style="margin-top:14px">
-<button onclick="submitEngineeringRequest()">Submit Engineering Request</button>
-</div>
-
-<div id="intake-result" style="display:none;margin-top:20px"></div>
-<div id="intake-information" style="display:none;margin-top:20px"></div>
+<h2>Next</h2>
+<p>Engineering jobs, skills, review, dispatch and project operations will appear here.</p>
 </div>
 
 <script>
 const token = localStorage.getItem("engineering_ai_access_token");
-
-async function refreshAccessToken() {
-    const refreshToken = localStorage.getItem("engineering_ai_refresh_token");
-
-    if (!refreshToken) {
-        throw new Error("No refresh token available. Please sign in again.");
-    }
-
-    const response = await fetch(
-        "https://vaxerlbgwwlfamncevdg.supabase.co/auth/v1/token?grant_type=refresh_token",
-        {
-            method: "POST",
-            headers: {
-                "apikey": "sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s",
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                refresh_token: refreshToken
-            })
-        }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.access_token) {
-        localStorage.removeItem("engineering_ai_access_token");
-        localStorage.removeItem("engineering_ai_refresh_token");
-        throw new Error(data.error_description || data.msg || "Session refresh failed. Please sign in again.");
-    }
-
-    localStorage.setItem("engineering_ai_access_token", data.access_token);
-
-    if (data.refresh_token) {
-        localStorage.setItem("engineering_ai_refresh_token", data.refresh_token);
-    }
-
-    return data.access_token;
-}
-
-async function authFetch(url, options = {}) {
-    const requestOptions = Object.assign({}, options);
-    const headers = Object.assign({}, requestOptions.headers || {});
-
-    let accessToken = localStorage.getItem("engineering_ai_access_token");
-
-    if (!accessToken) {
-        throw new Error("No active authentication session. Please sign in.");
-    }
-
-    headers["Authorization"] = "Bearer " + accessToken;
-    requestOptions.headers = headers;
-
-    let response = await fetch(url, requestOptions);
-
-    if (response.status !== 401) {
-        return response;
-    }
-
-    accessToken = await refreshAccessToken();
-
-    const retryHeaders = Object.assign({}, headers, {
-        "Authorization": "Bearer " + accessToken
-    });
-
-    requestOptions.headers = retryHeaders;
-
-    return fetch(url, requestOptions);
-}
 const accountBox = document.getElementById("account");
-const skillsStatusBox = document.getElementById("skills-status");
-const skillsBox = document.getElementById("skills");
-const skillDetailBox = document.getElementById("skill-detail");
 const jobsBox = document.getElementById("jobs");
 const detailBox = document.getElementById("job-detail");
 
@@ -326,7 +219,7 @@ async function loadAccount() {
     }
 
     try {
-        const response = await authFetch("/v1/account", {
+        const response = await fetch("/v1/account", {
             headers: {"Authorization": "Bearer " + token}
         });
 
@@ -347,296 +240,6 @@ async function loadAccount() {
     }
 }
 
-async function loadSkills() {
-    if (!token) {
-        skillsStatusBox.textContent = "No active authentication session.";
-        return;
-    }
-
-    try {
-        const response = await authFetch("/v1/skills", {
-            headers: {"Authorization": "Bearer " + token}
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || "Skills request failed");
-        }
-
-        const skills = data.skills || [];
-
-        skillsStatusBox.innerHTML =
-            "<p><strong>Registry:</strong> v" + esc(data.version) +
-            " &nbsp; <strong>Status:</strong> " + esc(data.status) +
-            " &nbsp; <strong>Total:</strong> " + esc(data.count) + "</p>";
-
-        if (skills.length === 0) {
-            skillsBox.innerHTML = "<p>No engineering skills registered.</p>";
-            return;
-        }
-
-        skillsBox.innerHTML = skills.map(function(skill, index) {
-            const executable = skill.integration_status === "integrated";
-
-            return "<div style='border:1px solid #ddd;padding:12px;margin:10px 0;border-radius:8px'>" +
-                "<div style='display:flex;justify-content:space-between;gap:12px;align-items:center'>" +
-                "<div>" +
-                "<p style='margin:0'><strong>" + esc(skill.skill_id) + "</strong></p>" +
-                "<p style='margin:5px 0'><strong>Domain:</strong> " + esc(skill.domain || "-") +
-                " &nbsp; <strong>Classification:</strong> " + esc(skill.classification || "-") + "</p>" +
-                "<p style='margin:5px 0'><strong>Integration:</strong> " + esc(skill.integration_status || "-") +
-                " &nbsp; <strong>Human Review:</strong> " + (skill.human_review_required ? "Yes" : "No") + "</p>" +
-                "</div>" +
-                "<button onclick='showSkill(" + index + ")'>View Inputs</button>" +
-                "</div>" +
-                "</div>";
-        }).join("");
-
-        window.engineeringSkills = skills;
-    } catch (error) {
-        skillsStatusBox.textContent = "Skills load failed: " + error.message;
-        skillsBox.innerHTML = "";
-    }
-}
-
-function showSkill(index) {
-    const skill = (window.engineeringSkills || [])[index];
-
-    if (!skill) {
-        return;
-    }
-
-    function inputRows(items) {
-        if (!items || items.length === 0) {
-            return "<p>None</p>";
-        }
-
-        return "<ul>" + items.map(function(item) {
-            return "<li><strong>" + esc(item.name) + "</strong> Ã¢â‚¬â€ " +
-                esc(item.data_type || "value") +
-                (item.allowed_values ? " Ã¢â‚¬â€ Allowed: " + esc(item.allowed_values.join(", ")) : "") +
-                (item.description ? " Ã¢â‚¬â€ " + esc(item.description) : "") +
-                "</li>";
-        }).join("") + "</ul>";
-    }
-
-    skillDetailBox.style.display = "block";
-    skillDetailBox.innerHTML =
-        "<div style='border-top:1px solid #ddd;padding-top:16px'>" +
-        "<h3>Skill Detail</h3>" +
-        "<p><strong>Skill ID:</strong> " + esc(skill.skill_id) + "</p>" +
-        "<p><strong>Domain:</strong> " + esc(skill.domain || "-") + "</p>" +
-        "<p><strong>Source Repository:</strong> " + esc(skill.source_repository || "-") + "</p>" +
-        "<p><strong>Execution:</strong> " + esc(skill.execution || "-") + "</p>" +
-        "<p><strong>Classification:</strong> " + esc(skill.classification || "-") + "</p>" +
-        "<p><strong>Integration Status:</strong> " + esc(skill.integration_status || "-") + "</p>" +
-        "<p><strong>Human Review Required:</strong> " + (skill.human_review_required ? "Yes" : "No") + "</p>" +
-        "<h4>Required Inputs</h4>" +
-        inputRows(skill.required_inputs) +
-        "<h4>Optional Inputs</h4>" +
-        inputRows(skill.optional_inputs) +
-        "<h4>Conditional Inputs</h4>" +
-        inputRows(skill.conditional_inputs) +
-        "<button onclick='skillDetailBox.style.display=\\\"none\\\"'>Close</button>" +
-        "</div>";
-}
-
-function parseJsonField(id, label) {
-    const raw = document.getElementById(id).value.trim();
-
-    if (!raw) {
-        return {};
-    }
-
-    try {
-        const value = JSON.parse(raw);
-
-        if (!value || Array.isArray(value) || typeof value !== "object") {
-            throw new Error(label + " must be a JSON object.");
-        }
-
-        return value;
-    } catch (error) {
-        throw new Error(label + " is invalid JSON: " + error.message);
-    }
-}
-
-async function loadIntakeSkills() {
-    const select = document.getElementById("intake-skill");
-
-    if (!select || !window.engineeringSkills) {
-        return;
-    }
-
-    const executableSkills = window.engineeringSkills.filter(function(skill) {
-        return skill.integration_status === "integrated";
-    });
-
-    executableSkills.forEach(function(skill) {
-        const option = document.createElement("option");
-        option.value = skill.skill_id;
-        option.textContent = skill.skill_id + " (" + (skill.domain || "Engineering") + ")";
-        select.appendChild(option);
-    });
-}
-
-function renderIntakePlan(plan, job) {
-    const resultBox = document.getElementById("intake-result");
-    const informationBox = document.getElementById("intake-information");
-
-    resultBox.style.display = "block";
-    informationBox.style.display = "none";
-
-    const missing = plan.missing_inputs || [];
-    const questions = plan.questions || [];
-    const extracted = plan.extracted_inputs || {};
-
-    resultBox.innerHTML =
-        "<div style='border-top:1px solid #ddd;padding-top:16px'>" +
-        "<h3>Engineering Request Result</h3>" +
-        "<p><strong>Status:</strong> " + esc(plan.status || "-") + "</p>" +
-        "<p><strong>Selected Skill:</strong> " + esc(plan.selected_skill_id || "-") + "</p>" +
-        "<p><strong>Confidence:</strong> " + esc(plan.confidence ?? "-") + "</p>" +
-        "<p><strong>Job ID:</strong> " + esc((job || {}).job_id || "-") + "</p>" +
-        "<p><strong>Job Status:</strong> " + esc((job || {}).status || "-") + "</p>" +
-        "<p><strong>Routing Rationale:</strong> " + esc(plan.rationale || "-") + "</p>" +
-        "<h4>Extracted / Provided Inputs</h4>" +
-        "<pre style='white-space:pre-wrap;background:#f7f7f7;padding:10px;border-radius:6px'>" +
-        esc(JSON.stringify(extracted, null, 2)) + "</pre>" +
-        "<h4>Missing Inputs</h4>" +
-        "<pre style='white-space:pre-wrap;background:#fff8e1;padding:10px;border-radius:6px'>" +
-        esc(JSON.stringify(missing, null, 2)) + "</pre>" +
-        "<h4>Questions</h4>" +
-        "<pre style='white-space:pre-wrap;background:#fff8e1;padding:10px;border-radius:6px'>" +
-        esc(JSON.stringify(questions, null, 2)) + "</pre>" +
-        "</div>";
-
-    if (missing.length > 0 && job && job.job_id) {
-        informationBox.style.display = "block";
-
-        informationBox.innerHTML =
-            "<div style='border:1px solid #ddd;padding:16px;border-radius:8px'>" +
-            "<h3>Provide Missing Engineering Information</h3>" +
-            "<p>The job is waiting for additional inputs. Enter the missing values as JSON.</p>" +
-            "<p><strong>Required:</strong> " + esc(missing.join(", ")) + "</p>" +
-            "<p><strong>Questions:</strong></p>" +
-            "<ul>" +
-            questions.map(function(question) {
-                return "<li>" + esc(question) + "</li>";
-            }).join("") +
-            "</ul>" +
-            "<textarea id='missing-inputs' rows='6' style='width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px' placeholder='{&quot;flow_m3hr&quot;:20,&quot;diameter_mm&quot;:80,&quot;straight_length_m&quot;:60,&quot;static_head_m&quot;:8,&quot;margin_pct&quot;:10}'></textarea>" +
-            "<div style='margin-top:12px'>" +
-            "<button onclick=&quot;provideMissingInformation('" + esc(job.job_id) + "')&quot;>Submit Missing Information</button>" +
-            "</div>" +
-            "</div>";
-    }
-}
-
-async function submitEngineeringRequest() {
-    const resultBox = document.getElementById("intake-result");
-
-    try {
-        const message = document.getElementById("intake-message").value.trim();
-
-        if (!message) {
-            throw new Error("Engineering Request is required.");
-        }
-
-        const skill = document.getElementById("intake-skill").value;
-        const inputs = parseJsonField("intake-inputs", "Optional Inputs");
-        const projectContext = parseJsonField("intake-context", "Project Context");
-
-        const payload = {
-            message: message,
-            inputs: inputs,
-            project_context: projectContext
-        };
-
-        if (skill) {
-            payload.requested_skill_id = skill;
-        }
-
-        resultBox.style.display = "block";
-        resultBox.innerHTML = "<p>Submitting engineering request...</p>";
-
-        const response = await authFetch("/v1/intake", {
-            method: "POST",
-            headers: {
-                "Authorization": "Bearer " + token,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || "Engineering intake failed");
-        }
-
-        renderIntakePlan(data.plan || {}, data.job || {});
-        await loadJobs();
-
-        if (data.job && data.job.job_id) {
-            await openJob(data.job.job_id);
-        }
-    } catch (error) {
-        resultBox.style.display = "block";
-        resultBox.innerHTML =
-            "<p style='color:#b00020'><strong>Request failed:</strong> " +
-            esc(error.message) + "</p>";
-    }
-}
-
-async function provideMissingInformation(jobId) {
-    try {
-        const raw = document.getElementById("missing-inputs").value.trim();
-
-        if (!raw) {
-            throw new Error("Missing information JSON is required.");
-        }
-
-        let inputs;
-
-        try {
-            inputs = JSON.parse(raw);
-        } catch (error) {
-            throw new Error("Missing information must be valid JSON: " + error.message);
-        }
-
-        if (!inputs || Array.isArray(inputs) || typeof inputs !== "object") {
-            throw new Error("Missing information must be a JSON object.");
-        }
-
-        const response = await authFetch(
-            "/v1/jobs/" + encodeURIComponent(jobId) + "/information",
-            {
-                method: "POST",
-                headers: {
-                    "Authorization": "Bearer " + token,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({inputs: inputs})
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || "Information update failed");
-        }
-
-        alert("Engineering information updated successfully.");
-
-        await loadJobs();
-        await openJob(jobId);
-    } catch (error) {
-        alert(error.message);
-    }
-}
-
 async function loadJobs() {
     if (!token) {
         jobsBox.textContent = "No active authentication session.";
@@ -644,7 +247,7 @@ async function loadJobs() {
     }
 
     try {
-        const response = await authFetch("/v1/jobs", {
+        const response = await fetch("/v1/jobs", {
             headers: {"Authorization": "Bearer " + token}
         });
 
@@ -680,7 +283,7 @@ async function openJob(jobId) {
     detailBox.innerHTML = "<p>Loading job detail...</p>";
 
     try {
-        const response = await authFetch("/v1/jobs/" + encodeURIComponent(jobId), {
+        const response = await fetch("/v1/jobs/" + encodeURIComponent(jobId), {
             headers: {"Authorization": "Bearer " + token}
         });
 
@@ -744,7 +347,7 @@ async function openJob(jobId) {
 }
 
 async function jobAction(jobId, action) {
-    const response = await authFetch(
+    const response = await fetch(
         "/v1/jobs/" + encodeURIComponent(jobId) + "/" + action,
         {
             method: "POST",
@@ -774,7 +377,7 @@ async function approveJob(jobId) {
         return;
     }
 
-    const response = await authFetch(
+    const response = await fetch(
         "/v1/jobs/" + encodeURIComponent(jobId) + "/approve",
         {
             method: "POST",
@@ -801,7 +404,6 @@ async function approveJob(jobId) {
 }
 
 loadAccount();
-loadSkills().then(loadIntakeSkills);
 loadJobs();
 </script>
 </body>
@@ -841,21 +443,6 @@ loadJobs();
             body = self._read_json(environ) if method in {"POST", "PUT", "PATCH"} else {}
             query = parse_qs(environ.get("QUERY_STRING", ""), keep_blank_values=True)
             parts = [p for p in path.split("/") if p]
-            if len(parts) == 2 and parts[0] == "v1" and parts[1] == "skills" and method == "GET":
-                ctx.require_scope("jobs:read")
-                registry = load_registry()
-                skills = registry.get("skills", [])
-                return self._json(
-                    start_response,
-                    "200 OK",
-                    {
-                        "version": registry.get("version"),
-                        "status": registry.get("status"),
-                        "skills": skills,
-                        "count": len(skills),
-                    },
-                )
-
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "intake" and method == "POST":
                 message = str(body.get("message", "")).strip()
                 if not message:
@@ -1145,16 +732,6 @@ loadJobs();
                     ctx.require_scope("jobs:write")
                     result = service.extract_attachment(job_id, attachment_id)
                     return self._json(start_response, "200 OK", result)
-            if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "information":
-                job_id = parts[2]
-                if method != "POST":
-                    return self._json(start_response, "405 Method Not Allowed", {"error": "POST required"})
-                ctx.require_scope("jobs:write")
-                updates = body.get("inputs", {})
-                if not isinstance(updates, dict):
-                    raise ValueError("inputs must be an object")
-                job = service.provide_missing_information(job_id, updates)
-                return self._json(start_response, "200 OK", job.to_dict())
 
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs":
                 job_id, action = parts[2], parts[3]
@@ -1196,10 +773,5 @@ loadJobs();
 from uvicorn.middleware.wsgi import WSGIMiddleware
 
 app = WSGIMiddleware(APIApp())
-
-
-
-
-
 
 

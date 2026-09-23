@@ -1,3 +1,6 @@
+from integrations.service import InMemoryIntegrationStore
+from crm.store import InMemoryCRMStore
+from jobs.store import InMemoryJobStore
 import io, json
 from api.app import APIApp
 
@@ -18,7 +21,7 @@ def call(app, method, path, body=None, tenant='tenant-a'):
 
 
 def test_health_and_job_lifecycle_api():
-    app=APIApp()
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     status, body=call(app,'GET','/health')
     assert status.startswith('200') and body['status']=='ok'
     payload={'source':'api-test','requested_skill_id':'duct_sizing','inputs':{'airflow':3600,'method':'velocity','duct_type':'round','target_velocity_ms':8,'material':'gss'}}
@@ -35,7 +38,7 @@ def test_health_and_job_lifecycle_api():
 
 
 def test_api_tenant_boundary():
-    app=APIApp()
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     _, job=call(app,'POST','/v1/jobs',{'source':'api','requested_skill_id':'duct_sizing','inputs':{}},tenant='tenant-a')
     jid=job['job_id']
     status, _=call(app,'GET',f'/v1/jobs/{jid}',tenant='tenant-b')
@@ -43,7 +46,7 @@ def test_api_tenant_boundary():
 
 
 def test_api_requires_tenant():
-    app=APIApp()
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     raw=b'{}'
     env={'REQUEST_METHOD':'GET','PATH_INFO':'/v1/jobs/x','CONTENT_LENGTH':'0','wsgi.input':io.BytesIO(raw)}
     result={}
@@ -55,7 +58,7 @@ def test_api_requires_tenant():
 def test_api_returns_503_when_openai_provider_is_selected_without_key(monkeypatch):
     monkeypatch.setenv("ENGINEERING_AI_INTENT_PROVIDER", "openai")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    app=APIApp()
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     status, body=call(app,'POST','/v1/intake',{'message':'Size a round duct'})
     assert status.startswith('503')
     assert 'OPENAI_API_KEY' in body['error']

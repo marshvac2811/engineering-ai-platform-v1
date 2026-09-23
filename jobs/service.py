@@ -1,4 +1,4 @@
-"""Provider-neutral engineering job lifecycle service.
+﻿"""Provider-neutral engineering job lifecycle service.
 
 This V1 service is deliberately synchronous. A database-backed queue worker can
 replace the in-memory store without changing the job contract.
@@ -11,6 +11,7 @@ from orchestrator.engine import execute
 from skills.common import SkillRequest
 from validators.basic import require_positive
 from validators.governance import validate_governance_context
+from validators.registered_skill_inputs import validate_registered_skill_inputs
 from ingestion.service import IngestionService
 
 from .models import Job, JobStatus
@@ -241,3 +242,4 @@ class JobService:
     def _is_missing_information_case(errors: list[str]) -> bool:
         markers = ("Missing required", "Provide ", "must be supplied")
         return any(error.startswith(markers) for error in errors)
+

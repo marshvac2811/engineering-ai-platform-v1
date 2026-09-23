@@ -1,4 +1,4 @@
-﻿"""Provider-neutral natural-language intake and engineering skill routing.
+"""Provider-neutral natural-language intake and engineering skill routing.
 
 This module deliberately keeps language understanding lightweight and auditable:
 - a pluggable IntentProvider interface can later be backed by Tasklet/OpenAI/etc.
@@ -9,13 +9,11 @@ This module deliberately keeps language understanding lightweight and auditable:
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
 
-from orchestrator.engine import SKILLS
-from skill_framework.registry import load_skill_registry
-from skill_framework.input_resolver import resolve_input_requirements
+from orchestrator.engine import SKILLS, execute
+from skills.common import SkillRequest
 
 
 @dataclass
@@ -90,7 +88,7 @@ FIELD_QUESTIONS = {
     "width_mm": "What rectangular duct width should be checked, in mm?",
     "height_mm": "What rectangular duct height should be checked, in mm?",
     "material": "What duct material should be used (for example gss, pu_panel, fabric or flexible)?",
-    "flow_m3hr": "What design water flow is required, in mÂ³/hr?",
+    "flow_m3hr": "What design water flow is required, in m³/hr?",
     "diameter_mm": "What pipe internal diameter should be checked, in mm?",
     "roughness_mm": "What pipe roughness should be used, in mm?",
     "straight_length_m": "What is the straight pipe length, in metres?",
@@ -103,9 +101,9 @@ FIELD_QUESTIONS = {
     "rule_id": "Which diagnostic rule or fault condition should be evaluated?",
     "values": "Please provide the measured fault-condition values for the selected diagnostic rule.",
     "load_method": "For cooling tower sizing, should the load come from chiller data or a direct heat load?",
-    "range_c": "What cooling-tower range should be used, in Â°C?",
-    "wet_bulb_c": "What is the site design wet-bulb temperature, in Â°C?",
-    "approach_c": "What cooling-tower approach should be used, in Â°C?",
+    "range_c": "What cooling-tower range should be used, in °C?",
+    "wet_bulb_c": "What is the site design wet-bulb temperature, in °C?",
+    "approach_c": "What cooling-tower approach should be used, in °C?",
     "coc": "What cycles of concentration (COC) should be used?",
     "drift_pct": "What drift loss should be used, as percent of water flow?",
     "chiller_tr": "What chiller capacity should be used, in TR?",
@@ -134,7 +132,7 @@ FIELD_QUESTIONS = {
     "efficiency_kw_per_tr": "What chiller efficiency should be used, in kW/TR?",
     "annual_hours": "What are the annual operating hours?",
     "load_factor_pct": "What average load factor should be used, in percent?",
-    "tariff_per_kwh": "What electricity tariff should be used, in â‚¹/kWh?",
+    "tariff_per_kwh": "What electricity tariff should be used, in ₹/kWh?",
     "duty_modules": "How many duty chiller modules are required?",
     "redundancy_level": "What redundancy is required: N, N+1 or N+2?",
     "equipment_counts": "Please provide the BMS equipment counts by equipment type.",
@@ -157,7 +155,7 @@ FIELD_QUESTIONS = {
     "motor_kw": "What motor power should be used, in kW?",
     "speed_reduction_pct": "What speed reduction should be used, in percent?",
     "static_head_fraction": "What fraction of head is static, in percent?",
-    "ambient_temp_c": "What ambient temperature should be used, in Â°C?",
+    "ambient_temp_c": "What ambient temperature should be used, in °C?",
     "altitude_m": "What site altitude should be used, in metres?",
     "total_vfd_kva": "What is the total VFD load, in kVA?",
     "transformer_kva": "What is the transformer capacity, in kVA?",
@@ -188,7 +186,7 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "capacity_new": [r"new\s*(?:capacity\s*)?([\d,.]+)\s*(?:tr|ton)"],
         "total_load_tr": [r"([\d,.]+)\s*(?:tr|tons?)\b"],
         "chiller_tr": [r"([\d,.]+)\s*(?:tr|tons?)\b"],
-        "flow_m3hr": [r"([\d,.]+)\s*m3\s*/?\s*h(?:r)?", r"([\d,.]+)\s*mÂ³\s*/?\s*h(?:r)?"],
+        "flow_m3hr": [r"([\d,.]+)\s*m3\s*/?\s*h(?:r)?", r"([\d,.]+)\s*m³\s*/?\s*h(?:r)?"],
         "diameter_mm": [r"(?:dia(?:meter)?|pipe)\s*[:=]?\s*([\d,.]+)\s*mm", r"([\d,.]+)\s*mm\s*(?:pipe|dia(?:meter)?)"],
         "width_mm": [r"(?:width|w)\s*[:=]?\s*([\d,.]+)\s*mm"],
         "height_mm": [r"(?:height|(?<![a-z])h)\s*[:=]?\s*([\d,.]+)\s*mm"],
@@ -196,18 +194,18 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "target_friction_pa_per_m": [r"(?:friction|friction\s*rate)\s*[:=]?\s*([\d,.]+)\s*pa\s*/?\s*m"],
         "straight_length_m": [r"(?:straight\s*(?:length|pipe)|pipe\s*length)\s*[:=]?\s*([\d,.]+)\s*m", r"([\d,.]+)\s*m\s*(?:straight\s*length|pipe\s*length)\b"],
         "static_head_m": [r"(?:static|elevation)\s*(?:head|lift)\s*[:=]?\s*([\d,.]+)\s*m", r"([\d,.]+)\s*m\s*(?:static|elevation)\s*(?:head|lift)\b"],
-        "margin_pct": [r"(?:margin|allowance)\s*[:=]?\s*([\d,.]+)\s*(?:%|percent)\b", r"([\d,.]+)\s*(?:%|percent)\s*(?:margin|allowance)\b"],
-        "wet_bulb_c": [r"wet\s*bulb\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
-        "approach_c": [r"approach\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
-        "range_c": [r"(?:range|delta\s*t|Î”t)\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
+        "margin_pct": [r"(?:margin|allowance)\s*[:=]?\s*([\d,.]+)\s*%", r"([\d,.]+)\s*%\s*(?:margin|allowance)\b"],
+        "wet_bulb_c": [r"wet\s*bulb\s*[:=]?\s*([\d,.]+)\s*(?:°?c|deg c)"],
+        "approach_c": [r"approach\s*[:=]?\s*([\d,.]+)\s*(?:°?c|deg c)"],
+        "range_c": [r"(?:range|delta\s*t|Δt)\s*[:=]?\s*([\d,.]+)\s*(?:°?c|deg c)"],
         "coc": [r"(?:coc|cycles?\s*of\s*concentration)\s*[:=]?\s*([\d,.]+)"],
         "drift_pct": [r"drift\s*(?:loss)?\s*[:=]?\s*([\d,.]+)\s*%"],
         "annual_hours": [r"([\d,.]+)\s*(?:annual\s*hours|hours\s*/\s*year|hr\s*/\s*yr)"],
-        "tariff_per_kwh": [r"(?:tariff|electricity\s*tariff)\s*[:=]?\s*(?:â‚¹|rs\.?\s*)?([\d,.]+)\s*/?\s*kwh"],
+        "tariff_per_kwh": [r"(?:tariff|electricity\s*tariff)\s*[:=]?\s*(?:₹|rs\.?\s*)?([\d,.]+)\s*/?\s*kwh"],
         "load_factor_pct": [r"(?:load\s*factor)\s*[:=]?\s*([\d,.]+)\s*%"],
         "speed_reduction_pct": [r"(?:speed\s*reduction)\s*[:=]?\s*([\d,.]+)\s*%"],
         "static_head_fraction": [r"(?:static\s*head\s*fraction|static\s*head)\s*[:=]?\s*([\d,.]+)\s*%"],
-        "ambient_temp_c": [r"(?:ambient|temperature)\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
+        "ambient_temp_c": [r"(?:ambient|temperature)\s*[:=]?\s*([\d,.]+)\s*(?:°?c|deg c)"],
         "altitude_m": [r"(?:altitude|elevation)\s*[:=]?\s*([\d,.]+)\s*m\b"],
         "total_vfd_kva": [r"(?:vfd\s*load|total\s*vfd)\s*[:=]?\s*([\d,.]+)\s*kva"],
         "transformer_kva": [r"(?:transformer|tx)\s*(?:capacity)?\s*[:=]?\s*([\d,.]+)\s*kva"],
@@ -225,18 +223,6 @@ def extract_facts(text: str) -> Dict[str, Any]:
                 if m and key == "refrigerant":
                     out[key] = m.group(1).upper()
                     break
-
-    material_patterns = [
-        (r"\b(?:gi|g\.i\.|galvanized\s*iron|galvanised\s*iron)\b(?:\s+pipe)?", "gi"),
-        (r"\b(?:ms|m\.s\.|mild\s*steel|carbon\s*steel)\b(?:\s+pipe)?", "ms_cs"),
-        (r"\b(?:copper|cu)\b(?:\s+pipe)?", "copper"),
-        (r"\b(?:upvc|u\.p\.v\.c\.|u-pvc|u\s+pvc|pvc)\b(?:\s+pipe)?", "upvc_pvc"),
-        (r"\b(?:hdpe|h\.d\.p\.e\.|high\s+density\s+polyethylene)\b(?:\s+pipe)?", "hdpe"),
-    ]
-    for pattern, material in material_patterns:
-        if re.search(pattern, t, re.IGNORECASE):
-            out["material"] = material
-            break
 
     if "rectangular" in t:
         out["duct_type"] = "rectangular"
@@ -278,6 +264,27 @@ class RuleBasedIntentProvider:
         if len(candidates) > 1 and top.score == second:
             return None, candidates[:5], 0.45
         return top.skill_id, candidates[:5], confidence
+
+
+def _missing_inputs(skill_id: str, inputs: Dict[str, Any], project_context: Dict[str, Any], standards_context: Dict[str, Any], assumptions_context: Dict[str, Any]) -> List[str]:
+    result = execute(SkillRequest(
+        skill_id=skill_id,
+        inputs=inputs,
+        project_context=project_context,
+        standards_context=standards_context,
+        assumptions_context=assumptions_context,
+        request_id="orchestrator-validation",
+    ))
+    missing: List[str] = []
+    for error in result.validation_errors:
+        prefix = "Missing required input: "
+        if error.startswith(prefix):
+            missing.append(error[len(prefix):].strip())
+        elif error.startswith("Provide roughness_mm"):
+            missing.append("roughness_mm")
+        elif error.startswith("Provide "):
+            missing.append(error.split("Provide ", 1)[1].strip().split(" or ", 1)[0])
+    return list(dict.fromkeys(missing))
 
 
 def build_plan(
@@ -330,42 +337,12 @@ def build_plan(
         question = "Which engineering task should I perform?" if not candidates else "Which of these engineering tasks did you intend?"
         return OrchestrationPlan(status, text.strip(), None, confidence, candidates, merged, [], [question], assumptions_context, standards_context, project_context, ["No unique engineering skill could be selected."])
 
-    registry_path = Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
-    registry = load_skill_registry(registry_path)
-    definition = registry.get(skill_id)
-
-    registry_resolution = resolve_input_requirements(definition, merged)
-
-    missing = registry_resolution.missing_inputs
-    questions = registry_resolution.questions
-    rationale_source = "registry-defined input contract"
-
+    missing = _missing_inputs(skill_id, merged, project_context, standards_context, assumptions_context)
+    questions = [FIELD_QUESTIONS.get(field, f"Please provide the engineering input: {field}.") for field in missing]
     status = "awaiting_information" if missing else "ready_for_execution"
     rationale = [f"Selected {skill_id} using {provider.name} intent routing."]
     rationale.extend(provider_rationale)
-    rationale.append(
-        f"Input requirements resolved using {rationale_source}."
-    )
+    if missing:
+        rationale.append("Required fields were determined by executing the registered deterministic skill validator.")
 
-    if registry_resolution.invalid_inputs:
-        rationale.append(
-            "Registry input validation warnings: "
-            + "; ".join(registry_resolution.invalid_inputs)
-        )
-
-    return OrchestrationPlan(
-        status,
-        text.strip(),
-        skill_id,
-        confidence,
-        candidates,
-        merged,
-        missing,
-        questions,
-        assumptions_context,
-        standards_context,
-        project_context,
-        rationale,
-        provider.name,
-    )
-
+    return OrchestrationPlan(status, text.strip(), skill_id, confidence, candidates, merged, missing, questions, assumptions_context, standards_context, project_context, rationale, provider.name)

@@ -1,3 +1,6 @@
+from integrations.service import InMemoryIntegrationStore
+from crm.store import InMemoryCRMStore
+from jobs.store import InMemoryJobStore
 import io, json
 from api.app import APIApp
 
@@ -12,7 +15,7 @@ def call(app, method, path, body=None, tenant='t1', user='u1'):
 
 
 def test_crm_api_create_list_and_sync():
-    app=APIApp()
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     status,data=call(app,'POST','/v1/crm/deals', {'name':'Office Retrofit','category':'Retrofit Jobs','stakeholder':'End Client','value':500000,'stage':'quotation'})
     assert status=='201 Created'
     deal_id=data['deal_id']
@@ -23,7 +26,7 @@ def test_crm_api_create_list_and_sync():
 
 
 def test_crm_api_tenant_isolation():
-    app=APIApp()
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
     status,data=call(app,'POST','/v1/crm/deals', {'name':'Tenant A'})
     deal_id=data['deal_id']
     status,data=call(app,'GET',f'/v1/crm/deals/{deal_id}',tenant='t2',user='u2')

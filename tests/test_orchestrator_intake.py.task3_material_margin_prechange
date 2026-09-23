@@ -23,19 +23,6 @@ def test_natural_language_routes_duct_request_and_extracts_inputs():
     assert plan.missing_inputs==[]
 
 
-
-def test_natural_language_pump_request_extracts_material_and_percent_margin():
-    plan=build_plan('Calculate pump head. Flow 20 m3/hr, diameter 80 mm, straight length 60 m, static head 8 m, margin 10 percent. Use GI pipe.')
-    assert plan.selected_skill_id=='pump_head'
-    assert plan.extracted_inputs['flow_m3hr']==20
-    assert plan.extracted_inputs['diameter_mm']==80
-    assert plan.extracted_inputs['straight_length_m']==60
-    assert plan.extracted_inputs['static_head_m']==8
-    assert plan.extracted_inputs['margin_pct']==10
-    assert plan.extracted_inputs['material']=='gi'
-    assert plan.status=='ready_for_execution'
-    assert plan.missing_inputs==[]
-
 def test_natural_language_routes_pump_request():
     plan=build_plan('Calculate pump head for 20 m3/hr, 80 mm pipe, 60 m straight length, 8 m static head and 10% margin', provided_inputs={'roughness_mm':0.0015})
     assert plan.selected_skill_id=='pump_head'
