@@ -69,7 +69,8 @@ class APIApp:
         )
         self.development_authenticator = development_authenticator or DevelopmentHeaderAuthenticator()
         self.api_key_authenticator = ApiKeyAuthenticator(self.api_keys.lookup)
-        # Lazy-load Supabase JWT verification so startup does not require Supabase env vars.\n        self.supabase_jwt_authenticator = None
+        # Lazy-load Supabase JWT verification so startup does not require Supabase env vars.
+        self.supabase_jwt_authenticator = None
         self.service_factory = service_factory or (lambda tenant: JobService(self.store, tenant_id=tenant, ingestion_service=self.ingestion))
 
     def _authenticate(self, environ) -> AuthContext:
@@ -79,6 +80,8 @@ class APIApp:
 
             # Supabase JWTs are three-part tokens; existing API keys remain opaque.
             if token.count(".") == 2:
+                if self.supabase_jwt_authenticator is None:
+                    self.supabase_jwt_authenticator = SupabaseJWTAuthenticator()
                 return self.supabase_jwt_authenticator.authenticate(environ)
 
             return self.api_key_authenticator.authenticate(environ)
