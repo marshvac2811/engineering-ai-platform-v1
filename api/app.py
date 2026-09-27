@@ -69,7 +69,7 @@ class APIApp:
         )
         self.development_authenticator = development_authenticator or DevelopmentHeaderAuthenticator()
         self.api_key_authenticator = ApiKeyAuthenticator(self.api_keys.lookup)
-        self.supabase_jwt_authenticator = SupabaseJWTAuthenticator()
+        # Lazy-load Supabase JWT verification so startup does not require Supabase env vars.\n        self.supabase_jwt_authenticator = None
         self.service_factory = service_factory or (lambda tenant: JobService(self.store, tenant_id=tenant, ingestion_service=self.ingestion))
 
     def _authenticate(self, environ) -> AuthContext:
