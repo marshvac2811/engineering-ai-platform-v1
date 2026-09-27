@@ -1,0 +1,98 @@
+version: 1
+registry_name: engineering_standards_scope_registry
+status: governed_scope_metadata
+
+# Scope references are not compliance requirements. They identify authoritative
+# sections that may govern a calculation. PASS/FAIL remains driven only by
+# structured requirements in standards/registry.yaml.
+sources:
+  - id: bis_nbc_2016
+    authority: BIS
+    name: National Building Code of India
+    edition: "2016"
+    source_url: https://www.bis.gov.in/standards/national-building-code/?lang=en
+    references:
+      - ref_id: nbc_p6_s8
+        reference: "Part 6, Section 8"
+        title: Glass and Glazing
+        disciplines: [facade, structural, construction]
+      - ref_id: nbc_p8_s2
+        reference: "Part 8, Section 2"
+        title: Electrical and Allied Installations
+        disciplines: [electrical, bms]
+      - ref_id: nbc_p8_s3
+        reference: "Part 8, Section 3"
+        title: Air Conditioning, Heating and Mechanical Ventilation
+        disciplines: [hvac, mechanical]
+      - ref_id: nbc_p9
+        reference: "Part 9"
+        title: Plumbing Services
+        disciplines: [plumbing, mechanical, construction]
+      - ref_id: nbc_p7
+        reference: "Part 7"
+        title: Construction Management, Practices and Safety
+        disciplines: [construction, project_management]
+      - ref_id: nbc_p11
+        reference: "Part 11"
+        title: Approach to Sustainability
+        disciplines: [sustainability, energy, facade, hvac, electrical]
+
+  - id: bee_ecbc_2017
+    authority: BEE
+    name: Energy Conservation Building Code
+    edition: "2017"
+    source_url: https://beeindia.gov.in/view_content.php?lang=1&lid=615
+    references:
+      - ref_id: ecbc_envelope
+        reference: "ECBC 2017 - Building Envelope"
+        title: Envelope thermal and solar performance
+        disciplines: [facade, construction]
+      - ref_id: ecbc_mechanical
+        reference: "ECBC 2017 - Mechanical Systems and Equipment"
+        title: HVAC and mechanical energy performance
+        disciplines: [hvac, mechanical]
+      - ref_id: ecbc_lighting
+        reference: "ECBC 2017 - Interior and Exterior Lighting"
+        title: Lighting energy performance
+        disciplines: [electrical, bms]
+      - ref_id: ecbc_electrical
+        reference: "ECBC 2017 - Electrical Power and Motors"
+        title: Electrical systems and motor efficiency
+        disciplines: [electrical, bms]
+      - ref_id: ecbc_renewable
+        reference: "ECBC 2017 - Renewable Energy Systems"
+        title: Renewable-energy provisions
+        disciplines: [energy, electrical, sustainability]
+
+  - id: ashrae_55_2023
+    authority: ASHRAE
+    name: Thermal Environmental Conditions for Human Occupancy
+    edition: "2023"
+    source_url: https://www.ashrae.org/technical-resources/standards-and-guidelines/titles-purposes-and-scopes
+    references:
+      - ref_id: ashrae55_scope
+        reference: "ASHRAE 55-2023"
+        title: Thermal environmental conditions for human occupancy
+        disciplines: [hvac]
+
+  - id: ashrae_62_1_2025
+    authority: ASHRAE
+    name: Ventilation and Acceptable Indoor Air Quality
+    edition: "2025"
+    source_url: https://www.ashrae.org/technical-resources/standards-and-guidelines/titles-purposes-and-scopes
+    references:
+      - ref_id: ashrae621_scope
+        reference: "ASHRAE 62.1-2025"
+        title: Ventilation and acceptable indoor air quality
+        disciplines: [hvac]
+
+  - id: ashrae_90_1_2025
+    authority: ASHRAE
+    name: Energy Standard for Sites and Buildings Except Low-Rise Residential Buildings
+    edition: "2025"
+    source_url: https://www.ashrae.org/technical-resources/standards-and-guidelines/titles-purposes-and-scopes
+    references:
+      - ref_id: ashrae901_scope
+        reference: "ASHRAE 90.1-2025"
+        title: Energy efficiency of buildings and sites
+        disciplines: [hvac, facade, electrical, energy, sustainability]

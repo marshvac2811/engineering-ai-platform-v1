@@ -1,4 +1,4 @@
-﻿"""Minimal provider-neutral WSGI API for the engineering job service.
+"""Minimal provider-neutral WSGI API for the engineering job service.
 
 This boundary intentionally contains no engineering calculations. In production,
 X-Tenant-ID should be derived from the authenticated Supabase JWT rather than
@@ -14,6 +14,7 @@ load_dotenv()
 from urllib.parse import parse_qs
 from typing import Callable, Dict, Tuple
 from jobs.service import JobService
+from jobs.models import JobStatus
 from jobs.store import InMemoryJobStore
 from jobs.supabase_store import build_supabase_job_store_from_env
 from ingestion.factory import build_ingestion_service
@@ -28,6 +29,13 @@ from crm.store import InMemoryCRMStore
 from crm.supabase_store import build_supabase_crm_store_from_env
 from integrations.service import IntegrationService, InMemoryIntegrationStore
 from integrations.supabase_store import build_supabase_integration_store_from_env
+from workflow.service import WorkflowTaskService
+from workflow.store import InMemoryWorkflowTaskStore
+from workflow.supabase_store import build_supabase_workflow_task_store_from_env
+from integrations.providers.upwork import (
+    UpworkOAuthStateStore, TrialUpworkTokenStore, authorization_url as upwork_authorization_url,
+    exchange_code as upwork_exchange_code, UpworkProviderError,
+)
 from integrations.providers.gmail import (
     GmailAPIClient,
     GmailOAuthStateStore,
@@ -42,13 +50,16 @@ class APIApp:
     def __init__(self, service_factory: Callable[[str], JobService] | None = None, *,
                  development_authenticator=None, api_keys=None, usage_store=None,
                  gmail_client=None, gmail_token_store=None, gmail_state_store=None,
-                 store=None, ingestion=None, crm_store=None, integration_store=None) -> None:
+                 store=None, ingestion=None, crm_store=None, integration_store=None, workflow_task_store=None) -> None:
         self.store = store or build_supabase_job_store_from_env() or InMemoryJobStore()
         self.ingestion = ingestion or build_ingestion_service()
         self.api_keys = api_keys or InMemoryApiKeyStore()
         self.usage = usage_store or InMemoryUsageStore()
         self.crm_store = crm_store or build_supabase_crm_store_from_env() or InMemoryCRMStore()
         self.integration_store = integration_store or build_supabase_integration_store_from_env() or InMemoryIntegrationStore()
+        self.workflow_task_store = workflow_task_store or build_supabase_workflow_task_store_from_env() or InMemoryWorkflowTaskStore()
+        self.upwork_state_store = UpworkOAuthStateStore()
+        self.upwork_token_store = TrialUpworkTokenStore()
         self.gmail_token_store = gmail_token_store or TrialGmailTokenStore()
         self.gmail_state_store = gmail_state_store or GmailOAuthStateStore()
         self.gmail_client = gmail_client or GmailAPIClient(
@@ -148,6 +159,34 @@ class APIApp:
             "email_address": profile.get("emailAddress"),
             "connection_id": connection.connection_id,
         })
+
+    def _upwork_oauth_callback(self, environ, start_response):
+        query = parse_qs(environ.get("QUERY_STRING", ""), keep_blank_values=True)
+        state = (query.get("state") or [""])[0]
+        code = (query.get("code") or [""])[0]
+        oauth_error = (query.get("error") or [""])[0]
+        if oauth_error:
+            return self._json(start_response, "400 Bad Request", {"error": f"Upwork OAuth error: {oauth_error}"})
+        if not state or not code:
+            return self._json(start_response, "400 Bad Request", {"error": "state and code are required"})
+        tenant = self.upwork_state_store.consume(state)
+        client_id = os.getenv("UPWORK_CLIENT_ID", "").strip()
+        client_secret = os.getenv("UPWORK_CLIENT_SECRET", "").strip()
+        redirect_uri = os.getenv("UPWORK_REDIRECT_URI", "").strip()
+        if not client_id or not client_secret or not redirect_uri:
+            raise ValueError("UPWORK_CLIENT_ID, UPWORK_CLIENT_SECRET and UPWORK_REDIRECT_URI must be configured")
+        token = upwork_exchange_code(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, code=code)
+        if not token.get("access_token"):
+            raise UpworkProviderError("Upwork OAuth response did not contain access_token")
+        token["expires_at"] = __import__("time").time() + float(token.get("expires_in", 86400))
+        self.upwork_token_store.save(tenant, token)
+        integrations = IntegrationService(self.integration_store, tenant_id=tenant)
+        connection = integrations.configure(
+            provider="upwork", status="connected",
+            scopes=str(token.get("scope", "")).split(),
+            metadata={"oauth": "upwork", "trial_token_store": "local"},
+        )
+        return self._json(start_response, "200 OK", {"connected": True, "tenant_id": tenant, "connection_id": connection.connection_id, "provider": "upwork"})
 
     def __call__(self, environ, start_response):
         method = environ.get("REQUEST_METHOD", "GET")
@@ -821,6 +860,11 @@ loadJobs();
                 return self._json(start_response, "404 Not Found", {"error": str(exc)})
             except (ValueError, TypeError, GmailProviderError) as exc:
                 return self._json(start_response, "400 Bad Request", {"error": str(exc)})
+        if path == "/v1/integrations/upwork/oauth/callback" and method == "GET":
+            try:
+                return self._upwork_oauth_callback(environ, start_response)
+            except (ValueError, TypeError, UpworkProviderError) as exc:
+                return self._json(start_response, "400 Bad Request", {"error": str(exc)})
 
         try:
             webhook_parts = [p for p in path.split("/") if p]
@@ -913,6 +957,47 @@ loadJobs();
                     "auth_method": ctx.auth_method,
                     "scopes": sorted(ctx.scopes),
                 })
+
+            # Upwork OAuth and production-workflow intake
+            if parts == ["v1", "integrations", "upwork", "oauth", "start"] and method == "GET":
+                ctx.require_scope_role("admin")
+                ctx.require_scope("integrations:write")
+                client_id = os.getenv("UPWORK_CLIENT_ID", "").strip()
+                redirect_uri = os.getenv("UPWORK_REDIRECT_URI", "").strip()
+                if not client_id or not redirect_uri:
+                    raise ValueError("UPWORK_CLIENT_ID and UPWORK_REDIRECT_URI must be configured")
+                state = self.upwork_state_store.create(tenant_id)
+                auth_url = upwork_authorization_url(client_id=client_id, redirect_uri=redirect_uri, state=state)
+                return self._json(start_response, "200 OK", {"provider": "upwork", "authorization_url": auth_url, "state": state, "grant": "authorization_code"})
+
+            # Workflow tasks are business-level work items; engineering Jobs remain the execution authority.
+            if parts == ["v1", "workflow", "tasks"] and method == "GET":
+                ctx.require_scope("workflow:read")
+                workflow = WorkflowTaskService(self.workflow_task_store, tenant_id=tenant_id)
+                return self._json(start_response, "200 OK", {"tasks": [t.to_dict() for t in workflow.list()]})
+
+            if parts == ["v1", "workflow", "tasks"] and method == "POST":
+                ctx.require_scope("workflow:write")
+                workflow = WorkflowTaskService(self.workflow_task_store, tenant_id=tenant_id)
+                task = workflow.create(
+                    source=str(body.get("source", "manual")), title=str(body.get("title", "")),
+                    requirement=str(body.get("requirement", "")), client_name=str(body.get("client_name", "")),
+                    client_contact=str(body.get("client_contact", "")), company=str(body.get("company", "")),
+                    skill_id=body.get("skill_id"), priority=str(body.get("priority", "NORMAL")).upper(),
+                    deadline=body.get("deadline"), deliverable=body.get("deliverable"), notes=str(body.get("notes", "")),
+                )
+                return self._json(start_response, "201 Created", task.to_dict())
+
+            if len(parts) == 4 and parts[:3] == ["v1", "workflow", "tasks"] and method == "GET":
+                ctx.require_scope("workflow:read")
+                workflow = WorkflowTaskService(self.workflow_task_store, tenant_id=tenant_id)
+                return self._json(start_response, "200 OK", workflow.get(parts[3]).to_dict())
+
+            if len(parts) == 5 and parts[:3] == ["v1", "workflow", "tasks"] and parts[4] == "status" and method == "POST":
+                ctx.require_scope("workflow:write")
+                workflow = WorkflowTaskService(self.workflow_task_store, tenant_id=tenant_id)
+                updated = workflow.transition(parts[3], str(body.get("status", "")))
+                return self._json(start_response, "200 OK", updated.to_dict())
 
             # Gmail OAuth and live trial sync
             if parts == ["v1", "integrations", "gmail", "oauth", "start"] and method == "GET":
@@ -1041,10 +1126,15 @@ loadJobs();
                     payload=payload,
                     source_message=body.get("source_message"),
                 )
-                response = {"event": event.to_dict(), "created": created, "job_created": False}
+                response = {"event": event.to_dict(), "created": created, "task_created": False, "job_created": False}
 
-                # Message-bearing providers can automatically enter engineering intake.
+                # Message-bearing providers first create a business task, then the existing
+                # registry-driven intake creates the engineering Job. This keeps business
+                # workflow and engineering execution distinct.
                 if created and provider_name in {"gmail", "upwork", "fiverr"}:
+                    workflow = WorkflowTaskService(self.workflow_task_store, tenant_id=tenant_id)
+                    task, task_created = workflow.create_from_event(source=provider_name, external_id=external_id, payload=payload)
+                    response["task_created"] = task_created
                     p = payload
                     subject = str(p.get("subject", ""))
                     message_text = str(p.get("body_text", p.get("message", p.get("text", ""))))
@@ -1053,13 +1143,17 @@ loadJobs();
                         provider = build_intent_provider()
                         plan = build_plan(
                             intake_message,
-                            project_context={"source_provider": provider_name, "external_event_id": external_id},
+                            project_context={"source_provider": provider_name, "external_event_id": external_id, "workflow_task_id": task.task_id},
                             provider=provider,
                         )
                         job = service.create_from_plan(plan)
+                        workflow.link_job(task.task_id, job.job_id)
                         response["job_created"] = True
                         response["job"] = job.to_dict()
                         response["plan"] = plan.to_dict()
+                        response["task"] = workflow.get(task.task_id).to_dict()
+                    else:
+                        response["task"] = task.to_dict()
                 return self._json(start_response, "201 Created", response)
 
             # Canonical internal CRM / pipeline
@@ -1127,6 +1221,40 @@ loadJobs();
                 if method == "GET":
                     ctx.require_scope("jobs:read")
                     return self._json(start_response, "200 OK", job.to_dict())
+
+            if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "report" and method == "GET":
+                job_id = parts[2]
+                ctx.require_scope("jobs:read")
+                job = service._get(job_id)
+                if hasattr(service.store, "get_report_artifact"):
+                    artifact = service.store.get_report_artifact(job_id, tenant_id=service.tenant_id)
+                else:
+                    artifact = None
+                if artifact is None:
+                    report = (job.result or {}).get("compliance_report")
+                    if report is None:
+                        return self._json(start_response, "404 Not Found", {"error": "Engineering report not available"})
+                    artifact = {
+                        "report_id": job.report_id if hasattr(job, "report_id") else None,
+                        "job_id": job.job_id,
+                        "tenant_id": job.tenant_id,
+                        "version": 1,
+                        "status": "approved" if job.status == JobStatus.APPROVED else "draft",
+                        "title": f"Engineering Report — {job.skill_id or job.requested_skill_id or 'analysis'}",
+                        "skill_id": job.skill_id or job.requested_skill_id,
+                        "report": report,
+                    }
+                return self._json(start_response, "200 OK", artifact)
+
+            if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "compliance" and method == "GET":
+                job_id = parts[2]
+                ctx.require_scope("jobs:read")
+                job = service._get(job_id)
+                if hasattr(service.store, "get_compliance_checks"):
+                    checks = service.store.get_compliance_checks(job_id, tenant_id=service.tenant_id)
+                else:
+                    checks = list(((job.result or {}).get("engineering_result") or {}).get("compliance") or [])
+                return self._json(start_response, "200 OK", {"job_id": job.job_id, "checks": checks, "count": len(checks)})
 
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "attachments" and method == "POST":
                 job_id = parts[2]

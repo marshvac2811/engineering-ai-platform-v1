@@ -1,4 +1,4 @@
-﻿"""Provider-neutral natural-language intake and engineering skill routing.
+"""Provider-neutral natural-language intake and engineering skill routing.
 
 This module deliberately keeps language understanding lightweight and auditable:
 - a pluggable IntentProvider interface can later be backed by Tasklet/OpenAI/etc.
@@ -58,6 +58,7 @@ class IntentProvider(Protocol):
 # implementation can be audited. An LLM provider can replace this without
 # changing the job or skill interfaces.
 ROUTING_RULES: Dict[str, Sequence[str]] = {
+    "facade_u_factor": ("facade u value", "facade u-factor", "facade u factor", "u value of facade", "u-factor of facade", "glass u value", "glass u-factor", "glass u factor", "u value of this facade", "curtain wall u value", "fenestration u factor", "thermal transmittance of facade"),
     "duct_sizing": ("duct", "duct size", "duct sizing", "cfm duct", "air velocity", "equal friction"),
     "pump_head": ("pump head", "tdh", "total dynamic head", "pump sizing", "pump duty", "pipe head"),
     "preliminary_load_estimation": ("cooling load", "hvac load", "tonnage", "tons of ac", "sq ft per ton", "air conditioning load"),
@@ -82,6 +83,7 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
 }
 
 FIELD_QUESTIONS = {
+    "components": "Provide facade/fenestration components as JSON with name, area_m2 and u_factor for each component.",
     "airflow": "What is the airflow in CFM?",
     "method": "Which duct sizing method should be used: velocity or equal friction?",
     "duct_type": "Should the duct be round or rectangular?",

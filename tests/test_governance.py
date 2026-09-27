@@ -8,7 +8,8 @@ def test_registries_load_without_invented_standard_values():
     assumptions = load_assumption_registry()
     standards = load_standard_registry()
     assert assumptions["assumptions"]
-    assert standards["standards"] == []
+    assert standards["standards"]
+    assert any(row["id"] == "bee_ecbc_2017" for row in standards["standards"])
 
 
 def test_assumption_and_standard_context_are_carried_into_result():

@@ -1,5 +1,47 @@
-.tokens/
+﻿# Secrets
 .env
-*.pyc
+.env.*
+!.env.example
+*.pem
+*.key
+*.secret
+
+# Python
+.venv/
+venv/
 __pycache__/
+*.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime / local databases
+*.log
+*.sqlite
+*.sqlite3
+*.db
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Backups / temporary files
+*.bak
+phase4_tree.txt
+phase12_package/
+task1_patch/
+
+# Phase package archives
+*.zip
+
+# Build / generated
+dist/
+build/
+coverage/
+htmlcov/
+
+# Local temporary artifacts
+tmp/
+temp/

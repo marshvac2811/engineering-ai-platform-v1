@@ -1,4 +1,4 @@
-﻿version: 3
+version: 3
 registry_name: engineering_skill_registry
 status: executable_batch_v3
 skills:
@@ -591,6 +591,54 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.commercial.deviation.adapter:DeviationStatementSkill
+- skill_id: facade_u_factor
+  domain: FACADE
+  source_repository: universal-engineering-compliance
+  source_path: skills/hvac/facade_u_factor
+  execution: deterministic_python
+  classification: preliminary_compliance
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: components
+    data_type: array
+    description: Facade/fenestration components with area_m2 and u_factor.
+  optional_inputs: []
+  conditional_inputs: []
+  standards:
+  - standard_id: bee_ecbc_2017
+    title: Energy Conservation Building Code
+    edition: "2017"
+    source: https://www.beeindia.gov.in/show_content.php?lang=1&level=2&lid=327&ls_id=201
+    status: governed_metadata
+  implementation_binding: skills.hvac.facade_u_factor.adapter:FacadeUFactorSkill
+
+crm_pipeline:
+  domain: COMMERCIAL
+  source: marshvac2811/pipeline/pipeline.html
+  status: integrated
+  stages:
+  - budgetary
+  - tendering
+  - quotation
+  - followup
+  - negotiation
+  - won
+  - lost
+  categories:
+  - Project Sales
+  - Retrofit Jobs
+  - Energy Optimization
+  stakeholders:
+  - Consultant
+  - Builder
+  - Developer
+  - Contractor
+  - End Client
+  - Other
+  canonical: true
+  external_adapters:
+  - hubspot
 crm_pipeline:
   domain: COMMERCIAL
   source: marshvac2811/pipeline/pipeline.html

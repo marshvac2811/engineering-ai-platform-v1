@@ -4,10 +4,10 @@ Commercial SaaS foundation for deterministic HVAC/BMS/energy/commercial engineer
 
 ## Current integration checkpoint
 
-- 22 skill definitions in the registry.
-- 21 executable deterministic skills integrated.
+- 23 skill definitions in the registry.
+- 22 executable deterministic skills integrated.
 - 1 skill intentionally pending source audit: `chiller_efficiency`.
-- 63 automated tests passing.
+- Phase 4 checkpoint had 63 automated tests; Phase 5 adds universal compliance/facade coverage and preserves the existing test suite.
 - GitHub source repositories are read-only inputs for this build; no source repository is modified by the platform package.
 
 ## Integrated skill groups
@@ -89,7 +89,7 @@ The API now has an authentication abstraction, local development identity header
 
 ## Current commercial SaaS checkpoint
 
-- 63 automated tests passing.
+- Phase 4 checkpoint had 63 automated tests; Phase 5 adds universal compliance/facade coverage and preserves the existing test suite.
 - Authentication abstraction with development headers and API-key authentication.
 - API keys are stored as SHA-256 hashes; plaintext secrets are returned only at issuance.
 - API-key scopes are enforced for job read/write, approval, dispatch, usage, and key administration.
@@ -118,3 +118,25 @@ Fiverr publishes the required API surface.
 ## Gmail live trial boundary
 
 The V1 package now includes a stdlib-only Gmail OAuth/API client for the first live trial. It supports OAuth start/callback, short-lived OAuth state, refresh-token reuse, message polling with Gmail query syntax, message normalization across nested MIME parts, and attachment download into the existing ingestion service. The trial token store is file-backed only to make a single-tenant staging test runnable without adding a new dependency; it is not the production credential store.
+
+
+## Universal engineering calculation and compliance layer — Phase 5
+
+The platform now has a shared `code_engine` for governed code documents, structured
+requirements, applicability and compliance checks. Engineering skills can consume
+this layer without embedding code values in prompts.
+
+The first integrated vertical is `facade_u_factor`. It calculates a preliminary
+area-weighted U-factor from component/system inputs and emits a structured
+compliance record containing authority, edition, clause, requirement, project
+value, required value and PASS/FAIL/NOT_APPLICABLE/NOT_VERIFIABLE status.
+
+The initial standards metadata includes BIS NBC 2016, BEE ECBC 2017 and ASHRAE
+90.1-2025. The registry stores metadata and structured requirements rather than
+reproducing copyrighted standards. Applicability is project-specific; a listed
+standard is not automatically treated as mandatory for every project.
+
+This is the first vertical of the universal engine, not the final coverage set.
+Additional HVAC, facade, electrical, plumbing, fire/life-safety, structural and
+construction requirements should be added through the same registry/skill
+contract as their authoritative source and applicability are verified.

@@ -1,8 +1,335 @@
-version: 1
+version: 3
 registry_name: engineering_standards_registry
-status: draft
-
-# This registry intentionally contains metadata, not invented standard values.
-# Standards/editions/clauses must be loaded from an authoritative project source
-# before a skill treats a standard-dependent parameter as governed.
-standards: []
+status: governed_metadata
+standards:
+- id: bee_ecbc_2017
+  authority: BEE
+  code_name: Energy Conservation Building Code
+  edition: '2017'
+  category: regulatory_reference
+  jurisdiction: India
+  status: active_reference
+  source_url: https://www.beeindia.gov.in/show_content.php?lang=1&level=2&lid=327&ls_id=201
+  notes: Applicability must be established for the project before treating a requirement
+    as mandatory.
+  requirements:
+  - id: ecbc2017_water_cooled_chiller_cop_lt_260
+    clause: 5.2.2.1 / Table 5-1
+    title: Water-cooled chiller minimum COP for capacity below 260 kWr
+    discipline: hvac
+    parameter: chiller_cop
+    operator: '>='
+    required_value: 4.7
+    unit: COP
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: rated COP under the applicable test conditions; verify manufacturer
+      data and rating basis
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      chiller_type:
+      - water_cooled
+      chiller_capacity_band:
+      - lt_260
+  - id: ecbc2017_water_cooled_chiller_cop_260_530
+    clause: 5.2.2.1 / Table 5-1
+    title: Water-cooled chiller minimum COP for capacity 260 to below 530 kWr
+    discipline: hvac
+    parameter: chiller_cop
+    operator: '>='
+    required_value: 4.9
+    unit: COP
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: rated COP under the applicable test conditions; verify manufacturer
+      data and rating basis
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      chiller_type:
+      - water_cooled
+      chiller_capacity_band:
+      - 260_to_lt_530
+  - id: ecbc2017_water_cooled_chiller_cop_530_1050
+    clause: 5.2.2.1 / Table 5-1
+    title: Water-cooled chiller minimum COP for capacity 530 to below 1,050 kWr
+    discipline: hvac
+    parameter: chiller_cop
+    operator: '>='
+    required_value: 5.4
+    unit: COP
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: rated COP under the applicable test conditions; verify manufacturer
+      data and rating basis
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      chiller_type:
+      - water_cooled
+      chiller_capacity_band:
+      - 530_to_lt_1050
+  - id: ecbc2017_water_cooled_chiller_cop_1050_1580
+    clause: 5.2.2.1 / Table 5-1
+    title: Water-cooled chiller minimum COP for capacity 1,050 to below 1,580 kWr
+    discipline: hvac
+    parameter: chiller_cop
+    operator: '>='
+    required_value: 5.8
+    unit: COP
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: rated COP under the applicable test conditions; verify manufacturer
+      data and rating basis
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      chiller_type:
+      - water_cooled
+      chiller_capacity_band:
+      - 1050_to_lt_1580
+  - id: ecbc2017_water_cooled_chiller_cop_ge_1580
+    clause: 5.2.2.1 / Table 5-1
+    title: Water-cooled chiller minimum COP for capacity 1,580 kWr and above
+    discipline: hvac
+    parameter: chiller_cop
+    operator: '>='
+    required_value: 6.3
+    unit: COP
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: rated COP under the applicable test conditions; verify manufacturer
+      data and rating basis
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      chiller_type:
+      - water_cooled
+      chiller_capacity_band:
+      - ge_1580
+  - id: ecbc2017_air_cooled_chiller_cop_lt_260
+    clause: 5.2.2.1 / Table 5-2
+    title: Air-cooled chiller minimum COP for capacity below 260 kWr
+    discipline: hvac
+    parameter: chiller_cop
+    operator: '>='
+    required_value: 2.8
+    unit: COP
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: rated COP under the applicable test conditions; verify manufacturer
+      data and rating basis
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      chiller_type:
+      - air_cooled
+      chiller_capacity_band:
+      - lt_260
+  - id: ecbc2017_air_cooled_chiller_cop_ge_260
+    clause: 5.2.2.1 / Table 5-2
+    title: Air-cooled chiller minimum COP for capacity 260 kWr and above
+    discipline: hvac
+    parameter: chiller_cop
+    operator: '>='
+    required_value: 3.0
+    unit: COP
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: rated COP under the applicable test conditions; verify manufacturer
+      data and rating basis
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      chiller_type:
+      - air_cooled
+      chiller_capacity_band:
+      - ge_260
+  - id: ecbc2017_unitary_ac_eer_water_cooled_gt_105
+    clause: 5.2.2.2 / Table 5-3
+    title: Water-cooled unitary air-conditioner minimum EER above 10.5 kWr
+    discipline: hvac
+    parameter: unitary_ac_eer
+    operator: '>='
+    required_value: 3.3
+    unit: EER
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: rated EER; verify product certification/rating basis
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      unitary_type:
+      - water_cooled
+      cooling_capacity_band:
+      - gt_10_5_kwr
+  - id: ecbc2017_unitary_ac_eer_air_cooled_gt_105
+    clause: 5.2.2.2 / Table 5-3
+    title: Air-cooled unitary air-conditioner minimum EER above 10.5 kWr
+    discipline: hvac
+    parameter: unitary_ac_eer
+    operator: '>='
+    required_value: 2.8
+    unit: EER
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: rated EER; verify product certification/rating basis
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      unitary_type:
+      - air_cooled
+      cooling_capacity_band:
+      - gt_10_5_kwr
+  - id: ecbc2017_vertical_fenestration_u_factor
+    clause: 4.3.3 / Table 4-10
+    title: Vertical fenestration maximum U-factor
+    discipline: facade
+    parameter: u_factor
+    operator: <=
+    required_value: 3.0
+    unit: W/m².K
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: overall fenestration product calculation/test; preliminary
+      area-weighted calculation is not a certified product rating
+    applicability:
+      building_type:
+      - commercial
+      component: vertical_fenestration
+  - id: ecbc2017_lighting_lpd_office
+    clause: 6.3.2 / Table 6-1
+    title: Interior lighting power density for office building
+    discipline: energy
+    parameter: lighting_power_density
+    operator: <=
+    required_value: 9.5
+    unit: W/m²
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: calculate installed interior lighting power divided by applicable
+      gross lighted floor area
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      building_area_type:
+      - office
+  - id: ecbc2017_lighting_lpd_parking
+    clause: 6.3.2 / Table 6-1
+    title: Interior lighting power density for parking garage
+    discipline: energy
+    parameter: lighting_power_density
+    operator: <=
+    required_value: 3.0
+    unit: W/m²
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: calculate installed interior lighting power divided by applicable
+      gross lighted floor area
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      building_area_type:
+      - parking_garage
+  - id: ecbc2017_feeder_voltage_drop
+    clause: 7.2.1.3
+    title: Maximum feeder voltage drop at design load
+    discipline: electrical
+    parameter: feeder_voltage_drop
+    operator: <=
+    required_value: 2.0
+    unit: '%'
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: engineering voltage-drop calculation at design load
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      circuit_type:
+      - feeder
+  - id: ecbc2017_branch_voltage_drop
+    clause: 7.2.1.3
+    title: Maximum branch circuit voltage drop at design load
+    discipline: electrical
+    parameter: branch_voltage_drop
+    operator: <=
+    required_value: 3.0
+    unit: '%'
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: engineering voltage-drop calculation at design load
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      circuit_type:
+      - branch
+  - id: ecbc2017_check_metering_above_1000kva
+    clause: 7.2.4
+    title: Permanent electrical metering for services exceeding 1000 kVA
+    discipline: bms
+    parameter: permanent_electrical_metering
+    operator: ==
+    required_value: true
+    unit: boolean
+    requirement_type: MANDATORY_REGULATORY
+    verification_method: verify electrical metering schedule and installed metering
+      arrangement
+    applicability:
+      building_type:
+      - commercial
+      ecbc_level:
+      - ECBC
+      service_capacity_band:
+      - gt_1000_kva
+- id: bis_nbc_2016
+  authority: BIS
+  code_name: National Building Code of India
+  edition: '2016'
+  category: model_code
+  jurisdiction: India
+  status: active_reference
+  source_url: https://www.bis.gov.in/standards/national-building-code/?lang=en
+  notes: Applicability and adoption depend on jurisdiction and project context.
+- id: ashrae_55_2023
+  authority: ASHRAE
+  code_name: Thermal Environmental Conditions for Human Occupancy
+  edition: '2023'
+  category: engineering_reference
+  jurisdiction: international
+  status: reference
+  source_url: https://www.ashrae.org/technical-resources/standards-and-guidelines
+  notes: Reference candidate; structured project-specific requirements must be loaded
+    before compliance PASS/FAIL checks are generated.
+- id: ashrae_62_1_2025
+  authority: ASHRAE
+  code_name: Ventilation and Acceptable Indoor Air Quality
+  edition: '2025'
+  category: engineering_reference
+  jurisdiction: international
+  status: reference
+  source_url: https://www.ashrae.org/technical-resources/standards-and-guidelines
+  notes: Reference candidate; structured project-specific requirements must be loaded
+    before compliance PASS/FAIL checks are generated.
+- id: ashrae_90_1_2025
+  authority: ASHRAE
+  code_name: Energy Standard for Sites and Buildings Except Low-Rise Residential Buildings
+  edition: '2025'
+  category: engineering_reference
+  jurisdiction: international
+  status: reference
+  source_url: https://www.ashrae.org/technical-resources/bookstore/standard-90-1
+  notes: Use only where the project contract, jurisdiction, certification path, or
+    client requirement makes it applicable.

@@ -62,3 +62,22 @@ def test_api_returns_503_when_openai_provider_is_selected_without_key(monkeypatc
     status, body=call(app,'POST','/v1/intake',{'message':'Size a round duct'})
     assert status.startswith('503')
     assert 'OPENAI_API_KEY' in body['error']
+
+def test_api_exposes_engineering_report_and_compliance():
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
+    payload={'source':'api-test','requested_skill_id':'facade_u_factor','inputs':{
+        'components':[{'name':'glass','area_m2':10,'u_factor':2.0}],
+        'project_context':{'building_type':'office','location':'Delhi'}
+    }}
+    status, job=call(app,'POST','/v1/jobs',payload)
+    assert status.startswith('201'); jid=job['job_id']
+    status, _=call(app,'POST',f'/v1/jobs/{jid}/enqueue')
+    status, job=call(app,'POST',f'/v1/jobs/{jid}/process')
+    assert job['status']=='human_review'
+    status, report=call(app,'GET',f'/v1/jobs/{jid}/report')
+    assert status.startswith('200')
+    assert report['report']['report_type']=='engineering_compliance_report'
+    status, compliance=call(app,'GET',f'/v1/jobs/{jid}/compliance')
+    assert status.startswith('200')
+    assert compliance['count'] == 1
+    assert compliance['checks'][0]['clause_reference']

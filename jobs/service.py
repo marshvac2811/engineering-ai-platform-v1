@@ -1,4 +1,4 @@
-﻿"""Provider-neutral engineering job lifecycle service.
+"""Provider-neutral engineering job lifecycle service.
 
 This V1 service is deliberately synchronous. A database-backed queue worker can
 replace the in-memory store without changing the job contract.
@@ -153,7 +153,30 @@ class JobService:
             request_id=job.job_id,
         )
         result = execute(request)
-        job.result = result.to_dict()
+        result_dict = result.to_dict()
+        job.result = result_dict
+        if result.status not in {"input_validation_failed", "calculation_failed", "skill_not_registered"}:
+            from reports.adapter import build_report_envelope
+            try:
+                job.result["report"] = build_report_envelope(
+                    skill_id=job.skill_id,
+                    result=result_dict,
+                    inputs=job.inputs,
+                    project_context=job.project_context,
+                    standards_context=job.standards_context,
+                    assumptions_context=job.assumptions_context,
+                )
+            except KeyError as exc:
+                job.errors.append(str(exc))
+                job.transition(JobStatus.FAILED, "No registered report profile exists for the executed skill.", error=str(exc))
+                self.store.save(job)
+                return job
+        if result.engineering_result.get("compliance"):
+            from reports.compliance_report import build_compliance_report
+            job.result["compliance_report"] = build_compliance_report(
+                skill_id=job.skill_id,
+                engineering_result=result.engineering_result,
+            )
         job.warnings.extend(result.warnings)
 
         if result.status == "input_validation_failed":

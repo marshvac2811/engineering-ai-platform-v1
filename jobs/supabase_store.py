@@ -1,4 +1,4 @@
-﻿"""Supabase/PostgREST-backed job store and queue primitives.
+"""Supabase/PostgREST-backed job store and queue primitives.
 
 The store deliberately depends only on the small interface exposed by the
 Supabase Python client (`table`, `select`, `insert`, `update`, `upsert`,
@@ -8,6 +8,8 @@ This keeps the application layer independent of the exact SDK version.
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, Optional
+import hashlib
+import json
 
 from .models import Job, JobEvent, JobStatus
 from .store import JobStore
@@ -30,6 +32,7 @@ class SupabaseJobStore(JobStore):
             "project_context": job.project_context,
             "standards_context": job.standards_context,
             "assumptions_context": job.assumptions_context,
+            "orchestration": self._orchestration_from_events(job),
             "status": job.status.value,
             "skill_id": job.skill_id,
             "result": job.result,
@@ -59,7 +62,126 @@ class SupabaseJobStore(JobStore):
                 event_rows,
                 on_conflict="event_key",
             ).execute()
+
+        self._persist_engineering_artifacts(job)
         return job
+
+    @staticmethod
+    def _orchestration_from_events(job: Job) -> Dict[str, Any]:
+        for event in reversed(job.events):
+            if event.event_type == "orchestration_plan":
+                return event.metadata.get("plan") or {}
+        return {}
+
+    def _persist_engineering_artifacts(self, job: Job) -> None:
+        """Persist the versioned engineering report plus normalized compliance evidence."""
+        result = job.result or {}
+        engineering = result.get("engineering_result") or {}
+        checks = list(engineering.get("compliance") or [])
+        report = result.get("compliance_report")
+        if not report and engineering:
+            from reports.compliance_report import build_compliance_report
+            report = build_compliance_report(skill_id=job.skill_id or job.requested_skill_id or "", engineering_result=engineering)
+        if not report:
+            return
+
+        canonical = json.dumps(report, sort_keys=True, separators=(",", ":"), default=str)
+        content_sha256 = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        status = "approved" if job.status == JobStatus.APPROVED else "draft"
+        title = f"Engineering Report — {job.skill_id or job.requested_skill_id or 'analysis'}"
+
+        try:
+            latest = (self.client.table("engineering_report_artifacts")
+                      .select("report_id,version,content_sha256")
+                      .eq("job_id", job.job_id)
+                      .order("version", desc=True)
+                      .limit(1)
+                      .execute())
+            latest_rows = getattr(latest, "data", None) or []
+            if latest_rows and latest_rows[0].get("content_sha256") == content_sha256:
+                report_id = latest_rows[0]["report_id"]
+                version = int(latest_rows[0].get("version") or 1)
+                self.client.table("engineering_report_artifacts").update({
+                    "status": status,
+                    "reviewer": next((e.metadata.get("reviewer") for e in reversed(job.events) if e.event_type == "job_status_changed" and e.metadata.get("reviewer")), None),
+                    "review_comment": next((e.metadata.get("comment", "") for e in reversed(job.events) if e.event_type == "job_status_changed" and e.metadata.get("comment")), ""),
+                    "approved_at": job.updated_at if status == "approved" else None,
+                }).eq("report_id", report_id).execute()
+            else:
+                version = (int(latest_rows[0].get("version") or 0) + 1) if latest_rows else 1
+                response = self.client.table("engineering_report_artifacts").insert({
+                    "tenant_id": job.tenant_id,
+                    "job_id": job.job_id,
+                    "version": version,
+                    "status": status,
+                    "title": title,
+                    "skill_id": job.skill_id or job.requested_skill_id,
+                    "report": report,
+                    "content_sha256": content_sha256,
+                    "html_path": "",
+                    "pdf_path": "",
+                    "reviewer": next((e.metadata.get("reviewer") for e in reversed(job.events) if e.event_type == "job_status_changed" and e.metadata.get("reviewer")), None),
+                    "review_comment": next((e.metadata.get("comment", "") for e in reversed(job.events) if e.event_type == "job_status_changed" and e.metadata.get("comment")), ""),
+                    "approved_at": job.updated_at if status == "approved" else None,
+                }).execute()
+                rows = getattr(response, "data", None) or []
+                report_id = rows[0].get("report_id") if rows else None
+
+            if report_id:
+                self.client.table(self.jobs_table).update({"report_id": report_id}).eq("job_id", job.job_id).execute()
+
+            for check in checks:
+                row = {
+                    "job_id": job.job_id,
+                    "tenant_id": job.tenant_id,
+                    "requirement_id": check.get("requirement_id", ""),
+                    "status": check.get("status", "NOT_VERIFIABLE"),
+                    "input_value": check.get("input_value"),
+                    "required_value": check.get("required_value"),
+                    "unit": check.get("unit", ""),
+                    "calculation": check.get("calculation", ""),
+                    "clause_reference": check.get("clause_reference", ""),
+                    "authority": check.get("authority", ""),
+                    "code_name": check.get("code_name", ""),
+                    "edition": check.get("edition", ""),
+                    "requirement_type": check.get("requirement_type", ""),
+                    "evidence": check.get("evidence", {}),
+                }
+                response = self.client.table("engineering_compliance_checks").upsert(row, on_conflict="job_id,requirement_id").execute()
+                check_rows = getattr(response, "data", None) or []
+                check_id = check_rows[0].get("check_id") if check_rows else None
+                evidence = row["evidence"]
+                if check_id and isinstance(evidence, dict):
+                    source_type = evidence.get("source_type") or evidence.get("sourceType")
+                    if source_type:
+                        self.client.table("engineering_compliance_evidence").insert({
+                            "check_id": check_id,
+                            "job_id": job.job_id,
+                            "tenant_id": job.tenant_id,
+                            "source_type": str(source_type),
+                            "source_reference": str(evidence.get("source_reference") or evidence.get("sourceReference") or ""),
+                            "document_reference": str(evidence.get("document_reference") or evidence.get("documentReference") or ""),
+                            "calculation_reference": str(evidence.get("calculation_reference") or evidence.get("calculationReference") or ""),
+                            "metadata": evidence,
+                        }).execute()
+        except Exception:
+            # Artifact persistence must not break the authoritative job lifecycle.
+            return
+
+    def get_report_artifact(self, job_id: str, *, tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        query = self.client.table("engineering_report_artifacts").select("*").eq("job_id", job_id).order("version", desc=True).limit(1)
+        if tenant_id:
+            query = query.eq("tenant_id", tenant_id)
+        response = query.execute()
+        rows = getattr(response, "data", None) or []
+        return rows[0] if rows else None
+
+    def get_compliance_checks(self, job_id: str, *, tenant_id: Optional[str] = None) -> list[Dict[str, Any]]:
+        query = self.client.table("engineering_compliance_checks").select("*").eq("job_id", job_id).order("created_at", desc=False)
+        if tenant_id:
+            query = query.eq("tenant_id", tenant_id)
+        response = query.execute()
+        return list(getattr(response, "data", None) or [])
 
     def get(self, job_id: str) -> Optional[Job]:
         response = (
