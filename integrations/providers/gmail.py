@@ -64,7 +64,7 @@ class TrialGmailTokenStore:
     """
 
     def __init__(self, root: str | None = None) -> None:
-        self.root = Path(root or os.getenv("GMAIL_TOKEN_DIR", ".tokens/gmail"))
+        self.root = Path(root or os.getenv("GMAIL_TOKEN_DIR") or (f"/tmp/engineering_ai/gmail_token_dir" if os.getenv("VERCEL") else ".tokens/gmail"))
         self.root.mkdir(parents=True, exist_ok=True)
         try:
             self.root.chmod(stat.S_IRWXU)
