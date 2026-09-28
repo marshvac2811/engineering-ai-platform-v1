@@ -78,7 +78,7 @@ class SupabaseJWTAuthenticator(Authenticator):
     """Verify Supabase Auth access tokens using the project's JWKS endpoint."""
 
     def __init__(self) -> None:
-        self.supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
+        self.supabase_url = (os.getenv("SUPABASE_URL") or "https://vaxerlbgwwlfamncevdg.supabase.co").rstrip("/")
         if not self.supabase_url:
             raise RuntimeError("SUPABASE_URL is required for Supabase JWT authentication")
         self.issuer = f"{self.supabase_url}/auth/v1"
