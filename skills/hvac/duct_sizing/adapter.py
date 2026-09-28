@@ -51,8 +51,31 @@ class DuctSizingSkill:
             )
 
         inputs = request.inputs
-        airflow_cfm = float(inputs["airflow"])
-        flow_m3hr = airflow_cfm * 1.6990107955
+        airflow = float(inputs["airflow"])
+        airflow_unit = str(inputs["airflow_unit"]).strip().lower()
+        airflow_unit_aliases = {
+            "m3/hr": "m3/hr",
+            "m3/h": "m3/hr",
+            "m³/hr": "m3/hr",
+            "m³/h": "m3/hr",
+            "cfm": "cfm",
+        }
+        normalized_airflow_unit = airflow_unit_aliases.get(airflow_unit)
+        if normalized_airflow_unit is None:
+            return SkillResult(
+                skill_id=self.skill_id,
+                status="input_validation_failed",
+                validation_errors=[
+                    "Invalid airflow_unit. Allowed values: m3/hr, m3/h, m³/hr, m³/h, cfm"
+                ],
+                source_revision=SOURCE_REVISION,
+            )
+        if normalized_airflow_unit == "m3/hr":
+            flow_m3hr = airflow
+            airflow_cfm = airflow / 1.6990107955
+        else:
+            airflow_cfm = airflow
+            flow_m3hr = airflow_cfm * 1.6990107955
         material = inputs.get("material", "gss")
         roughness_mm = engine.DUCT_MATERIALS[material]["roughness_mm"]
         method = inputs["method"]
@@ -109,7 +132,7 @@ class DuctSizingSkill:
         standards = resolve_standards_context(request.standards_context)
 
         trace = [
-            {"step": 1, "operation": "convert_airflow", "input": airflow_cfm, "input_unit": "CFM", "output": round(flow_m3hr, 6), "output_unit": "m3/hr"},
+            {"step": 1, "operation": "normalize_airflow", "input": airflow, "input_unit": normalized_airflow_unit, "output": round(flow_m3hr, 6), "output_unit": "m3/hr"},
             {"step": 2, "operation": "select_material_roughness", "material": material, "roughness_mm": roughness_mm},
             {"step": 3, "operation": "resolve_governance", "standards_count": len(standards)},
             {"step": 4, "operation": "execute_source_calculator", "function": self._source_function_name(duct_type, method)},
@@ -118,7 +141,13 @@ class DuctSizingSkill:
         return SkillResult(
             skill_id=self.skill_id,
             status="draft_ready",
-            engineering_result={**result, "input_airflow_cfm": airflow_cfm},
+            engineering_result={
+                **result,
+                "input_airflow": airflow,
+                "input_airflow_unit": normalized_airflow_unit,
+                "input_airflow_m3hr": round(flow_m3hr, 6),
+                "input_airflow_cfm": round(airflow_cfm, 6),
+            },
             assumptions=assumptions,
             standards=standards,
             warnings=warnings,
