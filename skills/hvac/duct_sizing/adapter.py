@@ -20,6 +20,7 @@ class DuctSizingSkill:
         errors: list[str] = []
         errors += validate_governance_context(request)
         errors += require_positive(request.inputs, ["airflow"])
+        errors += require_enum(request.inputs, "airflow_unit", ["m3/hr", "m3/h", "m³/hr", "m³/h", "cfm"])
         errors += require_enum(request.inputs, "method", ["velocity", "equal_friction"])
         errors += require_enum(request.inputs, "duct_type", ["round", "rectangular"])
 
