@@ -110,6 +110,7 @@ FIELD_QUESTIONS = {
     "height_mm": "What rectangular duct height should be checked, in mm?",
     "material": "What duct material should be used (for example gss, pu_panel, fabric or flexible)?",
     "flow_m3hr": "What design water flow is required, in mÂ³/hr?",
+        "roughness_mm": [r"roughness\s*[:=]?\s*([\d,.]+)\s*mm", r"([\d,.]+)\s*mm\s*(?:roughness|roughness\s*value)\b"],
     "diameter_mm": "What pipe internal diameter should be checked, in mm?",
     "roughness_mm": "What pipe roughness should be used, in mm?",
     "straight_length_m": "What is the straight pipe length, in metres?",
@@ -343,7 +344,7 @@ def build_plan(
                 if child.selected_skill_id:
                     supported.append(OrchestrationWorkItem(skill_id=child.selected_skill_id, normalized_request=child.normalized_request, extracted_inputs=child.extracted_inputs, missing_inputs=child.missing_inputs, questions=child.questions, status=child.status, report_type=_report_type_for_skill(child.selected_skill_id)))
                 else:
-                    unsupported.append(clause)
+                    unsupported.append(re.sub(r"^also\s+", "", clause, flags=re.IGNORECASE))
             if supported:
                 return OrchestrationPlan(
                     status="awaiting_information" if any(x.missing_inputs for x in supported) else "ready_for_execution",
