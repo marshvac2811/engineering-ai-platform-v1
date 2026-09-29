@@ -23,6 +23,13 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.hvac.preliminary_load_estimation.adapter:PreliminaryLoadEstimationSkill
+  routing_terms:
+  - cooling load
+  - hvac load
+  - tonnage
+  - tons of ac
+  - sq ft per ton
+  - air conditioning load
 - skill_id: duct_sizing
   domain: HVAC
   source_repository: duct-sizing-calculator
@@ -79,6 +86,13 @@ skills:
       method: equal_friction
     description: Target friction rate in Pa/m.
   implementation_binding: skills.hvac.duct_sizing.adapter:DuctSizingSkill
+  routing_terms:
+  - duct
+  - duct size
+  - duct sizing
+  - cfm duct
+  - air velocity
+  - equal friction
 - skill_id: pump_head
   domain: HVAC
   source_repository: hvac-boq-generator
@@ -150,6 +164,13 @@ skills:
   - fittings must be a list when supplied.
   - equipment_losses_m must be a list when supplied.
   implementation_binding: skills.hvac.pump_head.adapter:PumpHeadSkill
+  routing_terms:
+  - pump head
+  - tdh
+  - total dynamic head
+  - pump sizing
+  - pump duty
+  - pipe head
 - skill_id: hvac_fault_diagnosis
   domain: HVAC
   source_repository: hvac-plant-troubleshooting
@@ -168,6 +189,14 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.hvac.fault_diagnosis.adapter:HVAFaultDiagnosisSkill
+  routing_terms:
+  - troubleshoot
+  - fault
+  - trip
+  - diagnose
+  - cavitation
+  - refrigerant shortage
+  - high pressure trip
 - skill_id: cooling_tower
   domain: HVAC
   source_repository: hvac-boq-generator
@@ -219,6 +248,12 @@ skills:
       load_method: direct
     description: Direct cooling load in kW.
   implementation_binding: skills.hvac.cooling_tower.adapter:CoolingTowerSkill
+  routing_terms:
+  - cooling tower
+  - wet bulb
+  - approach
+  - blowdown
+  - makeup water
 - skill_id: refrigerant_pipe_sizing
   domain: HVAC
   source_repository: hvac-boq-generator
@@ -249,6 +284,14 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.hvac.refrigerant_pipe_sizing.adapter:RefrigerantPipeSizingSkill
+  routing_terms:
+  - refrigerant pipe
+  - suction line
+  - liquid line
+  - r410a
+  - r32
+  - r22
+  - r134a
 - skill_id: vrf_sizing
   domain: HVAC
   source_repository: hvac-boq-generator
@@ -268,6 +311,12 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.hvac.vrf_sizing.adapter:VRFSizingSkill
+  routing_terms:
+  - vrf
+  - vrv
+  - indoor unit
+  - outdoor unit
+  - combination ratio
 - skill_id: cleanroom_ach
   domain: HVAC
   source_repository: hvac-boq-generator
@@ -295,6 +344,13 @@ skills:
     description: Air changes per hour. Deterministic engine may use its governed default.
   conditional_inputs: []
   implementation_binding: skills.hvac.cleanroom_ach.adapter:CleanroomACHSKill
+  routing_terms:
+  - cleanroom
+  - ach
+  - air changes
+  - isolation room
+  - operating room
+  - icu
 - skill_id: duct_leakage
   domain: HVAC
   source_repository: hvac-boq-generator
@@ -320,6 +376,11 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.hvac.duct_leakage.adapter:DuctLeakageSkill
+  routing_terms:
+  - duct leakage
+  - leakage class
+  - leakage test
+  - smacna leakage
 - skill_id: chiller_selection_advisor
   domain: HVAC
   source_repository: hvac-boq-generator
@@ -346,6 +407,13 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.hvac.chiller_selection.adapter:ChillerSelectionAdvisorSkill
+  routing_terms:
+  - chiller selection
+  - select chiller
+  - chiller type
+  - air cooled chiller
+  - water cooled chiller
+  - chiller efficiency
 - skill_id: chiller_efficiency
   domain: HVAC
   source_repository: chiller-efficiency-calculator
@@ -373,6 +441,12 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.bms.points.adapters:BMSPointsGenerationSkill
+  routing_terms:
+  - bms points
+  - points list
+  - ai ao di do
+  - ddc points
+  - controller sizing
 - skill_id: bms_controller_sizing
   domain: BMS
   source_repository: BMS-points-list
@@ -391,6 +465,10 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.bms.points.adapters:BMSControllerSizingSkill
+  routing_terms:
+  - bms controller
+  - ddc controller
+  - controller panel
 - skill_id: bms_cost_estimation
   domain: BMS
   source_repository: bms-cost-estimator
@@ -427,6 +505,11 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.bms.cost.adapter:BMSCostEstimationSkill
+  routing_terms:
+  - bms cost
+  - bms estimate
+  - bms budget
+  - bms pricing
 - skill_id: bms_alarm_evaluation
   domain: BMS
   source_repository: bms-dashboard
@@ -447,6 +530,11 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.bms.alarm.adapter:BMSAlarmEvaluationSkill
+  routing_terms:
+  - bms alarm
+  - alarm threshold
+  - point alarm
+  - sensor alarm
 - skill_id: vfd_energy_savings
   domain: ENERGY
   source_repository: vfd-toolkit
@@ -469,6 +557,12 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.energy.vfd.adapters:VFDEnergySavingsSkill
+  routing_terms:
+  - vfd energy
+  - vfd savings
+  - speed reduction
+  - affinity law
+  - vfd saving
 - skill_id: vfd_derating
   domain: ENERGY
   source_repository: vfd-toolkit
@@ -487,6 +581,11 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.energy.vfd.adapters:VFDDeratingSkill
+  routing_terms:
+  - vfd derating
+  - vfd altitude
+  - vfd temperature
+  - drive sizing
 - skill_id: harmonic_screening
   domain: ENERGY
   source_repository: vfd-toolkit
@@ -503,6 +602,11 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.energy.vfd.adapters:HarmonicScreeningSkill
+  routing_terms:
+  - harmonics
+  - harmonic screening
+  - ieee 519
+  - vfd harmonic
 - skill_id: hvac_decarbonisation
   domain: ENERGY
   source_repository: hvac-decarb-tool
@@ -525,6 +629,12 @@ skills:
     description: Scenario definitions when scenario analysis is requested.
   conditional_inputs: []
   implementation_binding: skills.energy.decarbonisation.adapter:HVACDecarbonisationSkill
+  routing_terms:
+  - decarbon
+  - decarbonisation
+  - carbon saving
+  - hvac retrofit
+  - asset life extension
 - skill_id: energy_payback
   domain: ENERGY
   source_repository: hvac-boq-generator
@@ -559,6 +669,12 @@ skills:
     description: Project life. Deterministic engine default is 10 years.
   conditional_inputs: []
   implementation_binding: skills.energy.payback.adapter:EnergyPaybackSkill
+  routing_terms:
+  - payback
+  - energy savings
+  - energy cost saving
+  - roi
+  - retrofit payback
 - skill_id: hvac_boq
   domain: COMMERCIAL
   source_repository: hvac-boq-generator
@@ -575,6 +691,12 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.commercial.boq.adapter:HVACBOQSkill
+  routing_terms:
+  - boq
+  - bill of quantities
+  - quantity estimate
+  - hvac estimate
+  - tender estimate
 - skill_id: deviation_statement
   domain: COMMERCIAL
   source_repository: hvac-boq-generator
@@ -591,6 +713,11 @@ skills:
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.commercial.deviation.adapter:DeviationStatementSkill
+  routing_terms:
+  - deviation statement
+  - compliance statement
+  - technical compliance
+  - tender compliance
 - skill_id: facade_u_factor
   domain: FACADE
   source_repository: universal-engineering-compliance
@@ -612,6 +739,19 @@ skills:
     source: https://www.beeindia.gov.in/show_content.php?lang=1&level=2&lid=327&ls_id=201
     status: governed_metadata
   implementation_binding: skills.hvac.facade_u_factor.adapter:FacadeUFactorSkill
+  routing_terms:
+  - facade u value
+  - facade u-factor
+  - facade u factor
+  - u value of facade
+  - u-factor of facade
+  - glass u value
+  - glass u-factor
+  - glass u factor
+  - u value of this facade
+  - curtain wall u value
+  - fenestration u factor
+  - thermal transmittance of facade
 
 crm_pipeline:
   domain: COMMERCIAL
