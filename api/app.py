@@ -61,7 +61,7 @@ class APIApp:
         self.usage = usage_store or InMemoryUsageStore()
         self.crm_store = crm_store or build_supabase_crm_store_from_env() or InMemoryCRMStore()
         self.integration_store = integration_store or build_supabase_integration_store_from_env() or InMemoryIntegrationStore()
-        self.workflow_task_store = workflow_task_store or build_supabase_workflow_task_store_from_env() or InMemoryWorkflowTaskStore()
+        self.workflow_task_store = workflow_task_store or (build_supabase_workflow_task_store_from_env() if store is None else InMemoryWorkflowTaskStore())
         self.upwork_state_store = UpworkOAuthStateStore()
         self.upwork_token_store = TrialUpworkTokenStore()
         self.gmail_token_store = gmail_token_store or TrialGmailTokenStore()
