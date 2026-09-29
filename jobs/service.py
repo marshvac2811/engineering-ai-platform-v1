@@ -187,6 +187,10 @@ class JobService:
                     standards_context=job.standards_context,
                     assumptions_context=job.assumptions_context,
                 )
+                if self.report_service is not None and job.report_id is None:
+                    report = self.report_service.build(job, [{"skill_id": job.skill_id, "result": result_dict}])
+                    job.report_id = report.report_id
+                    job.result["report_id"] = report.report_id
             except KeyError as exc:
                 job.errors.append(str(exc))
                 job.transition(JobStatus.FAILED, "No registered report profile exists for the executed skill.", error=str(exc))
