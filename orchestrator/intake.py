@@ -199,6 +199,11 @@ def extract_facts(text: str) -> Dict[str, Any]:
     t = text.lower()
     out: Dict[str, Any] = {}
 
+    if re.search(r"\bcfm\b", t, re.IGNORECASE):
+        out["airflow_unit"] = "cfm"
+    elif re.search(r"m3\s*/?\s*h(?:r)?|m³\s*/?\s*h(?:r)?", t, re.IGNORECASE):
+        out["airflow_unit"] = "m3/hr"
+
     mappings = {
         "airflow": [r"([\d,.]+)\s*(?:cfm|cubic\s*feet\s*(?:per\s*minute|/min))"],
         "area_sqft": [r"([\d,.]+)\s*(?:sq\.?\s*ft|sqft|square\s*feet)"],
