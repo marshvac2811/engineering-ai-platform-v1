@@ -40,11 +40,27 @@ class OrchestrationPlan:
     project_context: Dict[str, Any] = field(default_factory=dict)
     rationale: List[str] = field(default_factory=list)
     provider: str = "rule_based"
+    work_items: List["OrchestrationWorkItem"] = field(default_factory=list)
+    unsupported_scope: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
         data["candidates"] = [asdict(c) for c in self.candidates]
+        data["work_items"] = [item.to_dict() for item in self.work_items]
         return data
+
+
+@dataclass
+class OrchestrationWorkItem:
+    skill_id: str
+    normalized_request: str
+    extracted_inputs: Dict[str, Any]
+    missing_inputs: List[str]
+    questions: List[str]
+    status: str = "ready_for_execution"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
 
 
 class IntentProvider(Protocol):
@@ -369,5 +385,7 @@ def build_plan(
         project_context,
         rationale,
         provider.name,
+        work_items=[OrchestrationWorkItem(skill_id=skill_id, normalized_request=text.strip(), extracted_inputs=merged, missing_inputs=missing, questions=questions, status=status)],
+        unsupported_scope=[],
     )
 
