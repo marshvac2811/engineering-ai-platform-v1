@@ -1228,7 +1228,10 @@ loadJobs();
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "report" and method == "GET":
                 job_id = parts[2]
                 ctx.require_scope("jobs:read")
-                job = service._get(job_id)
+                try:
+                    job = service._get(job_id)
+                except KeyError:
+                    return self._json(start_response, "404 Not Found", {"error": "Report is not available for this job"})
                 if hasattr(service.store, "get_report_artifact"):
                     artifact = service.store.get_report_artifact(job_id, tenant_id=service.tenant_id)
                 else:
