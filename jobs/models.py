@@ -110,6 +110,8 @@ class Job:
     project_context: Dict[str, Any] = field(default_factory=dict)
     standards_context: Dict[str, Any] = field(default_factory=dict)
     assumptions_context: Dict[str, Any] = field(default_factory=dict)
+    orchestration: Dict[str, Any] = field(default_factory=dict)
+    report_id: Optional[str] = None
     status: JobStatus = JobStatus.RECEIVED
     skill_id: Optional[str] = None
     result: Optional[Dict[str, Any]] = None
@@ -133,6 +135,8 @@ class Job:
         project_context: Optional[Dict[str, Any]] = None,
         standards_context: Optional[Dict[str, Any]] = None,
         assumptions_context: Optional[Dict[str, Any]] = None,
+        orchestration: Optional[Dict[str, Any]] = None,
+        report_id: Optional[str] = None,
         job_id: Optional[str] = None,
     ) -> "Job":
         if not tenant_id:
@@ -146,6 +150,8 @@ class Job:
             project_context=project_context or {},
             standards_context=standards_context or {},
             assumptions_context=assumptions_context or {},
+            orchestration=orchestration or {},
+            report_id=report_id,
         )
 
     def transition(self, new_status: JobStatus, message: str, **metadata: Any) -> None:
