@@ -307,7 +307,44 @@ def build_plan(
     standards_context: Optional[Dict[str, Any]] = None,
     assumptions_context: Optional[Dict[str, Any]] = None,
     provider: Optional[IntentProvider] = None,
+    _compound: bool = True,
 ) -> OrchestrationPlan:
+    if _compound:
+        clauses = [part.strip(" ;") for part in re.split(r";\s*|\s+also\s+", text.strip(), flags=re.IGNORECASE) if part.strip()]
+        expanded: List[str] = []
+        for clause in clauses:
+            pieces = re.split(r"\s+and\s+(?=(?:size|calculate|select|generate|estimate|evaluate|check|design)\b)", clause, flags=re.IGNORECASE)
+            expanded.extend(p.strip() for p in pieces if p.strip())
+        if len(expanded) > 1:
+            supported: List[OrchestrationWorkItem] = []
+            unsupported: List[str] = []
+            first_plan: Optional[OrchestrationPlan] = None
+            for clause in expanded:
+                child = build_plan(clause, requested_skill_id=requested_skill_id, provided_inputs=provided_inputs, project_context=project_context, standards_context=standards_context, assumptions_context=assumptions_context, provider=provider, _compound=False)
+                if first_plan is None:
+                    first_plan = child
+                if child.selected_skill_id:
+                    supported.append(OrchestrationWorkItem(skill_id=child.selected_skill_id, normalized_request=child.normalized_request, extracted_inputs=child.extracted_inputs, missing_inputs=child.missing_inputs, questions=child.questions, status=child.status))
+                else:
+                    unsupported.append(clause)
+            if supported:
+                return OrchestrationPlan(
+                    status="awaiting_information" if any(x.missing_inputs for x in supported) else "ready_for_execution",
+                    normalized_request=text.strip(),
+                    selected_skill_id=supported[0].skill_id,
+                    confidence=min((first_plan.confidence if first_plan else 0.0), 0.99),
+                    candidates=first_plan.candidates if first_plan else [],
+                    extracted_inputs=supported[0].extracted_inputs,
+                    missing_inputs=sorted({item for x in supported for item in x.missing_inputs}),
+                    questions=[q for x in supported for q in x.questions],
+                    assumptions_context=assumptions_context,
+                    standards_context=standards_context,
+                    project_context=project_context,
+                    rationale=["Compound request split into independently routed engineering work items."],
+                    provider=provider.name,
+                    work_items=supported,
+                    unsupported_scope=unsupported,
+                )
     provider = provider or RuleBasedIntentProvider()
     project_context = project_context or {}
     standards_context = standards_context or {}
