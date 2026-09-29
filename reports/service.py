@@ -50,6 +50,16 @@ class ReportService:
                 checks.append({"source": "skill_result", "assessment": standard})
             standards.append({"skill_id": item["skill_id"], "checks": checks, "not_assessed": not bool(profile.verified_check_ids)})
 
+        report_work_items = []
+        for item in valid:
+            report_item = dict(item)
+            result = item.get("result") or {}
+            engineering = result.get("engineering_result") or {}
+            trace = result.get("calculation_trace") or engineering.get("calculation_trace") or []
+            if trace:
+                report_item["calculation_trace"] = trace
+            report_work_items.append(report_item)
+
         payload = {
             "report_type": first.report_type if len(valid) == 1 else "engineering_workflow_report",
             "title": first.title if len(valid) == 1 else "Engineering Workflow Report",
@@ -58,7 +68,7 @@ class ReportService:
                 "normalized_request": job.orchestration.get("normalized_request"),
                 "work_item_count": len(valid),
             },
-            "work_items": valid,
+            "work_items": report_work_items,
             "standards_assessment": standards,
             "unsupported_scope": job.orchestration.get("unsupported_scope", []),
             "human_review": {
