@@ -215,6 +215,7 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "chiller_tr": [r"([\d,.]+)\s*(?:tr|tons?)\b"],
         "flow_m3hr": [r"([\d,.]+)\s*m3\s*/?\s*h(?:r)?", r"([\d,.]+)\s*mÂ³\s*/?\s*h(?:r)?"],
         "diameter_mm": [r"(?:dia(?:meter)?|pipe)\s*[:=]?\s*([\d,.]+)\s*mm", r"([\d,.]+)\s*mm\s*(?:pipe|dia(?:meter)?)"],
+        "roughness_mm": [r"roughness\s*[:=]?\s*([\d,.]+)\s*mm", r"([\d,.]+)\s*mm\s*(?:roughness|roughness\s*value)\b"],
         "width_mm": [r"(?:width|w)\s*[:=]?\s*([\d,.]+)\s*mm"],
         "height_mm": [r"(?:height|(?<![a-z])h)\s*[:=]?\s*([\d,.]+)\s*mm"],
         "target_velocity_ms": [r"(?:target\s*)?velocity\s*[:=]?\s*([\d,.]+)\s*m/s", r"(?:at\s+)?([\d,.]+)\s*m/s(?:\s+velocity)?\b"],
