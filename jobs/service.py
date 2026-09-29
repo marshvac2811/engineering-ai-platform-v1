@@ -13,6 +13,7 @@ from validators.basic import require_positive
 from validators.governance import validate_governance_context
 from validators.registered_skill_inputs import validate_registered_skill_inputs
 from ingestion.service import IngestionService
+from reports.service import ReportService
 
 from .models import Job, JobStatus
 from .store import JobStore
@@ -22,11 +23,12 @@ Dispatcher = Callable[[Job], Dict[str, Any]]
 
 
 class JobService:
-    def __init__(self, store: JobStore, dispatcher: Optional[Dispatcher] = None, *, tenant_id: Optional[str] = None, ingestion_service: Optional[IngestionService] = None) -> None:
+    def __init__(self, store: JobStore, dispatcher: Optional[Dispatcher] = None, *, tenant_id: Optional[str] = None, ingestion_service: Optional[IngestionService] = None, report_service: Optional[ReportService] = None) -> None:
         self.store = store
         self.dispatcher = dispatcher or self._default_dispatcher
         self.tenant_id = tenant_id
         self.ingestion = ingestion_service or IngestionService()
+        self.report_service = report_service
 
     def _assert_tenant(self, job: Job) -> None:
         if self.tenant_id is not None and job.tenant_id != self.tenant_id:
@@ -60,6 +62,7 @@ class JobService:
             project_context=plan.project_context,
             standards_context=plan.standards_context,
             assumptions_context=plan.assumptions_context,
+            orchestration=plan.to_dict(),
         )
         job.add_event("orchestration_plan", "Natural-language request classified by orchestrator.", plan=plan.to_dict())
         if plan.status == "awaiting_information":
@@ -112,7 +115,20 @@ class JobService:
             raise ValueError("Job is not awaiting information")
         job.inputs.update(updates)
         job.add_event("information_received", "Missing input information supplied.", fields=list(updates))
-        job.transition(JobStatus.QUEUED, "Job returned to queue after input update.")
+        from orchestrator.intake import build_plan
+        plan = build_plan(
+            job.orchestration.get("normalized_request", ""),
+            requested_skill_id=job.requested_skill_id,
+            provided_inputs=job.inputs,
+            project_context=job.project_context,
+            standards_context=job.standards_context,
+            assumptions_context=job.assumptions_context,
+        )
+        job.orchestration = plan.to_dict()
+        if plan.status == "ready_for_execution":
+            job.transition(JobStatus.QUEUED, "All required inputs supplied; job returned to queue.")
+        else:
+            job.add_event("orchestration_replanned", "Additional required inputs remain missing.", missing_inputs=plan.missing_inputs)
         self.store.save(job)
         return job
 
@@ -156,6 +172,11 @@ class JobService:
         result_dict = result.to_dict()
         job.result = result_dict
         if result.status not in {"input_validation_failed", "calculation_failed", "skill_not_registered"}:
+            if self.report_service is not None:
+                report = self.report_service.build(job, [{"skill_id": job.skill_id, "result": result_dict}])
+                job.report_id = report.report_id
+                job.result["report_id"] = report.report_id
+                job.result["report"] = report.report
             from reports.adapter import build_report_envelope
             try:
                 job.result["report"] = build_report_envelope(
