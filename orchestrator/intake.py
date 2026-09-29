@@ -358,7 +358,7 @@ def build_plan(
                     standards_context=standards_context,
                     project_context=project_context,
                     rationale=["Compound request split into independently routed engineering work items."],
-                    provider=provider.name,
+                    provider=getattr(provider, "name", "rule_based"),
                     work_items=supported,
                     unsupported_scope=unsupported,
                 )
