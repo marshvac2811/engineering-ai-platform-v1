@@ -7,6 +7,7 @@ trusted directly from the HTTP client.
 from __future__ import annotations
 import json
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -45,6 +46,9 @@ from integrations.providers.gmail import (
     normalize_message as normalize_gmail_message,
     GmailProviderError,
 )
+
+# External dashboard contract.
+DASHBOARD_PATH = Path(__file__).resolve().parents[1] / "web" / "app.html"
 
 class APIApp:
     def __init__(self, service_factory: Callable[[str], JobService] | None = None, *,
