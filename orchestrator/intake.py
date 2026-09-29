@@ -58,6 +58,7 @@ class OrchestrationWorkItem:
     missing_inputs: List[str]
     questions: List[str]
     status: str = "ready_for_execution"
+    report_type: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -298,6 +299,17 @@ class RuleBasedIntentProvider:
         return top.skill_id, candidates[:5], confidence
 
 
+def _report_type_for_skill(skill_id: Optional[str]) -> str:
+    if not skill_id:
+        return ""
+    try:
+        from skill_registry.capabilities import get_capability
+        capability = get_capability(skill_id)
+        return capability.report_type if capability else ""
+    except Exception:
+        return ""
+
+
 def build_plan(
     text: str,
     *,
@@ -324,7 +336,7 @@ def build_plan(
                 if first_plan is None:
                     first_plan = child
                 if child.selected_skill_id:
-                    supported.append(OrchestrationWorkItem(skill_id=child.selected_skill_id, normalized_request=child.normalized_request, extracted_inputs=child.extracted_inputs, missing_inputs=child.missing_inputs, questions=child.questions, status=child.status))
+                    supported.append(OrchestrationWorkItem(skill_id=child.selected_skill_id, normalized_request=child.normalized_request, extracted_inputs=child.extracted_inputs, missing_inputs=child.missing_inputs, questions=child.questions, status=child.status, report_type=_report_type_for_skill(child.selected_skill_id)))
                 else:
                     unsupported.append(clause)
             if supported:
@@ -422,7 +434,7 @@ def build_plan(
         project_context,
         rationale,
         provider.name,
-        work_items=[OrchestrationWorkItem(skill_id=skill_id, normalized_request=text.strip(), extracted_inputs=merged, missing_inputs=missing, questions=questions, status=status)],
+        work_items=[OrchestrationWorkItem(skill_id=skill_id, normalized_request=text.strip(), extracted_inputs=merged, missing_inputs=missing, questions=questions, status=status, report_type=_report_type_for_skill(skill_id))],
         unsupported_scope=[],
     )
 
