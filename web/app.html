@@ -60,7 +60,7 @@ h2{margin-top:0}
 </div>
 
 <div style="margin-top:14px">
-<button onclick="submitEngineeringRequest()">Submit Engineering Request</button>
+<button id="submit-engineering-request" type="button">Submit Engineering Request</button>
 </div>
 
 <div id="intake-result" style="display:none;margin-top:20px"></div>
@@ -666,6 +666,8 @@ async function approveJob(jobId) {
     await loadJobs();
     await openJob(jobId);
 }
+
+document.getElementById("submit-engineering-request").addEventListener("click", submitEngineeringRequest);
 
 loadAccount();
 loadSkills().then(loadIntakeSkills);
