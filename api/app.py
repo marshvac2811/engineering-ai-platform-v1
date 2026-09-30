@@ -880,9 +880,17 @@ loadJobs();
             configured_secret = os.getenv(f"INTEGRATION_WEBHOOK_SECRET_{webhook_provider.upper()}") if webhook_provider else None
             authorized_webhook = bool(webhook_provider and webhook_secret and configured_secret and webhook_secret == configured_secret)
             if authorized_webhook:
-                tenant_id = str(environ.get("HTTP_X_TENANT_ID") or "").strip()
+                # A validated integration webhook is already authenticated by the
+                # provider-specific shared secret. Do not require the browser/client
+                # to supply a trusted tenant header. For this single-tenant trial,
+                # resolve the server-side default tenant instead.
+                tenant_id = str(
+                    os.getenv("SUPABASE_DEFAULT_TENANT_ID")
+                    or os.getenv("DEFAULT_TENANT_ID")
+                    or "00000000-0000-0000-0000-000000000001"
+                ).strip()
                 if not tenant_id:
-                    raise AuthenticationError("X-Tenant-ID is required for integration webhooks")
+                    raise AuthenticationError("No default tenant is configured for integration webhooks")
                 ctx = AuthContext(tenant_id=tenant_id, user_id="integration-webhook", role="member", scopes={"integrations:write"}, auth_method="webhook")
             else:
                 ctx = self._authenticate(environ)
