@@ -473,7 +473,7 @@ async function provideMissingInformation(jobId) {
         }
 
         const response = await authFetch(
-            "/v1/jobs/" + encodeURIComponent(jobId) + "/answers",
+            "/v1/jobs/" + encodeURIComponent(jobId) + "/information",
             {
                 method: "POST",
                 headers: {
