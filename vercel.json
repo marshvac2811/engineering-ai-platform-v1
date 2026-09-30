@@ -14,7 +14,7 @@
     },
     {
       "src": "/login",
-      "dest": "/login.html"
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",
