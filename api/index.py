@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from typing import Callable
+from urllib.parse import parse_qs
 
 _cached_app = None
 
@@ -34,7 +35,9 @@ def _load_app():
 
 
 def app(environ, start_response):
-    path = environ.get("PATH_INFO", "")
+    query = parse_qs(environ.get("QUERY_STRING", ""), keep_blank_values=True)
+    original_path = (query.get("__vercel_path") or [""])[0]
+    path = original_path or environ.get("PATH_INFO", "")
     method = environ.get("REQUEST_METHOD", "GET")
 
     if path == "/health" and method == "GET":
