@@ -24,7 +24,7 @@ from orchestrator.registry_loader import load_registry
 from orchestrator.intake import build_plan
 from orchestrator.provider_factory import build_intent_provider
 from orchestrator.provider import ProviderUnavailableError
-from api.auth import DevelopmentHeaderAuthenticator, ApiKeyAuthenticator, SupabaseJWTAuthenticator, AuthContext, AuthenticationError
+from api.auth import DevelopmentHeaderAuthenticator, ApiKeyAuthenticator, SupabaseJWTAuthenticator, EdgeVerifiedAuthenticator, AuthContext, AuthenticationError
 from api.security import InMemoryApiKeyStore, InMemoryUsageStore, UsageEvent
 from crm.service import CRMService
 from crm.store import InMemoryCRMStore
@@ -80,6 +80,12 @@ class APIApp:
         self.service_factory = service_factory or (lambda tenant: JobService(self.store, tenant_id=tenant, ingestion_service=self.ingestion))
 
     def _authenticate(self, environ) -> AuthContext:
+        # Vercel Edge Middleware performs Supabase JWT signature verification
+        # before the Python function. This keeps Supabase JWKS/Auth off the
+        # Python request path, which was failing with EBUSY in Vercel.
+        if environ.get("HTTP_X_ENGINEERING_AUTH"):
+            return EdgeVerifiedAuthenticator().authenticate(environ)
+
         auth = environ.get("HTTP_AUTHORIZATION", "")
         if auth.startswith("Bearer "):
             token = auth[7:].strip()
