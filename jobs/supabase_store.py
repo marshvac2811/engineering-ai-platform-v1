@@ -32,7 +32,7 @@ class SupabaseJobStore(JobStore):
             "project_context": job.project_context,
             "standards_context": job.standards_context,
             "assumptions_context": job.assumptions_context,
-            "orchestration": self._orchestration_from_events(job),
+            "orchestration": job.orchestration,
             "status": job.status.value,
             "skill_id": job.skill_id,
             "result": job.result,
@@ -103,8 +103,8 @@ class SupabaseJobStore(JobStore):
                 version = int(latest_rows[0].get("version") or 1)
                 self.client.table("engineering_report_artifacts").update({
                     "status": status,
-                    "reviewer": next((e.metadata.get("reviewer") for e in reversed(job.events) if e.event_type == "job_status_changed" and e.metadata.get("reviewer")), None),
-                    "review_comment": next((e.metadata.get("comment", "") for e in reversed(job.events) if e.event_type == "job_status_changed" and e.metadata.get("comment")), ""),
+                    "reviewer": next((e.metadata.get("reviewer") for e in reversed(job.events) if e.event_type == "status_change" and e.metadata.get("reviewer")), None),
+                    "review_comment": next((e.metadata.get("comment", "") for e in reversed(job.events) if e.event_type == "status_change" and e.metadata.get("comment")), ""),
                     "approved_at": job.updated_at if status == "approved" else None,
                 }).eq("report_id", report_id).execute()
             else:
@@ -120,8 +120,8 @@ class SupabaseJobStore(JobStore):
                     "content_sha256": content_sha256,
                     "html_path": "",
                     "pdf_path": "",
-                    "reviewer": next((e.metadata.get("reviewer") for e in reversed(job.events) if e.event_type == "job_status_changed" and e.metadata.get("reviewer")), None),
-                    "review_comment": next((e.metadata.get("comment", "") for e in reversed(job.events) if e.event_type == "job_status_changed" and e.metadata.get("comment")), ""),
+                    "reviewer": next((e.metadata.get("reviewer") for e in reversed(job.events) if e.event_type == "status_change" and e.metadata.get("reviewer")), None),
+                    "review_comment": next((e.metadata.get("comment", "") for e in reversed(job.events) if e.event_type == "status_change" and e.metadata.get("comment")), ""),
                     "approved_at": job.updated_at if status == "approved" else None,
                 }).execute()
                 rows = getattr(response, "data", None) or []
@@ -244,6 +244,7 @@ class SupabaseJobStore(JobStore):
             project_context=row.get("project_context") or {},
             standards_context=row.get("standards_context") or {},
             assumptions_context=row.get("assumptions_context") or {},
+            orchestration=row.get("orchestration") or {},
             status=JobStatus(row.get("status", JobStatus.RECEIVED.value)),
             skill_id=row.get("skill_id"),
             result=row.get("result"),
