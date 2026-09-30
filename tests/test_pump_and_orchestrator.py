@@ -38,3 +38,34 @@ def test_orchestrator_dispatches_pump_head():
     result = execute(req)
     assert result.status == "draft_ready"
     assert result.skill_id == "pump_head"
+
+
+
+def test_pump_head_intake_surfaces_either_or_inputs():
+    from orchestrator.intake import build_plan
+
+    plan = build_plan(
+        "Calculate pump head for a water circulation system with 120 m pipe length, 25 mm pipe diameter, 20 m static head, 4 m/s flow velocity, and 6 fittings."
+    )
+    assert plan.status == "awaiting_information"
+    assert "flow_m3hr" in plan.missing_inputs
+    assert "margin_pct" in plan.missing_inputs
+    assert "roughness_mm" in plan.missing_inputs
+    assert "material" in plan.missing_inputs
+
+
+def test_successful_retry_clears_stale_errors():
+    from jobs import InMemoryJobStore, JobService, JobStatus
+
+    service = JobService(InMemoryJobStore(), tenant_id="test-tenant")
+    job = service.create_job(
+        tenant_id="test-tenant", source="test", requested_skill_id="pump_head",
+        inputs={"flow_m3hr": 20, "diameter_mm": 80, "straight_length_m": 10, "static_head_m": 0, "margin_pct": 0},
+    )
+    service.enqueue(job.job_id)
+    job = service.process(job.job_id)
+    assert job.status == JobStatus.AWAITING_INFORMATION
+    job.inputs["roughness_mm"] = 0.0015
+    job = service.provide_missing_information(job.job_id, {"roughness_mm": 0.0015})
+    assert job.status == JobStatus.HUMAN_REVIEW
+    assert job.errors == []
