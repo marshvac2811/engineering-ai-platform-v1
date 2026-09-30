@@ -135,12 +135,22 @@ async function dispatch(jobId){
 
 function formatResult(result){
  const labels={
-  method:"Method",flow_m3hr:"Airflow (m³/h)",target_velocity_ms:"Target velocity",
-  required_diameter_mm:"Required diameter",recommended_diameter_mm:"Recommended diameter",
+  method:"Method",flow_m3hr:"Design flow",diameter_mm:"Pipe diameter",roughness_mm:"Pipe roughness",
+  straight_length_m:"Straight length",velocity_ms:"Velocity",reynolds_number:"Reynolds number",
+  friction_factor:"Friction factor",friction_head_m:"Friction head",static_head_m:"Static head",
+  fittings_equivalent_length_m:"Fitting equivalent length",equipment_losses_m:"Equipment losses",
+  subtotal_head_m:"Subtotal head",margin_pct:"Design margin",margin_head_m:"Margin head",
+  total_dynamic_head_m:"Total dynamic head",total_dynamic_head_kpa:"Total dynamic head",
+  total_dynamic_head_bar:"Total dynamic head",total_dynamic_head_ft:"Total dynamic head",
+  total_dynamic_head_psi:"Total dynamic head",
+  target_velocity_ms:"Target velocity",required_diameter_mm:"Required diameter",recommended_diameter_mm:"Recommended diameter",
   actual_velocity_ms:"Actual velocity",actual_friction_pa_per_m:"Friction loss",
   input_airflow:"Input airflow",input_airflow_unit:"Airflow unit"
  };
- const preferred=["method","input_airflow","input_airflow_unit","flow_m3hr","target_velocity_ms","required_diameter_mm","recommended_diameter_mm","actual_velocity_ms","actual_friction_pa_per_m"];
+ const preferred=["method","flow_m3hr","diameter_mm","roughness_mm","straight_length_m","velocity_ms","reynolds_number","friction_factor",
+  "friction_head_m","static_head_m","fittings_equivalent_length_m","equipment_losses_m","subtotal_head_m","margin_pct","margin_head_m",
+  "total_dynamic_head_m","total_dynamic_head_kpa","total_dynamic_head_bar","total_dynamic_head_ft","total_dynamic_head_psi",
+  "input_airflow","input_airflow_unit","target_velocity_ms","required_diameter_mm","recommended_diameter_mm","actual_velocity_ms","actual_friction_pa_per_m"];
  const fmt=(k,v)=>{
   if(v===null||v===undefined)return "";
   if(typeof v==="number")return Number.isInteger(v)?String(v):String(Number(v.toFixed(3)));
