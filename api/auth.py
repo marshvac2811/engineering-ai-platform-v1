@@ -11,7 +11,7 @@ from typing import Callable, Optional, FrozenSet
 import json
 import os
 import urllib.parse
-import urllib.request
+import httpx
 import jwt
 
 from jobs.tenant import TenantContext
@@ -100,14 +100,14 @@ class SupabaseJWTAuthenticator(Authenticator):
         if self._jwks_cache is None:
             last_error = None
             for attempt in range(3):
-                request = urllib.request.Request(
-                    self.jwks_url,
-                    headers={"Accept": "application/json", "Connection": "close"},
-                    method="GET",
-                )
                 try:
-                    with urllib.request.urlopen(request, timeout=5) as response:
-                        self._jwks_cache = json.loads(response.read().decode("utf-8"))
+                    with httpx.Client(timeout=5.0, trust_env=False, follow_redirects=True) as client:
+                        response = client.get(
+                            self.jwks_url,
+                            headers={"Accept": "application/json", "Connection": "close"},
+                        )
+                        response.raise_for_status()
+                        self._jwks_cache = response.json()
                     break
                 except Exception as exc:
                     last_error = exc
@@ -133,18 +133,18 @@ class SupabaseJWTAuthenticator(Authenticator):
         if not key:
             key = "sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s"
         url = self.supabase_url + "/auth/v1/user"
-        request = urllib.request.Request(
-            url,
-            headers={
-                "apikey": key,
-                "Authorization": "Bearer " + token,
-                "Accept": "application/json",
-                "Connection": "close",
-            },
-            method="GET",
-        )
-        with urllib.request.urlopen(request, timeout=8) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+        with httpx.Client(timeout=8.0, trust_env=False, follow_redirects=True) as client:
+            response = client.get(
+                url,
+                headers={
+                    "apikey": key,
+                    "Authorization": "Bearer " + token,
+                    "Accept": "application/json",
+                    "Connection": "close",
+                },
+            )
+            response.raise_for_status()
+            payload = response.json()
         if not isinstance(payload, dict) or not payload.get("id"):
             raise AuthenticationError("Supabase Auth rejected the access token")
         return payload
@@ -163,18 +163,18 @@ class SupabaseJWTAuthenticator(Authenticator):
             "limit": "1",
         })
         url = self.supabase_url + "/rest/v1/tenant_memberships?" + query
-        request = urllib.request.Request(
-            url,
-            headers={
-                "apikey": service_key,
-                "Authorization": "Bearer " + service_key,
-                "Accept": "application/json",
-            },
-            method="GET",
-        )
         try:
-            with urllib.request.urlopen(request, timeout=8) as response:
-                rows = json.loads(response.read().decode("utf-8"))
+            with httpx.Client(timeout=8.0, trust_env=False, follow_redirects=True) as client:
+                response = client.get(
+                    url,
+                    headers={
+                        "apikey": service_key,
+                        "Authorization": "Bearer " + service_key,
+                        "Accept": "application/json",
+                    },
+                )
+                response.raise_for_status()
+                rows = response.json()
         except Exception as exc:
             raise AuthenticationError(
                 "Unable to resolve tenant membership: " + str(exc)
