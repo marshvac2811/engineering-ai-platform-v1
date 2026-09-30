@@ -91,6 +91,7 @@ def test_supabase_store_save_and_get_round_trip():
     assert restored.job_id == job.job_id
     assert restored.status == JobStatus.QUEUED
     assert restored.inputs["flow_m3hr"] == 100
+    assert restored.orchestration == {}
     assert len(restored.events) == 1
 
 
@@ -136,3 +137,16 @@ def test_supabase_store_claim_next_uses_worker_id():
     assert claimed is not None
     assert claimed.job_id == job.job_id
 
+
+
+def test_supabase_store_persists_current_orchestration_state():
+    client = FakeClient()
+    store = SupabaseJobStore(client)
+    job = Job.create(
+        tenant_id="test-tenant", source="test", inputs={"flow_m3hr": 100},
+        requested_skill_id="pump_head",
+        orchestration={"status": "awaiting_information", "missing_inputs": ["roughness_mm", "material"]},
+    )
+    store.save(job)
+    restored = store.get(job.job_id)
+    assert restored.orchestration["missing_inputs"] == ["roughness_mm", "material"]
