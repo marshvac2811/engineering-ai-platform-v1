@@ -154,19 +154,27 @@ function formatResult(result){
  const note=result.velocity_note?'<div class="small" style="margin-top:10px">'+esc(result.velocity_note)+'</div>':"";
  return '<div class="result"><h3>Engineering Result</h3><div class="result-grid">'+items+'</div>'+note+'</div>';
 }
+function fieldLabel(field){
+ const labels={
+  flow_m3hr:"Design water flow (m³/hr)",diameter_mm:"Pipe internal diameter (mm)",
+  straight_length_m:"Straight pipe length (m)",static_head_m:"Static head (m)",
+  margin_pct:"Design margin (%)",roughness_mm:"Pipe roughness (mm)",material:"Pipe material"
+ };
+ return labels[field]||field.replaceAll("_"," ");
+}
 function jobHtml(j){
- const id=esc(j.job_id), status=String(j.status||"unknown"), review=status==="human_review";
- const orch=j.orchestration||{}, missing=Array.isArray(orch.missing_inputs)?orch.missing_inputs:[];
- const question=Array.isArray(orch.questions)&&orch.questions.length?orch.questions[0]:"Additional information is required.";
+ const rawId=String(j.job_id), id=esc(rawId), status=String(j.status||"unknown"), review=status==="human_review";
+ const orch=j.orchestration||{}, missing=Array.isArray(orch.missing_inputs)?orch.missing_inputs.map(String):[];
+ const questions=Array.isArray(orch.questions)?orch.questions.map(String):[];
  const result=j.result?.engineering_result||j.result?.engineeringResult;
  let html='<div class="job '+(review?"review":"")+'"><div><strong>Engineering Request</strong></div>'+
   '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>';
  if(status==="awaiting_information"&&missing.length){
-  const fields=missing.map(f=>String(f));
-  html+='<div class="need"><strong>Information needed</strong><div style="margin-top:5px">'+esc(question)+'</div>'+
-   fields.map(field=>'<label class="small" style="display:block;margin-top:10px">'+esc(field)+'</label>'+
-    '<input id="answer-'+id+'-'+esc(field)+'" inputmode="decimal" placeholder="Enter '+esc(field)+'" style="margin-top:4px">').join('')+
-   '<div class="actions"><button id="btn-'+id+'" onclick="provideInfo(\''+id+'\','+JSON.stringify(fields)+')">Continue</button></div>'+
+  html+='<div class="need"><strong>Information needed</strong>'+
+   '<div style="margin-top:5px">'+esc(questions.join(" "))+'</div>'+
+   '<div style="margin-top:10px">'+missing.map(field=>'<div style="margin-top:10px"><label class="small" for="answer-'+id+'-'+esc(field)+'">'+esc(fieldLabel(field))+'</label>'+
+    '<input id="answer-'+id+'-'+esc(field)+'" type="text" inputmode="decimal" autocomplete="off" placeholder="Enter '+esc(fieldLabel(field))+'" style="margin-top:4px"></div>').join('')+
+   '</div><div class="actions"><button id="btn-'+id+'">Continue</button></div>'+
    '<div id="msg-'+id+'" class="msg"></div></div>';
  }
  if(result)html+=formatResult(result);
@@ -183,6 +191,10 @@ async function loadJobs(){
   if(!r.ok)throw Error(d.error||"Jobs unavailable");
   if(!d.jobs?.length){box.innerHTML='<div class="empty">No jobs yet.</div>';return;}
   box.innerHTML=d.jobs.slice(0,20).map(jobHtml).join("");
+  d.jobs.slice(0,20).filter(j=>String(j.status||"")==="awaiting_information").forEach(j=>{
+   const b=document.getElementById("btn-"+j.job_id);
+   if(b)b.onclick=()=>provideInfo(j.job_id,(j.orchestration?.missing_inputs||[]).map(String));
+  });
   const hasAwaiting=d.jobs.some(j=>String(j.status||"")==="awaiting_information");
   const requestMsg=document.getElementById("requestMsg");
   if(!hasAwaiting && requestMsg.textContent==="One input is needed to continue.") requestMsg.style.display="none";
