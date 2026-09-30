@@ -7,6 +7,7 @@ trusted directly from the HTTP client.
 from __future__ import annotations
 import json
 import os
+import threading
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -49,6 +50,7 @@ from integrations.providers.gmail import (
 
 # External dashboard contract.
 DASHBOARD_PATH = Path(__file__).resolve().parents[1] / "web" / "app.html"
+_SUPABASE_AUTH_LOCK = threading.Lock()
 
 class APIApp:
     def __init__(self, service_factory: Callable[[str], JobService] | None = None, *,
@@ -86,7 +88,8 @@ class APIApp:
             if token.count(".") == 2:
                 if self.supabase_jwt_authenticator is None:
                     self.supabase_jwt_authenticator = SupabaseJWTAuthenticator()
-                return self.supabase_jwt_authenticator.authenticate(environ)
+                with _SUPABASE_AUTH_LOCK:
+                    return self.supabase_jwt_authenticator.authenticate(environ)
 
             return self.api_key_authenticator.authenticate(environ)
 
