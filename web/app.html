@@ -99,13 +99,17 @@ async function submitRequest(){
  finally{btn.disabled=false;}
 }
 
-async function provideInfo(jobId,field){
- const input=document.getElementById("answer-"+jobId), value=input.value.trim();
+async function provideInfo(jobId,fields){
  const msg=document.getElementById("msg-"+jobId);
- if(!value){showMsg(msg,false,"Please enter the required information.");return;}
+ const updates={};
+ for(const field of fields){
+  const input=document.getElementById("answer-"+jobId+"-"+field);
+  const value=input?.value.trim();
+  if(!value){showMsg(msg,false,"Please enter all required information.");return;}
+  updates[field]=value;
+ }
  const button=document.getElementById("btn-"+jobId);button.disabled=true;
  try{
-  const updates={}; updates[field]=value;
   const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/information",{
    method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({inputs:updates})
   });
@@ -158,10 +162,11 @@ function jobHtml(j){
  let html='<div class="job '+(review?"review":"")+'"><div><strong>Engineering Request</strong></div>'+
   '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>';
  if(status==="awaiting_information"&&missing.length){
-  const field=esc(missing[0]);
+  const fields=missing.map(f=>String(f));
   html+='<div class="need"><strong>Information needed</strong><div style="margin-top:5px">'+esc(question)+'</div>'+
-   '<input id="answer-'+id+'" placeholder="Enter your answer (for example: round)" style="margin-top:10px">'+
-   '<div class="actions"><button id="btn-'+id+'" onclick="provideInfo(\''+id+'\',\''+field+'\')">Continue</button></div>'+
+   fields.map(field=>'<label class="small" style="display:block;margin-top:10px">'+esc(field)+'</label>'+
+    '<input id="answer-'+id+'-'+esc(field)+'" inputmode="decimal" placeholder="Enter '+esc(field)+'" style="margin-top:4px">').join('')+
+   '<div class="actions"><button id="btn-'+id+'" onclick="provideInfo(\\''+id+'\\','+JSON.stringify(fields).replace(/'/g,"\\'")+')">Continue</button></div>'+
    '<div id="msg-'+id+'" class="msg"></div></div>';
  }
  if(result)html+=formatResult(result);
