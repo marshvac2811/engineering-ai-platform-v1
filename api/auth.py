@@ -77,6 +77,46 @@ class DevelopmentHeaderAuthenticator(Authenticator):
         return AuthContext(tenant_id=tenant_id, user_id=user_id, role=role, auth_method="development", scopes=frozenset({"*"}))
 
 
+class EdgeVerifiedAuthenticator(Authenticator):
+    """Consume claims cryptographically verified by Vercel Edge Middleware."""
+
+    def authenticate(self, environ) -> AuthContext:
+        raw = str(environ.get("HTTP_X_ENGINEERING_AUTH") or "").strip()
+        if not raw:
+            raise AuthenticationError("Edge authentication context is missing")
+        import base64
+        try:
+            padding = "=" * (-len(raw) % 4)
+            payload = json.loads(base64.urlsafe_b64decode(raw + padding).decode("utf-8"))
+        except Exception as exc:
+            raise AuthenticationError("Invalid edge authentication context") from exc
+
+        user_id = str(payload.get("sub") or "").strip()
+        tenant_id = str(payload.get("tenant_id") or "").strip()
+        role = str(payload.get("role") or "member").strip()
+        exp = payload.get("exp")
+        if not user_id or not tenant_id:
+            raise AuthenticationError("Edge authentication context is incomplete")
+        try:
+            if int(exp) <= int(time.time()):
+                raise AuthenticationError("Supabase JWT is expired")
+        except (TypeError, ValueError):
+            raise AuthenticationError("Edge authentication context has invalid expiry")
+        if role not in {"owner", "admin", "engineer", "reviewer", "member"}:
+            raise AuthenticationError("Invalid application role")
+
+        scopes = payload.get("scopes", [])
+        if not isinstance(scopes, (list, tuple, set)):
+            scopes = []
+        return AuthContext(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            role=role,
+            auth_method="supabase_jwt",
+            scopes=frozenset(str(x) for x in scopes),
+        )
+
+
 class SupabaseJWTAuthenticator(Authenticator):
     """Verify Supabase Auth access tokens using the project's JWKS endpoint."""
 
