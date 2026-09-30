@@ -12,8 +12,9 @@ def test_plan_is_persisted_on_job_and_answers_replan_until_ready():
     service.provide_missing_information(job.job_id, {"airflow": 8000, "method": "velocity", "duct_type": "round"})
     assert job.status == JobStatus.AWAITING_INFORMATION
     service.provide_missing_information(job.job_id, {"target_velocity_ms": 7, "material": "gss"})
-    assert job.status == JobStatus.QUEUED
+    assert job.status == JobStatus.HUMAN_REVIEW
     assert job.orchestration["status"] == "ready_for_execution"
+    assert job.result["status"] == "draft_ready"
 
 
 def test_answers_do_not_queue_when_inputs_remain_missing():
