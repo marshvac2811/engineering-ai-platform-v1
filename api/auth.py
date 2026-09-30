@@ -10,11 +10,28 @@ from dataclasses import dataclass
 from typing import Callable, Optional, FrozenSet
 import json
 import os
+import socket
 import urllib.parse
 import httpx
 import jwt
 
 from jobs.tenant import TenantContext
+
+
+# Vercel's Python runtime can intermittently return EBUSY from getaddrinfo()
+# when resolving Supabase hosts. Supabase's public API is IPv4 reachable, so
+# constrain these outbound auth lookups to IPv4 rather than letting the runtime
+# attempt the problematic address-family path.
+_original_getaddrinfo = socket.getaddrinfo
+
+
+def _vercel_ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    if family == 0:
+        family = socket.AF_INET
+    return _original_getaddrinfo(host, port, family, type, proto, flags)
+
+
+socket.getaddrinfo = _vercel_ipv4_getaddrinfo
 
 
 class AuthenticationError(PermissionError):
