@@ -10,11 +10,76 @@ from dataclasses import dataclass
 from typing import Callable, Optional, FrozenSet
 import json
 import os
+import socket
+import time
 import urllib.parse
+import urllib.request
 import httpx
 import jwt
 
 from jobs.tenant import TenantContext
+
+
+# Vercel Python can intermittently fail DNS resolution for external Supabase
+# hostnames with OSError(EBUSY). Resolve Supabase A records through Cloudflare
+# DNS-over-HTTPS and cache the result briefly. This avoids hardcoding a
+# potentially changing Supabase IP while leaving TLS/SNI on the real hostname.
+_original_getaddrinfo = socket.getaddrinfo
+_supabase_dns_cache = {}
+
+def _resolve_supabase_ipv4(host: str):
+    cached = _supabase_dns_cache.get(host)
+    now = time.time()
+    if cached and cached[1] > now:
+        return cached[0]
+
+    query_url = (
+        "https://cloudflare-dns.com/dns-query?name="
+        + urllib.parse.quote(host, safe="")
+        + "&type=A"
+    )
+    request = urllib.request.Request(
+        query_url,
+        headers={
+            "Accept": "application/dns-json",
+            "User-Agent": "engineering-ai-platform/1.0",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=4.0) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    addresses = [
+        str(answer.get("data", "")).strip()
+        for answer in payload.get("Answer", [])
+        if answer.get("type") == 1 and answer.get("data")
+    ]
+    if not addresses:
+        raise socket.gaierror(socket.EAI_NONAME, f"no A record for {host}")
+
+    _supabase_dns_cache[host] = (addresses[0], now + 300)
+    return addresses[0]
+
+
+def _resilient_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    host_text = str(host or "").rstrip(".").lower()
+    if host_text.endswith(".supabase.co"):
+        try:
+            ip = _resolve_supabase_ipv4(host_text)
+            requested_family = family if family in (socket.AF_INET, socket.AF_INET6) else socket.AF_INET
+            if requested_family == socket.AF_INET:
+                return [(
+                    socket.AF_INET,
+                    type or socket.SOCK_STREAM,
+                    proto or socket.IPPROTO_TCP,
+                    "",
+                    (ip, port),
+                )]
+        except Exception:
+            pass
+    return _original_getaddrinfo(host, port, family, type, proto, flags)
+
+
+socket.getaddrinfo = _resilient_getaddrinfo
 
 
 class AuthenticationError(PermissionError):
