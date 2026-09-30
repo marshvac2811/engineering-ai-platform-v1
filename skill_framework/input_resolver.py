@@ -144,6 +144,40 @@ def resolve_input_requirements(
         + list(definition.conditional_inputs)
     )
 
+    # Some skills have an either/or engineering requirement expressed as a
+    # validation rule rather than a required input (for example pump_head:
+    # roughness_mm OR material). Surface that requirement during intake so the
+    # user receives the complete input form in one pass instead of discovering
+    # the second field only after execution.
+    optional_by_name = {item.name: item for item in definition.optional_inputs}
+    for rule in getattr(definition, "validation_rules", []) or []:
+        text = str(rule)
+        match = __import__("re").search(
+            r"Provide\s+([A-Za-z_][A-Za-z0-9_]*)\s+or\s+(?:a\s+valid\s+)?(?:pipe\s+)?(?:material|[A-Za-z_][A-Za-z0-9_]*)",
+            text,
+            __import__("re").IGNORECASE,
+        )
+        if match:
+            first = match.group(1)
+            # Prefer the named alternative if it is present in the rule.
+            second_match = __import__("re").search(
+                r"or\s+(?:a\s+valid\s+)?(?:pipe\s+)?(material|[A-Za-z_][A-Za-z0-9_]*)",
+                text,
+                __import__("re").IGNORECASE,
+            )
+            second = second_match.group(1) if second_match else None
+            alternatives = [name for name in (first, second) if name in optional_by_name]
+            if alternatives and not any(_is_present(inputs, name) for name in alternatives):
+                for name in alternatives:
+                    if name not in missing:
+                        missing.append(name)
+                    item = optional_by_name[name]
+                    questions.append(
+                        item.question
+                        or item.description
+                        or f"Please provide the engineering input: {name}."
+                    )
+
     seen = set()
 
     for item in definitions:
