@@ -747,9 +747,13 @@ async function approveJob(jobId) {
 document.getElementById("submit-engineering-request").addEventListener("click", submitEngineeringRequest);
 document.getElementById("login-button").addEventListener("click", signIn);
 
-loadAccount();
-loadSkills().then(loadIntakeSkills);
-loadJobs();
+if (token) {
+    loadAccount();
+    loadSkills().then(loadIntakeSkills);
+    loadJobs();
+} else {
+    showLogin();
+}
 </script>
 </body>
 </html>
