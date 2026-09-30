@@ -235,6 +235,11 @@ class JobService:
             )
         job.warnings.extend(result.warnings)
 
+        # Errors from an earlier failed attempt are historical lifecycle data;
+        # they must not remain as active errors after a later successful run.
+        if result.status not in {"input_validation_failed", "calculation_failed", "skill_not_registered"}:
+            job.errors = []
+
         if result.status == "input_validation_failed":
             job.errors.extend(result.validation_errors)
             self._update_orchestration_for_validation_errors(job, result.validation_errors)
