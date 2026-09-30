@@ -125,19 +125,19 @@ class JobService:
         registry_path = __import__("pathlib").Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
         try:
             definition = load_skill_registry(registry_path).get(job.requested_skill_id or "")
-            numeric_fields = {
-                d.name for d in (
+            numeric_types = {
+                d.name: d.data_type for d in (
                     list(definition.required_inputs)
                     + list(definition.optional_inputs)
                     + list(definition.conditional_inputs)
                 ) if d.data_type in {"number", "integer"}
             }
             normalized_updates = dict(updates)
-            for name in numeric_fields:
+            for name, data_type in numeric_types.items():
                 if name in normalized_updates and isinstance(normalized_updates[name], str):
                     raw = normalized_updates[name].strip()
                     if raw:
-                        normalized_updates[name] = int(float(raw)) if definition.data_type == "integer" else float(raw)
+                        normalized_updates[name] = int(float(raw)) if data_type == "integer" else float(raw)
             updates = normalized_updates
         except (KeyError, ValueError, TypeError):
             # Keep the original values so the normal validation path reports
