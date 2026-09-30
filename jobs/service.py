@@ -73,6 +73,11 @@ class JobService:
             )
         elif plan.status in {"ambiguous", "unroutable"}:
             job.add_event("orchestration_needs_clarification", "Orchestrator could not select a unique executable skill.", status=plan.status)
+        else:
+            # Backend owns the automated lifecycle. The UI should not need to
+            # enqueue or process jobs step-by-step.
+            self.enqueue(job.job_id)
+            job = self.process(job.job_id)
         self.store.save(job)
         return job
 
