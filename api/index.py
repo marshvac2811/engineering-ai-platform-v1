@@ -39,7 +39,19 @@ def app(environ, start_response):
     # IMPORTANT: use an ordinary query key. Vercel may consume/reserve names
     # beginning with __, which caused the previous routing fix to be lost.
     original_path = (query.get("engineering_path") or [""])[0]
-    path = original_path or environ.get("PATH_INFO", "")
+
+    # Vercel can rewrite PATH_INFO to the function path and may normalize the
+    # query string before invoking Python. Prefer original request-path
+    # headers when available, then the explicit routing parameter.
+    forwarded_path = (
+        environ.get("HTTP_X_INVOKE_PATH")
+        or environ.get("HTTP_X_MATCHED_PATH")
+        or environ.get("HTTP_X_NOW_ROUTE_MATCHES")
+        or ""
+    )
+    path = original_path or forwarded_path or environ.get("PATH_INFO", "")
+    if path and path.startswith("/api/index.py/"):
+        path = path[len("/api/index.py"):]
     method = environ.get("REQUEST_METHOD", "GET")
 
     if path:
