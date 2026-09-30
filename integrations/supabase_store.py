@@ -123,7 +123,9 @@ class SupabaseIntegrationStore(InMemoryIntegrationStore):
 
 
 def build_supabase_integration_store_from_env() -> Optional[SupabaseIntegrationStore]:
-    url = os.getenv("SUPABASE_URL")
+    url = (os.getenv("SUPABASE_URL") or "").strip()
+    if url and "://" not in url:
+        url = f"https://{url}"
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
     if not url or not key:
