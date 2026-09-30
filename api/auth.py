@@ -128,6 +128,27 @@ class SupabaseJWTAuthenticator(Authenticator):
             raise AuthenticationError("Unsupported JWT algorithm: " + algorithm)
         return algorithm_impl.from_jwk(json.dumps(jwk))
 
+    def _validate_with_supabase_auth(self, token: str) -> dict:
+        key = (os.getenv("SUPABASE_PUBLISHABLE_KEY") or os.getenv("SUPABASE_ANON_KEY") or "").strip()
+        if not key:
+            key = "sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s"
+        url = self.supabase_url + "/auth/v1/user"
+        request = urllib.request.Request(
+            url,
+            headers={
+                "apikey": key,
+                "Authorization": "Bearer " + token,
+                "Accept": "application/json",
+                "Connection": "close",
+            },
+            method="GET",
+        )
+        with urllib.request.urlopen(request, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, dict) or not payload.get("id"):
+            raise AuthenticationError("Supabase Auth rejected the access token")
+        return payload
+
     def _resolve_tenant_membership(self, user_id: str) -> tuple[str, str]:
         service_key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
         if not service_key:
@@ -186,7 +207,26 @@ class SupabaseJWTAuthenticator(Authenticator):
                 options={"require": ["sub", "exp", "iss", "aud"]},
             )
         except Exception as exc:
-            raise AuthenticationError(f"Invalid Supabase JWT: {exc}") from exc
+            # Some Vercel serverless invocations can fail outbound JWKS retrieval
+            # even though Supabase Auth itself is reachable. In that case let
+            # Supabase validate the bearer token through its Auth API.
+            try:
+                user = self._validate_with_supabase_auth(token)
+                user_id = str(user.get("id") or "").strip()
+                if not user_id:
+                    raise AuthenticationError("Supabase Auth returned no user id")
+                claims = {
+                    "sub": user_id,
+                    "tenant_id": "",
+                    "app_role": str((user.get("app_metadata") or {}).get("app_role") or "member"),
+                    "scopes": [],
+                }
+            except AuthenticationError:
+                raise
+            except Exception as fallback_exc:
+                raise AuthenticationError(
+                    f"Invalid Supabase JWT: {exc}; Supabase Auth fallback failed: {fallback_exc}"
+                ) from fallback_exc
 
         user_id = str(claims["sub"])
         tenant_id = str(claims.get("tenant_id") or "").strip()
