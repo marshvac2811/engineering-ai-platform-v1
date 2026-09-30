@@ -98,22 +98,34 @@ class SupabaseJWTAuthenticator(Authenticator):
             raise AuthenticationError("Unsupported or incomplete Supabase JWT header")
 
         if self._jwks_cache is None:
+            # Vercel Python invocations can occasionally return OSError(EBUSY)
+            # from the runtime DNS/socket layer. Reuse one client per warm
+            # invocation and retry the network operation without repeatedly
+            # creating/closing sockets.
             last_error = None
-            for attempt in range(3):
+            client = getattr(self, "_http_client", None)
+            if client is None:
+                client = httpx.Client(
+                    timeout=httpx.Timeout(connect=5.0, read=8.0, write=5.0, pool=5.0),
+                    trust_env=False,
+                    follow_redirects=True,
+                    limits=httpx.Limits(max_connections=4, max_keepalive_connections=2),
+                )
+                self._http_client = client
+            import time
+            for attempt in range(6):
                 try:
-                    with httpx.Client(timeout=5.0, trust_env=False, follow_redirects=True) as client:
-                        response = client.get(
-                            self.jwks_url,
-                            headers={"Accept": "application/json", "Connection": "close"},
-                        )
-                        response.raise_for_status()
-                        self._jwks_cache = response.json()
+                    response = client.get(
+                        self.jwks_url,
+                        headers={"Accept": "application/json"},
+                    )
+                    response.raise_for_status()
+                    self._jwks_cache = response.json()
                     break
                 except Exception as exc:
                     last_error = exc
-                    if attempt < 2:
-                        import time
-                        time.sleep(0.25 * (attempt + 1))
+                    if attempt < 5:
+                        time.sleep(0.35 * (attempt + 1))
             if self._jwks_cache is None:
                 raise AuthenticationError("Unable to fetch Supabase JWKS: " + str(last_error))
 
@@ -133,18 +145,36 @@ class SupabaseJWTAuthenticator(Authenticator):
         if not key:
             key = "sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s"
         url = self.supabase_url + "/auth/v1/user"
-        with httpx.Client(timeout=8.0, trust_env=False, follow_redirects=True) as client:
-            response = client.get(
-                url,
-                headers={
-                    "apikey": key,
-                    "Authorization": "Bearer " + token,
-                    "Accept": "application/json",
-                    "Connection": "close",
-                },
+        client = getattr(self, "_http_client", None)
+        if client is None:
+            client = httpx.Client(
+                timeout=httpx.Timeout(connect=5.0, read=8.0, write=5.0, pool=5.0),
+                trust_env=False,
+                follow_redirects=True,
+                limits=httpx.Limits(max_connections=4, max_keepalive_connections=2),
             )
-            response.raise_for_status()
-            payload = response.json()
+            self._http_client = client
+        last_error = None
+        import time
+        for attempt in range(5):
+            try:
+                response = client.get(
+                    url,
+                    headers={
+                        "apikey": key,
+                        "Authorization": "Bearer " + token,
+                        "Accept": "application/json",
+                    },
+                )
+                response.raise_for_status()
+                payload = response.json()
+                break
+            except Exception as exc:
+                last_error = exc
+                if attempt < 4:
+                    time.sleep(0.35 * (attempt + 1))
+        else:
+            raise last_error
         if not isinstance(payload, dict) or not payload.get("id"):
             raise AuthenticationError("Supabase Auth rejected the access token")
         return payload
@@ -164,17 +194,25 @@ class SupabaseJWTAuthenticator(Authenticator):
         })
         url = self.supabase_url + "/rest/v1/tenant_memberships?" + query
         try:
-            with httpx.Client(timeout=8.0, trust_env=False, follow_redirects=True) as client:
-                response = client.get(
-                    url,
-                    headers={
-                        "apikey": service_key,
-                        "Authorization": "Bearer " + service_key,
-                        "Accept": "application/json",
-                    },
+            client = getattr(self, "_http_client", None)
+            if client is None:
+                client = httpx.Client(
+                    timeout=httpx.Timeout(connect=5.0, read=8.0, write=5.0, pool=5.0),
+                    trust_env=False,
+                    follow_redirects=True,
+                    limits=httpx.Limits(max_connections=4, max_keepalive_connections=2),
                 )
-                response.raise_for_status()
-                rows = response.json()
+                self._http_client = client
+            response = client.get(
+                url,
+                headers={
+                    "apikey": service_key,
+                    "Authorization": "Bearer " + service_key,
+                    "Accept": "application/json",
+                },
+            )
+            response.raise_for_status()
+            rows = response.json()
         except Exception as exc:
             raise AuthenticationError(
                 "Unable to resolve tenant membership: " + str(exc)
