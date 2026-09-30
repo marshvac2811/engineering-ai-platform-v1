@@ -118,6 +118,31 @@ class JobService:
         job = self._get(job_id)
         if job.status != JobStatus.AWAITING_INFORMATION:
             raise ValueError("Job is not awaiting information")
+        # Dashboard form values arrive as strings. Normalize them against the
+        # authoritative skill registry before re-planning/execution so numeric
+        # engineering inputs are passed to validators/calculators as numbers.
+        from skill_framework.registry import load_skill_registry
+        registry_path = __import__("pathlib").Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
+        try:
+            definition = load_skill_registry(registry_path).get(job.requested_skill_id or "")
+            numeric_fields = {
+                d.name for d in (
+                    list(definition.required_inputs)
+                    + list(definition.optional_inputs)
+                    + list(definition.conditional_inputs)
+                ) if d.data_type in {"number", "integer"}
+            }
+            normalized_updates = dict(updates)
+            for name in numeric_fields:
+                if name in normalized_updates and isinstance(normalized_updates[name], str):
+                    raw = normalized_updates[name].strip()
+                    if raw:
+                        normalized_updates[name] = int(float(raw)) if definition.data_type == "integer" else float(raw)
+            updates = normalized_updates
+        except (KeyError, ValueError, TypeError):
+            # Keep the original values so the normal validation path reports
+            # the precise input error rather than hiding it here.
+            pass
         job.inputs.update(updates)
         job.add_event("information_received", "Missing input information supplied.", fields=list(updates))
         from orchestrator.intake import build_plan
