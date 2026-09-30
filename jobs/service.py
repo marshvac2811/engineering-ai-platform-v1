@@ -237,6 +237,7 @@ class JobService:
 
         if result.status == "input_validation_failed":
             job.errors.extend(result.validation_errors)
+            self._update_orchestration_for_validation_errors(job, result.validation_errors)
             job.transition(JobStatus.AWAITING_INFORMATION, "Engineering skill reported missing or invalid inputs.", errors=result.validation_errors)
         elif result.status in {"calculation_failed", "skill_not_registered"}:
             job.errors.extend(result.validation_errors)
@@ -316,6 +317,53 @@ class JobService:
         if not job.source:
             errors.append("source is required")
         return errors
+
+    @staticmethod
+    def _update_orchestration_for_validation_errors(job: Job, errors: list[str]) -> None:
+        """Expose actionable skill-validation gaps to the dashboard.
+
+        Some deterministic skills report conditional/semantic requirements only
+        during execution (for example, pump_head requires roughness_mm or a
+        valid material). The execution error must therefore be reflected back
+        into the orchestration plan so the UI can render the exact field(s)
+        needed for continuation.
+        """
+        from skill_framework.registry import load_skill_registry
+
+        registry_path = __import__("pathlib").Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
+        try:
+            definition = load_skill_registry(registry_path).get(job.requested_skill_id or "")
+        except (KeyError, ValueError, TypeError):
+            return
+
+        definitions = (
+            list(definition.required_inputs)
+            + list(definition.optional_inputs)
+            + list(definition.conditional_inputs)
+        )
+        fields_by_name = {d.name: d for d in definitions}
+        missing = list(job.orchestration.get("missing_inputs") or [])
+        questions = list(job.orchestration.get("questions") or [])
+
+        for error in errors:
+            text = str(error)
+            # Prefer an explicitly named field in "Provide <field> ..." rules.
+            match = __import__("re").search(r"Provide\s+([A-Za-z_][A-Za-z0-9_]*)", text)
+            if match and match.group(1) in fields_by_name:
+                names = [match.group(1)]
+            else:
+                names = [name for name in fields_by_name if name in text]
+
+            for name in names:
+                if name not in missing:
+                    missing.append(name)
+                definition_for_field = fields_by_name[name]
+                question = getattr(definition_for_field, "question", None)
+                if question and question not in questions:
+                    questions.append(question)
+
+        job.orchestration["missing_inputs"] = missing
+        job.orchestration["questions"] = questions
 
     @staticmethod
     def _is_missing_information_case(errors: list[str]) -> bool:
