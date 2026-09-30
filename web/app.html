@@ -166,7 +166,7 @@ function jobHtml(j){
   html+='<div class="need"><strong>Information needed</strong><div style="margin-top:5px">'+esc(question)+'</div>'+
    fields.map(field=>'<label class="small" style="display:block;margin-top:10px">'+esc(field)+'</label>'+
     '<input id="answer-'+id+'-'+esc(field)+'" inputmode="decimal" placeholder="Enter '+esc(field)+'" style="margin-top:4px">').join('')+
-   '<div class="actions"><button id="btn-'+id+'" onclick="provideInfo(\\''+id+'\\','+JSON.stringify(fields).replace(/'/g,"\\'")+')">Continue</button></div>'+
+   '<div class="actions"><button id="btn-'+id+'" onclick="provideInfo(\\''+id+'\\','+JSON.stringify(fields)+')">Continue</button></div>'+
    '<div id="msg-'+id+'" class="msg"></div></div>';
  }
  if(result)html+=formatResult(result);
