@@ -106,7 +106,9 @@ def build_supabase_ingestion_service_from_env() -> Any:
     """Create a production ingestion service when Supabase server credentials exist."""
     import os
 
-    url = os.getenv("SUPABASE_URL")
+    url = (os.getenv("SUPABASE_URL") or "").strip()
+    if url and "://" not in url:
+        url = f"https://{url}"
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not url or not key:
         return None
