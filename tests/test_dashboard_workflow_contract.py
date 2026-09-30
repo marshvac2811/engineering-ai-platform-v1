@@ -11,8 +11,9 @@ def test_dashboard_file_and_authenticated_api_contract():
     assert "engineering_ai_access_token" in html
     assert 'fetch("/v1/intake"' in html or 'authFetch("/v1/intake"' in html
     assert "/v1/jobs/" in html
-    assert "/answers" in html
-    assert "/report?include_content=true" in html
+    assert "/information" in html
+    assert "formatResult" in html
+    assert "Dispatch" in html
 
 
 def test_dashboard_renders_plan_questions_and_unsupported_scope_safely():
