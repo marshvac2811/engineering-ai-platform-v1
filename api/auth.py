@@ -13,7 +13,6 @@ import os
 import urllib.parse
 import urllib.request
 import jwt
-from jwt import PyJWKClient
 
 from jobs.tenant import TenantContext
 
@@ -89,7 +88,45 @@ class SupabaseJWTAuthenticator(Authenticator):
             raise RuntimeError("SUPABASE_URL is required for Supabase JWT authentication")
         self.issuer = f"{self.supabase_url}/auth/v1"
         self.jwks_url = f"{self.issuer}/.well-known/jwks.json"
-        self.jwks_client = PyJWKClient(self.jwks_url, cache_keys=True)
+        self._jwks_cache = None
+
+    def _get_signing_key(self, token: str):
+        header = jwt.get_unverified_header(token)
+        kid = str(header.get("kid") or "").strip()
+        algorithm = str(header.get("alg") or "").strip()
+        if algorithm not in {"ES256", "RS256"} or not kid:
+            raise AuthenticationError("Unsupported or incomplete Supabase JWT header")
+
+        if self._jwks_cache is None:
+            last_error = None
+            for attempt in range(3):
+                request = urllib.request.Request(
+                    self.jwks_url,
+                    headers={"Accept": "application/json", "Connection": "close"},
+                    method="GET",
+                )
+                try:
+                    with urllib.request.urlopen(request, timeout=5) as response:
+                        self._jwks_cache = json.loads(response.read().decode("utf-8"))
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    if attempt < 2:
+                        import time
+                        time.sleep(0.25 * (attempt + 1))
+            if self._jwks_cache is None:
+                raise AuthenticationError("Unable to fetch Supabase JWKS: " + str(last_error))
+
+        keys = self._jwks_cache.get("keys", []) if isinstance(self._jwks_cache, dict) else []
+        jwk = next((key for key in keys if str(key.get("kid") or "") == kid), None)
+        if not jwk:
+            # Refresh once in case Supabase rotated signing keys.
+            self._jwks_cache = None
+            return self._get_signing_key(token)
+        algorithm_impl = jwt.algorithms.get_default_algorithms().get(algorithm)
+        if algorithm_impl is None:
+            raise AuthenticationError("Unsupported JWT algorithm: " + algorithm)
+        return algorithm_impl.from_jwk(json.dumps(jwk))
 
     def _resolve_tenant_membership(self, user_id: str) -> tuple[str, str]:
         service_key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
@@ -138,11 +175,11 @@ class SupabaseJWTAuthenticator(Authenticator):
             raise AuthenticationError("Supabase JWT is empty")
 
         try:
-            signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+            signing_key = self._get_signing_key(token)
 
             claims = jwt.decode(
                 token,
-                signing_key.key,
+                signing_key,
                 algorithms=["ES256", "RS256"],
                 audience="authenticated",
                 issuer=self.issuer,
