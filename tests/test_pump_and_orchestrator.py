@@ -65,7 +65,6 @@ def test_successful_retry_clears_stale_errors():
     service.enqueue(job.job_id)
     job = service.process(job.job_id)
     assert job.status == JobStatus.AWAITING_INFORMATION
-    job.inputs["roughness_mm"] = 0.0015
     job = service.provide_missing_information(job.job_id, {"roughness_mm": 0.0015})
     assert job.status == JobStatus.HUMAN_REVIEW
     assert job.errors == []
