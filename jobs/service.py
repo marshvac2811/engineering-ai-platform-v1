@@ -131,7 +131,8 @@ class JobService:
         )
         job.orchestration = plan.to_dict()
         if plan.status == "ready_for_execution":
-            job.transition(JobStatus.QUEUED, "All required inputs supplied; job returned to queue.")\n            job = self.process(job.job_id)
+            job.transition(JobStatus.QUEUED, "All required inputs supplied; job returned to queue.")
+            job = self.process(job.job_id)
         else:
             job.add_event("orchestration_replanned", "Additional required inputs remain missing.", missing_inputs=plan.missing_inputs)
         self.store.save(job)
