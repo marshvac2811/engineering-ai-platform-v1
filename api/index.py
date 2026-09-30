@@ -1,15 +1,14 @@
 """Vercel entry point for the Engineering AI Platform.
 
-Keep module import lightweight. The full API application is loaded lazily so a
-dependency/startup problem produces a useful HTTP response instead of a generic
-FUNCTION_INVOCATION_FAILED during function initialization.
+The Vercel route maps /v1/* requests to this Python function. The original
+public path is passed in a normal query parameter so Vercel does not consume
+it as an internal routing parameter.
 """
 
 from __future__ import annotations
 
 import json
-from typing import Callable
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs
 
 _cached_app = None
 
@@ -36,15 +35,13 @@ def _load_app():
 
 def app(environ, start_response):
     query = parse_qs(environ.get("QUERY_STRING", ""), keep_blank_values=True)
-    original_path = (query.get("__vercel_path") or [""])[0]
-    request_uri = environ.get("REQUEST_URI") or environ.get("RAW_URI") or ""
-    request_uri_path = urlsplit(request_uri).path if request_uri else ""
-    path = original_path or request_uri_path or environ.get("PATH_INFO", "")
+
+    # IMPORTANT: use an ordinary query key. Vercel may consume/reserve names
+    # beginning with __, which caused the previous routing fix to be lost.
+    original_path = (query.get("engineering_path") or [""])[0]
+    path = original_path or environ.get("PATH_INFO", "")
     method = environ.get("REQUEST_METHOD", "GET")
 
-    # Vercel routes /v1/* through /api/index.py. WSGI otherwise sees the
-    # function path (/api/index.py), which makes the API report "Route not found".
-    # Restore the externally requested path before handing off to APIApp.
     if path:
         environ["PATH_INFO"] = path
 
