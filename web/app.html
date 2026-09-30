@@ -19,7 +19,8 @@ h2{margin-top:0}
 <main>
 <div class="card">
 <h2>Engineering Operations Dashboard</h2>
-<p class="status" id="authStatus">Authenticated</p>
+<p class="status" id="authStatus">Checking authentication...</p>
+<div id="authAction" style="display:none;margin-top:10px"><a href="/login" style="display:inline-block;padding:10px 16px;background:#172033;color:white;border-radius:8px;text-decoration:none">Sign in again</a></div>
 <div id="account">Loading account...</div>
 </div>
 <div class="card">
@@ -112,6 +113,15 @@ async function refreshAccessToken() {
     return data.access_token;
 }
 
+function forceSignIn(message) {
+    localStorage.removeItem("engineering_ai_access_token");
+    localStorage.removeItem("engineering_ai_refresh_token");
+    const status = document.getElementById("authStatus");
+    const action = document.getElementById("authAction");
+    if (status) status.textContent = message || "Authentication required";
+    if (action) action.style.display = "block";
+}
+
 async function authFetch(url, options = {}) {
     const requestOptions = Object.assign({}, options);
     const headers = Object.assign({}, requestOptions.headers || {});
@@ -131,7 +141,12 @@ async function authFetch(url, options = {}) {
         return response;
     }
 
-    accessToken = await refreshAccessToken();
+    try {
+        accessToken = await refreshAccessToken();
+    } catch (error) {
+        forceSignIn("Session expired or authentication failed.");
+        throw error;
+    }
 
     const retryHeaders = Object.assign({}, headers, {
         "Authorization": "Bearer " + accessToken
@@ -139,7 +154,11 @@ async function authFetch(url, options = {}) {
 
     requestOptions.headers = retryHeaders;
 
-    return fetch(url, requestOptions);
+    const retryResponse = await fetch(url, requestOptions);
+    if (retryResponse.status === 401) {
+        forceSignIn("Authentication required. Please sign in again.");
+    }
+    return retryResponse;
 }
 const accountBox = document.getElementById("account");
 const skillsStatusBox = document.getElementById("skills-status");
@@ -673,6 +692,7 @@ async function approveJob(jobId) {
 
 document.getElementById("submit-engineering-request").addEventListener("click", submitEngineeringRequest);
 
+document.getElementById("authStatus").textContent = token ? "Authenticated" : "Authentication required";
 loadAccount();
 loadSkills().then(loadIntakeSkills);
 loadJobs();
