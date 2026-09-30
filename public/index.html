@@ -68,7 +68,31 @@ h2{margin-top:0}
 </div>
 
 <script>
-const token = localStorage.getItem("engineering_ai_access_token");
+function getStoredAccessToken() {
+    const direct = localStorage.getItem("engineering_ai_access_token");
+    if (direct) return direct;
+
+    // Recover an existing Supabase browser session from the standard
+    // Supabase localStorage key when the custom dashboard key is absent.
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || !key.startsWith("sb-")) continue;
+        try {
+            const value = JSON.parse(localStorage.getItem(key) || "");
+            const accessToken = value && (value.access_token || value.currentSession?.access_token);
+            if (accessToken) {
+                localStorage.setItem("engineering_ai_access_token", accessToken);
+                if (value.refresh_token) {
+                    localStorage.setItem("engineering_ai_refresh_token", value.refresh_token);
+                }
+                return accessToken;
+            }
+        } catch (_) {}
+    }
+    return "";
+}
+
+let token = getStoredAccessToken();
 
 if (!token) {
     window.location.replace("/login");
