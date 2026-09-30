@@ -278,7 +278,9 @@ class SupabaseJobStore(JobStore):
 def build_supabase_job_store_from_env() -> Optional[SupabaseJobStore]:
     import os
 
-    url = os.getenv("SUPABASE_URL")
+    url = (os.getenv("SUPABASE_URL") or "").strip()
+    if url and "://" not in url:
+        url = f"https://{url}"
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
     if not url or not key:
