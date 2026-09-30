@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional, FrozenSet
 import json
 import os
+import urllib.parse
 import httpx
 import jwt
 
