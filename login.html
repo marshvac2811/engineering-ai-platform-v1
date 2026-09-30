@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Engineering AI Platform — Sign in</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}
+main{max-width:480px;margin:70px auto;padding:0 20px}
+.card{background:white;padding:28px;border-radius:14px;box-shadow:0 5px 20px rgba(0,0,0,.08)}
+h1{margin-top:0}
+label{display:block;margin:14px 0 6px;font-weight:600}
+input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccc;border-radius:8px}
+button{margin-top:18px;padding:12px 18px;border:0;border-radius:8px;cursor:pointer}
+#message{margin-top:15px;color:#b00020}
+</style>
+</head>
+<body>
+<main>
+<div class="card">
+<h1>Engineering AI Platform</h1>
+<h2>Sign in</h2>
+<p>Use your Supabase account to access the Engineering Operations Dashboard.</p>
+<label for="email">Email</label>
+<input id="email" type="email" autocomplete="username">
+<label for="password">Password</label>
+<input id="password" type="password" autocomplete="current-password">
+<button id="login" type="button">Sign in</button>
+<div id="message"></div>
+</div>
+</main>
+<script>
+const SUPABASE_URL="https://vaxerlbgwwlfamncevdg.supabase.co";
+const SUPABASE_KEY="sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s";
+const message=document.getElementById("message");
+document.getElementById("login").addEventListener("click",async function(){
+  message.textContent="Signing in...";
+  try{
+    const email=document.getElementById("email").value.trim();
+    const password=document.getElementById("password").value;
+    if(!email||!password) throw new Error("Email and password are required.");
+    const response=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{
+      method:"POST",
+      headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({email,password})
+    });
+    const data=await response.json();
+    if(!response.ok||!data.access_token) throw new Error(data.error_description||data.msg||data.error||"Sign in failed.");
+    localStorage.setItem("engineering_ai_access_token",data.access_token);
+    if(data.refresh_token) localStorage.setItem("engineering_ai_refresh_token",data.refresh_token);
+    window.location.replace("/");
+  }catch(error){message.textContent=error.message;}
+});
+</script>
+</body>
+</html>
