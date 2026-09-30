@@ -6,11 +6,11 @@
     },
     {
       "src": "/v1/(.*)",
-      "dest": "/api/index.py"
+      "dest": "/api/index.py?__vercel_path=/v1/$1"
     },
     {
       "src": "/health",
-      "dest": "/api/index.py"
+      "dest": "/api/index.py?__vercel_path=/health"
     },
     {
       "src": "/login",
