@@ -23,7 +23,7 @@ button:disabled{opacity:.55;cursor:wait}
 .job{border:1px solid #e1e5eb;border-radius:10px;padding:15px;margin:10px 0}
 .review{background:#fff8e1;border-color:#ead48a}
 .status{font-weight:700;text-transform:capitalize}
-.result{margin-top:10px;background:#f7f8fa;padding:12px;border-radius:8px;white-space:pre-wrap;font-size:13px}
+.result{margin-top:10px;background:#f7f8fa;padding:14px;border-radius:10px;font-size:13px}.result h3{margin:0 0 12px;font-size:15px}.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.metric{background:#fff;border:1px solid #e1e5eb;border-radius:8px;padding:10px}.metric .label{display:block;color:#697386;font-size:11px;margin-bottom:4px}.metric .value{font-weight:700;font-size:14px}
 .need{margin-top:12px;padding:14px;border:1px solid #ead48a;background:#fffaf0;border-radius:10px}
 .actions{display:flex;gap:8px;margin-top:10px}
 .empty{color:#697386;padding:8px 0}
@@ -129,6 +129,27 @@ async function dispatch(jobId){
  const d=await r.json();if(!r.ok){alert(d.error||"Dispatch failed");return;}await loadJobs();
 }
 
+function formatResult(result){
+ const labels={
+  method:"Method",flow_m3hr:"Airflow (m³/h)",target_velocity_ms:"Target velocity",
+  required_diameter_mm:"Required diameter",recommended_diameter_mm:"Recommended diameter",
+  actual_velocity_ms:"Actual velocity",actual_friction_pa_per_m:"Friction loss",
+  input_airflow:"Input airflow",input_airflow_unit:"Airflow unit"
+ };
+ const preferred=["method","input_airflow","input_airflow_unit","flow_m3hr","target_velocity_ms","required_diameter_mm","recommended_diameter_mm","actual_velocity_ms","actual_friction_pa_per_m"];
+ const fmt=(k,v)=>{
+  if(v===null||v===undefined)return "";
+  if(typeof v==="number")return Number.isInteger(v)?String(v):String(Number(v.toFixed(3)));
+  return String(v);
+ };
+ const items=preferred.filter(k=>Object.prototype.hasOwnProperty.call(result,k)).map(k=>{
+  const value=fmt(k,result[k]);
+  const unit=k==="flow_m3hr"?" m³/h":k==="target_velocity_ms"||k==="actual_velocity_ms"?" m/s":k==="required_diameter_mm"||k==="recommended_diameter_mm"?" mm":k==="actual_friction_pa_per_m"?" Pa/m":"";
+  return '<div class="metric"><span class="label">'+esc(labels[k]||k)+'</span><span class="value">'+esc(value+unit)+'</span></div>';
+ }).join("");
+ const note=result.velocity_note?'<div class="small" style="margin-top:10px">'+esc(result.velocity_note)+'</div>':"";
+ return '<div class="result"><h3>Engineering Result</h3><div class="result-grid">'+items+'</div>'+note+'</div>';
+}
 function jobHtml(j){
  const id=esc(j.job_id), status=String(j.status||"unknown"), review=status==="human_review";
  const orch=j.orchestration||{}, missing=Array.isArray(orch.missing_inputs)?orch.missing_inputs:[];
@@ -143,7 +164,7 @@ function jobHtml(j){
    '<div class="actions"><button id="btn-'+id+'" onclick="provideInfo(\''+id+'\',\''+field+'\')">Continue</button></div>'+
    '<div id="msg-'+id+'" class="msg"></div></div>';
  }
- if(result)html+='<div class="result"><strong>Engineering Result</strong>\n'+esc(JSON.stringify(result,null,2))+'</div>';
+ if(result)html+=formatResult(result);
  if(j.errors?.length)html+='<div style="color:#a12626;margin-top:8px">'+esc(j.errors.join("; "))+'</div>';
  if(review)html+='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button></div>';
  if(status==="approved")html+='<div class="actions"><button onclick="dispatch(\''+id+'\')">Dispatch</button></div>';
@@ -157,6 +178,9 @@ async function loadJobs(){
   if(!r.ok)throw Error(d.error||"Jobs unavailable");
   if(!d.jobs?.length){box.innerHTML='<div class="empty">No jobs yet.</div>';return;}
   box.innerHTML=d.jobs.slice(0,20).map(jobHtml).join("");
+  const hasAwaiting=d.jobs.some(j=>String(j.status||"")==="awaiting_information");
+  const requestMsg=document.getElementById("requestMsg");
+  if(!hasAwaiting && requestMsg.textContent==="One input is needed to continue.") requestMsg.style.display="none";
  }catch(e){box.innerHTML='<div class="msg err" style="display:block">'+esc(e.message)+'</div>';}
 }
 
