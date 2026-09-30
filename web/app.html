@@ -5,21 +5,29 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Engineering Operations</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f7fa;color:#172033}
-header{background:#172033;color:#fff;padding:18px 28px}header .bar{max-width:1050px;margin:auto;display:flex;justify-content:space-between;align-items:center}
-h1{font-size:22px;margin:0} .user{font-size:13px;opacity:.85}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f7fa;color:#172033}
+header{background:#172033;color:#fff;padding:18px 28px}
+header .bar{max-width:1050px;margin:auto;display:flex;justify-content:space-between;align-items:center}
+h1{font-size:22px;margin:0}.user{font-size:13px;opacity:.85}
 main{max-width:1050px;margin:28px auto;padding:0 18px}
 .card{background:#fff;border:1px solid #e5e8ee;border-radius:14px;padding:22px;margin-bottom:18px}
-h2{font-size:18px;margin:0 0 14px}.muted{color:#697386;font-size:13px}
-textarea{width:100%;border:1px solid #ccd3df;border-radius:9px;padding:12px;font:inherit;resize:vertical}
+h2{font-size:18px;margin:0 0 10px}.muted{color:#697386;font-size:13px}
+textarea,input{width:100%;border:1px solid #ccd3df;border-radius:9px;padding:12px;font:inherit}
+textarea{resize:vertical}
 button{border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;background:#1769e0;color:#fff}
-button.secondary{background:#eef2f7;color:#172033}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-#submit{margin-top:12px}.msg{margin-top:12px;padding:10px;border-radius:8px;display:none}
+button:disabled{opacity:.55;cursor:wait}
+.secondary{background:#eef2f7;color:#172033}
+.msg{margin-top:12px;padding:10px;border-radius:8px;display:none}
 .ok{background:#e9f7ef;color:#176b3a}.err{background:#fdecec;color:#a12626}
 .job{border:1px solid #e1e5eb;border-radius:10px;padding:15px;margin:10px 0}
-.status{font-weight:700;text-transform:capitalize}.review{background:#fff8e1;border-color:#ead48a}
-pre{white-space:pre-wrap;background:#f7f8fa;padding:12px;border-radius:8px;overflow:auto;font-size:12px}
-details summary{cursor:pointer;font-weight:600}.empty{color:#697386;padding:8px 0}
+.review{background:#fff8e1;border-color:#ead48a}
+.status{font-weight:700;text-transform:capitalize}
+.result{margin-top:10px;background:#f7f8fa;padding:12px;border-radius:8px;white-space:pre-wrap;font-size:13px}
+.need{margin-top:12px;padding:14px;border:1px solid #ead48a;background:#fffaf0;border-radius:10px}
+.actions{display:flex;gap:8px;margin-top:10px}
+.empty{color:#697386;padding:8px 0}
+.small{font-size:12px;color:#697386}
 </style>
 </head>
 <body>
@@ -27,12 +35,9 @@ details summary{cursor:pointer;font-weight:600}.empty{color:#697386;padding:8px 
 <main>
 <section class="card">
 <h2>New Engineering Request</h2>
-<p class="muted">Describe the work in plain language. The backend selects the skill, validates inputs, runs the calculation and routes completed drafts for human review.</p>
-<textarea id="request" rows="5" placeholder="Example: Size a round GSS duct for 2,000 CFM using velocity method at 6 m/s."></textarea>
-<details style="margin-top:12px"><summary>Project context (optional)</summary>
-<textarea id="context" rows="3" style="margin-top:10px" placeholder='{"project":"Office HVAC","location":"Gurugram"}'></textarea>
-</details>
-<button id="submit" onclick="submitRequest()">Submit Request</button>
+<p class="muted">Tell the platform what you need in normal language. The engineering engine handles skill selection, input checks, calculation and validation automatically.</p>
+<textarea id="request" rows="5" placeholder="Example: Size a round GSS duct for 2,000 CFM using the velocity method at 6 m/s."></textarea>
+<button id="submit" style="margin-top:12px" onclick="submitRequest()">Submit Request</button>
 <div id="requestMsg" class="msg"></div>
 </section>
 
@@ -41,52 +46,120 @@ details summary{cursor:pointer;font-weight:600}.empty{color:#697386;padding:8px 
 <div id="jobs" class="empty">Loading...</div>
 </section>
 </main>
+
 <script>
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 let token=localStorage.getItem("engineering_ai_access_token");
 if(!token) location.replace("/login");
 
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function showMsg(el,ok,msg){el.className="msg "+(ok?"ok":"err");el.style.display="block";el.textContent=msg;}
+
 async function refresh(){
- const rt=localStorage.getItem("engineering_ai_refresh_token"); if(!rt) throw Error("Session expired. Please sign in again.");
- const r=await fetch("https://vaxerlbgwwlfamncevdg.supabase.co/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":"sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s","Content-Type":"application/json"},body:JSON.stringify({refresh_token:rt})});
- const d=await r.json(); if(!r.ok||!d.access_token) throw Error("Session expired. Please sign in again.");
- localStorage.setItem("engineering_ai_access_token",d.access_token); if(d.refresh_token)localStorage.setItem("engineering_ai_refresh_token",d.refresh_token); token=d.access_token;
+ const rt=localStorage.getItem("engineering_ai_refresh_token");
+ if(!rt) throw Error("Session expired. Please sign in again.");
+ const r=await fetch("https://vaxerlbgwwlfamncevdg.supabase.co/auth/v1/token?grant_type=refresh_token",{
+  method:"POST",
+  headers:{"apikey":"sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s","Content-Type":"application/json"},
+  body:JSON.stringify({refresh_token:rt})
+ });
+ const d=await r.json();
+ if(!r.ok||!d.access_token) throw Error("Session expired. Please sign in again.");
+ localStorage.setItem("engineering_ai_access_token",d.access_token);
+ if(d.refresh_token)localStorage.setItem("engineering_ai_refresh_token",d.refresh_token);
+ token=d.access_token;
 }
+
 async function api(url,opt={}){
- let h=Object.assign({},opt.headers||{},{"Authorization":"Bearer "+token}); let r=await fetch(url,Object.assign({},opt,{headers:h}));
+ let h=Object.assign({},opt.headers||{},{"Authorization":"Bearer "+token});
+ let r=await fetch(url,Object.assign({},opt,{headers:h}));
  if(r.status===401){await refresh();h.Authorization="Bearer "+token;r=await fetch(url,Object.assign({},opt,{headers:h}));}
  return r;
 }
+
 async function loadAccount(){
- try{const r=await api("/v1/account");const d=await r.json();if(r.ok)document.getElementById("user").textContent=(d.role||"user")+" · authenticated";}catch(e){}
+ try{
+  const r=await api("/v1/account"); const d=await r.json();
+  if(r.ok)document.getElementById("user").textContent=(d.role||"user")+" · authenticated";
+ }catch(e){}
 }
+
 async function submitRequest(){
- const box=document.getElementById("requestMsg"), btn=document.getElementById("submit");
- const message=document.getElementById("request").value.trim(); if(!message){box.className="msg err";box.style.display="block";box.textContent="Enter an engineering request.";return;}
- let context={}; const raw=document.getElementById("context").value.trim();
- if(raw){try{context=JSON.parse(raw);if(!context||Array.isArray(context))throw Error();}catch(e){box.className="msg err";box.style.display="block";box.textContent="Project context must be valid JSON.";return;}}
- btn.disabled=true;box.className="msg";box.style.display="block";box.textContent="Submitting and processing in backend...";
- try{const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,project_context:context})});const d=await r.json();if(!r.ok)throw Error(d.error||"Request failed");box.className="msg ok";box.textContent="Request processed. "+(d.job?.status||"");document.getElementById("request").value="";await loadJobs();}catch(e){box.className="msg err";box.textContent=e.message;}finally{btn.disabled=false;}
+ const btn=document.getElementById("submit"), msg=document.getElementById("requestMsg");
+ const message=document.getElementById("request").value.trim();
+ if(!message){showMsg(msg,false,"Please enter an engineering request.");return;}
+ btn.disabled=true;showMsg(msg,true,"Processing your request...");
+ try{
+  const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message})});
+  const d=await r.json();
+  if(!r.ok)throw Error(d.error||"Request failed");
+  document.getElementById("request").value="";
+  showMsg(msg,true, d.job?.status==="awaiting_information" ? "One input is needed to continue." : "Request submitted successfully.");
+  await loadJobs();
+ }catch(e){showMsg(msg,false,e.message);}
+ finally{btn.disabled=false;}
 }
-async function action(id,verb){
- try{const r=await api("/v1/jobs/"+encodeURIComponent(id)+"/"+verb,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reviewer:"dashboard",comment:"Approved from Engineering Operations dashboard"})});const d=await r.json();if(!r.ok)throw Error(d.error||"Action failed");await loadJobs();}catch(e){alert(e.message);}
+
+async function provideInfo(jobId,field){
+ const input=document.getElementById("answer-"+jobId), value=input.value.trim();
+ const msg=document.getElementById("msg-"+jobId);
+ if(!value){showMsg(msg,false,"Please enter the required information.");return;}
+ const button=document.getElementById("btn-"+jobId);button.disabled=true;
+ try{
+  const updates={}; updates[field]=value;
+  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/information",{
+   method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({inputs:updates})
+  });
+  const d=await r.json();if(!r.ok)throw Error(d.error||"Information update failed");
+  await loadJobs();
+ }catch(e){showMsg(msg,false,e.message);button.disabled=false;}
 }
+
+async function approve(jobId){
+ const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/approve",{
+  method:"POST",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({reviewer:"dashboard",comment:"Approved from Engineering Operations dashboard"})
+ });
+ const d=await r.json();if(!r.ok){alert(d.error||"Approval failed");return;}await loadJobs();
+}
+
+async function dispatch(jobId){
+ const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/dispatch",{
+  method:"POST",headers:{"Content-Type":"application/json"},body:"{}"
+ });
+ const d=await r.json();if(!r.ok){alert(d.error||"Dispatch failed");return;}await loadJobs();
+}
+
+function jobHtml(j){
+ const id=esc(j.job_id), status=String(j.status||"unknown"), review=status==="human_review";
+ const orch=j.orchestration||{}, missing=Array.isArray(orch.missing_inputs)?orch.missing_inputs:[];
+ const question=Array.isArray(orch.questions)&&orch.questions.length?orch.questions[0]:"Additional information is required.";
+ const result=j.result?.engineering_result||j.result?.engineeringResult;
+ let html='<div class="job '+(review?"review":"")+'"><div><strong>Engineering Request</strong></div>'+
+  '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>';
+ if(status==="awaiting_information"&&missing.length){
+  const field=esc(missing[0]);
+  html+='<div class="need"><strong>Information needed</strong><div style="margin-top:5px">'+esc(question)+'</div>'+
+   '<input id="answer-'+id+'" placeholder="Enter your answer (for example: round)" style="margin-top:10px">'+
+   '<div class="actions"><button id="btn-'+id+'" onclick="provideInfo(\''+id+'\',\''+field+'\')">Continue</button></div>'+
+   '<div id="msg-'+id+'" class="msg"></div></div>';
+ }
+ if(result)html+='<div class="result"><strong>Engineering Result</strong>\n'+esc(JSON.stringify(result,null,2))+'</div>';
+ if(j.errors?.length)html+='<div style="color:#a12626;margin-top:8px">'+esc(j.errors.join("; "))+'</div>';
+ if(review)html+='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button></div>';
+ if(status==="approved")html+='<div class="actions"><button onclick="dispatch(\''+id+'\')">Dispatch</button></div>';
+ html+='</div>';return html;
+}
+
 async function loadJobs(){
  const box=document.getElementById("jobs");
- try{const r=await api("/v1/jobs");const d=await r.json();if(!r.ok)throw Error(d.error||"Jobs unavailable");
- if(!d.jobs?.length){box.innerHTML='<div class="empty">No jobs yet.</div>';return;}
- box.innerHTML=d.jobs.slice(0,20).map(j=>{
-  const s=esc(j.status||"unknown"), cls=j.status==="human_review"?"job review":"job";
-  const result=j.result?.engineering_result||j.result?.engineeringResult;
-  return '<div class="'+cls+'"><div><strong>'+esc(j.requested_skill_id||j.skill_id||"Engineering request")+'</strong></div><div class="muted" style="margin-top:4px">Job: '+esc(j.job_id)+'</div><div style="margin-top:7px">Status: <span class="status">'+s.replaceAll("_"," ")+'</span></div>'+
-   (result?'<details style="margin-top:10px"><summary>Engineering result</summary><pre>'+esc(JSON.stringify(result,null,2))+'</pre></details>':'')+
-   (j.errors?.length?'<div style="color:#a12626;margin-top:8px">'+esc(j.errors.join("; "))+'</div>':'')+
-   (j.status==="human_review"?'<div class="actions"><button onclick="action(\''+esc(j.job_id)+'\',\'approve\')">Approve</button></div>':"")+
-   (j.status==="approved"?'<div class="actions"><button onclick="action(\''+esc(j.job_id)+'\',\'dispatch\')">Dispatch</button></div>':"")+
-   '</div>';
- }).join("");
- }catch(e){box.innerHTML='<div class="err" style="display:block">'+esc(e.message)+'</div>';}
+ try{
+  const r=await api("/v1/jobs");const d=await r.json();
+  if(!r.ok)throw Error(d.error||"Jobs unavailable");
+  if(!d.jobs?.length){box.innerHTML='<div class="empty">No jobs yet.</div>';return;}
+  box.innerHTML=d.jobs.slice(0,20).map(jobHtml).join("");
+ }catch(e){box.innerHTML='<div class="msg err" style="display:block">'+esc(e.message)+'</div>';}
 }
+
 loadAccount();loadJobs();
 </script>
 </body>
