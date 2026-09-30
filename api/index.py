@@ -42,6 +42,12 @@ def app(environ, start_response):
     path = original_path or request_uri_path or environ.get("PATH_INFO", "")
     method = environ.get("REQUEST_METHOD", "GET")
 
+    # Vercel routes /v1/* through /api/index.py. WSGI otherwise sees the
+    # function path (/api/index.py), which makes the API report "Route not found".
+    # Restore the externally requested path before handing off to APIApp.
+    if path:
+        environ["PATH_INFO"] = path
+
     if path == "/health" and method == "GET":
         return _json(
             start_response,
