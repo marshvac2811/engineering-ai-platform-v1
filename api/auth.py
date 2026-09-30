@@ -8,7 +8,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, Optional, FrozenSet
+import json
 import os
+import urllib.parse
+import urllib.request
 import jwt
 from jwt import PyJWKClient
 
@@ -88,6 +91,43 @@ class SupabaseJWTAuthenticator(Authenticator):
         self.jwks_url = f"{self.issuer}/.well-known/jwks.json"
         self.jwks_client = PyJWKClient(self.jwks_url, cache_keys=True)
 
+    def _resolve_tenant_membership(self, user_id: str) -> tuple[str, str]:
+        service_key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+        if not service_key:
+            raise AuthenticationError(
+                "SUPABASE_SERVICE_ROLE_KEY is required to resolve tenant membership"
+            )
+
+        query = urllib.parse.urlencode({
+            "user_id": "eq." + user_id,
+            "select": "tenant_id,role,is_default",
+            "order": "is_default.desc",
+            "limit": "1",
+        })
+        url = self.supabase_url + "/rest/v1/tenant_memberships?" + query
+        request = urllib.request.Request(
+            url,
+            headers={
+                "apikey": service_key,
+                "Authorization": "Bearer " + service_key,
+                "Accept": "application/json",
+            },
+            method="GET",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=8) as response:
+                rows = json.loads(response.read().decode("utf-8"))
+        except Exception as exc:
+            raise AuthenticationError(
+                "Unable to resolve tenant membership: " + str(exc)
+            ) from exc
+
+        if not isinstance(rows, list) or not rows:
+            return "", ""
+
+        row = rows[0] or {}
+        return str(row.get("tenant_id") or "").strip(), str(row.get("role") or "").strip()
+
     def authenticate(self, environ) -> AuthContext:
         auth = environ.get("HTTP_AUTHORIZATION", "")
         if not auth.startswith("Bearer "):
@@ -116,9 +156,16 @@ class SupabaseJWTAuthenticator(Authenticator):
         role = str(claims.get("app_role") or "member")
         raw_scopes = claims.get("scopes", [])
 
+        # The current Supabase JWT does not carry the application's tenant_id.
+        # Resolve it from the authenticated user's tenant membership instead of
+        # requiring the browser to send a trusted X-Tenant-ID header.
+        if not tenant_id:
+            tenant_id, membership_role = self._resolve_tenant_membership(user_id)
+            if membership_role:
+                role = membership_role
         if not tenant_id:
             raise AuthenticationError(
-                "Supabase JWT is valid but tenant_id claim is missing"
+                "Authenticated Supabase user has no active tenant membership"
             )
 
         if not isinstance(raw_scopes, (list, tuple, set)):
