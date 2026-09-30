@@ -502,7 +502,7 @@ async function loadJobs() {
             "<p><strong>Total Jobs:</strong> " + esc(data.count) + "</p>" +
             data.jobs.map(function(job) {
                 return "<div style='border:1px solid #ddd;padding:12px;margin:10px 0;border-radius:8px;cursor:pointer' " +
-                    "onclick='openJob(\\"" + esc(job.job_id) + "\\")'>" +
+                    "data-job-id=\"" + esc(job.job_id) + "\" onclick=\"openJob(this.dataset.jobId)\">" +
                     "<p><strong>Job ID:</strong> " + esc(job.job_id) + "</p>" +
                     "<p><strong>Status:</strong> " + esc(job.status) + "</p>" +
                     "<p><strong>Skill:</strong> " + esc(job.skill_id || job.requested_skill_id || "Not selected") + "</p>" +
