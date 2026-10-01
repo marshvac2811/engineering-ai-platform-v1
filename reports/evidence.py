@@ -87,9 +87,10 @@ def build_evidence_bundle(*, job, workflow: Dict[str, Any], consolidated: Dict[s
         "result": consolidated,
         "qa": consolidated.get("qa") or {},
         "governance": consolidated.get("governance") or {},
+        "delivery": job.dispatch_result or {},
         "review": {
             "required": True,
-            "status": "pending",
+            "status": "approved" if job.status.value in {"approved", "dispatching", "dispatched", "completed"} else "pending",
             "events": [e.to_dict() if hasattr(e, "to_dict") else {
                 "event_type": e.event_type, "status": e.status,
                 "message": e.message, "metadata": e.metadata, "created_at": e.created_at
