@@ -55,8 +55,8 @@ class JobService:
         return job
 
 
-    def create_from_plan(self, plan) -> Job:
-        """Create a job directly from an orchestration plan."""
+    def create_from_plan(self, plan, *, attachments: Optional[list[Dict[str, Any]]] = None, provider: Any = None) -> Job:
+        """Create a job and, when supplied, turn uploaded files into project context before execution."""
         job = self.create_job(
             source="orchestrator",
             requested_skill_id=plan.selected_skill_id,
@@ -67,17 +67,65 @@ class JobService:
             orchestration=plan.to_dict(),
         )
         job.add_event("orchestration_plan", "Natural-language request classified by orchestrator.", plan=plan.to_dict())
-        if plan.status == "awaiting_information":
-            job.transition(
-                JobStatus.AWAITING_INFORMATION,
-                "Additional engineering inputs are required before execution.",
-                missing_inputs=plan.missing_inputs,
+
+        if attachments:
+            import base64
+            document_context = list((job.project_context or {}).get("documents") or [])
+            for spec in attachments:
+                if not isinstance(spec, dict):
+                    raise ValueError("Each attachment must be an object")
+                filename = str(spec.get("filename") or "attachment.bin").strip()
+                raw = spec.get("content_base64")
+                if not raw:
+                    raise ValueError(f"content_base64 is required for {filename}")
+                try:
+                    data = base64.b64decode(raw, validate=True)
+                except Exception as exc:
+                    raise ValueError(f"Invalid base64 content for {filename}") from exc
+                self.register_attachment(
+                    job.job_id,
+                    filename=filename,
+                    mime_type=spec.get("mime_type"),
+                    data=data,
+                    metadata=spec.get("metadata") or {},
+                )
+                attachment = job.attachments[-1]
+                extracted = self.extract_attachment(job.job_id, attachment["attachment_id"])
+                document_context.append({
+                    "attachment_id": attachment["attachment_id"],
+                    "filename": attachment["filename"],
+                    "mime_type": attachment["mime_type"],
+                    "source_type": attachment["source_type"],
+                    "sha256": attachment["sha256"],
+                    "extraction_status": extracted.get("status"),
+                    "metadata": extracted.get("metadata") or {},
+                    "warnings": extracted.get("warnings") or [],
+                    "text": extracted.get("text") or "",
+                    "chunks": extracted.get("chunks") or [],
+                })
+            job.project_context = {**(job.project_context or {}), "documents": document_context}
+
+            # Reinterpret the request with the actual project evidence now available.
+            from orchestrator.intake import build_plan
+            plan = build_plan(
+                plan.normalized_request,
+                requested_skill_id=plan.selected_skill_id,
+                provided_inputs=job.inputs,
+                project_context=job.project_context,
+                standards_context=job.standards_context,
+                assumptions_context=job.assumptions_context,
+                provider=provider,
             )
+            job.orchestration = plan.to_dict()
+            job.add_event("project_context_enriched", "Uploaded project documents were extracted and added to AI engineering context.",
+                          attachment_count=len(attachments))
+
+        if plan.status == "awaiting_information":
+            job.transition(JobStatus.AWAITING_INFORMATION, "Additional engineering inputs are required before execution.",
+                           missing_inputs=plan.missing_inputs)
         elif plan.status in {"ambiguous", "unroutable"}:
             job.add_event("orchestration_needs_clarification", "Orchestrator could not select a unique executable skill.", status=plan.status)
         else:
-            # Backend owns the automated lifecycle. The UI should not need to
-            # enqueue or process jobs step-by-step.
             self.enqueue(job.job_id)
             job = self.process(job.job_id)
         self.store.save(job)

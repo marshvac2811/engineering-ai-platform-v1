@@ -18,6 +18,7 @@ from orchestrator.engine import SKILLS
 from skill_framework.registry import load_skill_registry
 from skill_framework.input_resolver import resolve_input_requirements
 from governance.engine import build_governance_context
+from knowledge.retrieval import build_ai_project_context
 
 
 @dataclass
@@ -379,7 +380,7 @@ def build_plan(
                     work_items=supported,
                     unsupported_scope=unsupported,
                 )
-    project_context = project_context or {}
+    project_context = build_ai_project_context(text, project_context or {})
     standards_context = standards_context or {}
     assumptions_context = assumptions_context or {}
     provided_inputs = dict(provided_inputs or {})
@@ -394,7 +395,13 @@ def build_plan(
             text,
             {
                 "provided_inputs": provided_inputs,
-                "project_context": project_context,
+                "project_context": {
+                    **project_context,
+                    "documents": [
+                        {k: d.get(k) for k in ("attachment_id", "filename", "mime_type", "source_type", "sha256", "extraction_status", "metadata", "warnings")}
+                        for d in project_context.get("documents", []) if isinstance(d, dict)
+                    ],
+                },
                 "standards_context": standards_context,
                 "assumptions_context": assumptions_context,
             },
