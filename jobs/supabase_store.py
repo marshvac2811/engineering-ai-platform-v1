@@ -247,6 +247,14 @@ class SupabaseJobStore(JobStore):
             "evidence_sha256": evidence_bundle.get("manifest", {}).get("bundle_sha256"),
         }
 
+    def mark_dispatch_complete(self, job: Job) -> None:
+        report_id = job.report_id or (job.dispatch_result or {}).get("artifacts", {}).get("report_id")
+        if not report_id:
+            return
+        self.client.table("engineering_report_artifacts").update({
+            "dispatched_at": job.updated_at,
+        }).eq("report_id", report_id).eq("job_id", job.job_id).execute()
+
     def get_report_artifact(self, job_id: str, *, tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         query = self.client.table("engineering_report_artifacts").select("*").eq("job_id", job_id).order("version", desc=True).limit(1)
         if tenant_id:
