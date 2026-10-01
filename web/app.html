@@ -35,8 +35,8 @@ button:disabled{opacity:.55;cursor:wait}
 <main>
 <section class="card">
 <h2>New Engineering Request</h2>
-<p class="muted">Tell the platform what you need in normal language. The engineering engine handles skill selection, input checks, calculation and validation automatically.</p>
-<textarea id="request" rows="5" placeholder="Example: Size a round GSS duct for 2,000 CFM using the velocity method at 6 m/s."></textarea>
+<p class="muted">Describe the engineering outcome you need in normal language. AI interprets the request, determines the engineering work, identifies governing requirements, asks only for missing information, executes verified capabilities when available, and routes the result for human review.</p>
+<textarea id="request" rows="5" placeholder="Example: Audit this hospital for energy savings, assess HVAC optimization, rooftop solar and BESS options, and prepare a decarbonization roadmap using applicable standards and the available project data."></textarea>
 <button id="submit" style="margin-top:12px" onclick="submitRequest()">Submit Request</button>
 <div id="requestMsg" class="msg"></div>
 </section>
@@ -199,7 +199,7 @@ function jobHtml(j){
    '</div><div class="actions"><button id="btn-'+id+'">Continue</button></div>'+
    '<div id="msg-'+id+'" class="msg"></div></div>';
  }
- if(j.orchestration?.scope_analysis?.verticals?.length) html+="<div class=\"small\" style=\"margin-top:8px\"><strong>Vertical:</strong> "+esc(j.orchestration.scope_analysis.verticals.map(v=>v.name).join(", "))+"</div>";\n if(result)html+=formatResult(result);\n if(result?.material_boq?.length) html+="<div class=\"result\"><h3>Material BOQ / Quantity Takeoff</h3>"+result.material_boq.map(x=>"<div class=\"metric\"><span class=\"label\">"+esc(x.material_name)+" ("+esc(x.unit)+")</span><span class=\"value\">"+esc(x.quantity)+"</span><div class=\"small\">"+esc(x.basis)+"</div></div>").join("")+"</div>";
+ const understanding=orch.request_understanding||{};\n if(understanding.objective||understanding.disciplines?.length||understanding.requested_outputs?.length){ html+="<div class=\"result\"><h3>AI Request Understanding</h3><div class=\"small\"><strong>Objective:</strong> "+esc(understanding.objective||"Not yet established")+"</div>"+(understanding.disciplines?.length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Disciplines:</strong> "+esc(understanding.disciplines.join(", "))+"</div>":"")+(understanding.requested_outputs?.length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Requested outputs:</strong> "+esc(understanding.requested_outputs.join(", "))+"</div>":"")+"</div>"; }\n const governance=orch.governance||orch.standards_context||{};\n if(governance.governing_bodies?.length||governance.standards?.length||governance.methodology&&Object.keys(governance.methodology).length){ html+="<div class=\"result\"><h3>Governance & Methodology</h3>"+(governance.governing_bodies?.length?"<div class=\"small\"><strong>Governing bodies:</strong> "+esc(governance.governing_bodies.join(", "))+"</div>":"")+(governance.standards?.length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Standards:</strong> "+esc(governance.standards.map(s=>typeof s==="string"?s:(s.title||s.standard_id||JSON.stringify(s))).join(", "))+"</div>":"")+(governance.methodology&&Object.keys(governance.methodology).length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Methodology:</strong> "+esc(JSON.stringify(governance.methodology))+"</div>":"")+"</div>"; }\n if(result)html+=formatResult(result);
  if(j.errors?.length)html+='<div style="color:#a12626;margin-top:8px">'+esc(j.errors.join("; "))+'</div>';
  if(review)html+='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button></div>';
  if(status==="approved")html+='<div class="actions"><button onclick="dispatch(\''+id+'\')">Dispatch</button></div>';
