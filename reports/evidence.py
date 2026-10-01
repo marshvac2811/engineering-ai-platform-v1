@@ -100,3 +100,17 @@ def build_evidence_bundle(*, job, workflow: Dict[str, Any], consolidated: Dict[s
     # Hash the complete evidence content separately from the manifest.
     bundle["manifest"]["bundle_sha256"] = sha256(bundle)
     return bundle
+
+
+def refresh_evidence_bundle(*, job) -> Dict[str, Any]:
+    """Rebuild the evidence bundle from the persisted job after lifecycle changes."""
+    result = dict(job.result or {})
+    result.pop("evidence_bundle", None)
+    engineering = dict(result.get("engineering_result") or {})
+    workflow = {
+        "status": result.get("status") or job.status.value,
+        "blockers": engineering.get("blockers") or [],
+        "engineering_plan": job.orchestration.get("engineering_plan") or {},
+        "engineering_results": engineering.get("task_results") or engineering.get("results") or [],
+    }
+    return build_evidence_bundle(job=job, workflow=workflow, consolidated=result)
