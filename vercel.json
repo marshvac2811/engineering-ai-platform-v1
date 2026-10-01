@@ -1,55 +1,30 @@
 {
   "version": 2,
   "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/v1/(.*)",
-      "dest": "/api/index.py/v1/$1"
-    },
-    {
-      "src": "/health",
-      "dest": "/api/index.py/health"
-    },
-    {
-      "src": "/login",
-      "dest": "/api/index.py/login"
-    },
-    {
-      "src": "/app",
-      "dest": "/api/index.py/app"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.py/app"
-    }
+    {"handle": "filesystem"},
+    {"src": "/v1/(.*)", "dest": "/api/index.py/v1/$1"},
+    {"src": "/health", "dest": "/api/index.py?engineering_path=/health"},
+    {"src": "/login", "dest": "/api/index.py?engineering_path=/login"},
+    {"src": "/app", "dest": "/api/index.py?engineering_path=/app"},
+    {"src": "/", "dest": "/api/index.py?engineering_path=/app"},
+    {"src": "/(.*)", "dest": "/api/index.py?engineering_path=/app"}
   ],
   "headers": [
-    {
-      "source": "/",
-      "headers": [
-        {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
-        {"key": "Pragma", "value": "no-cache"},
-        {"key": "Expires", "value": "0"}
-      ]
-    },
-    {
-      "source": "/app",
-      "headers": [
-        {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
-        {"key": "Pragma", "value": "no-cache"},
-        {"key": "Expires", "value": "0"}
-      ]
-    },
-    {
-      "source": "/login",
-      "headers": [
-        {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
-        {"key": "Pragma", "value": "no-cache"},
-        {"key": "Expires", "value": "0"}
-      ]
-    }
+    {"source": "/", "headers": [
+      {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
+      {"key": "Pragma", "value": "no-cache"},
+      {"key": "Expires", "value": "0"}
+    ]},
+    {"source": "/app", "headers": [
+      {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
+      {"key": "Pragma", "value": "no-cache"},
+      {"key": "Expires", "value": "0"}
+    ]},
+    {"source": "/login", "headers": [
+      {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
+      {"key": "Pragma", "value": "no-cache"},
+      {"key": "Expires", "value": "0"}
+    ]}
   ],
   "regions": ["hnd1"],
   "$schema": "https://openapi.vercel.sh/vercel.json"
