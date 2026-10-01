@@ -1,0 +1,81 @@
+version: 1
+verticals:
+  - id: hvac
+    name: HVAC
+    keywords: [hvac, air conditioning, duct, ahu, chiller, vrf, ventilation, cooling]
+    capabilities: [engineering_calculation, quantity_takeoff, boq, energy_analysis]
+  - id: firefighting
+    name: Firefighting
+    keywords: [fire fighting, firefighting, hydrant, sprinkler, fire pump, hose reel, fire alarm]
+    capabilities: [engineering_calculation, quantity_takeoff, compliance]
+  - id: plumbing
+    name: Plumbing
+    keywords: [plumbing, water supply, drainage, sanitary, soil pipe, waste pipe, pump]
+    capabilities: [engineering_calculation, quantity_takeoff, boq]
+  - id: bms
+    name: BMS
+    keywords: [bms, building management system, ddc, bacnet, modbus, io points, controls]
+    capabilities: [engineering_calculation, quantity_takeoff, boq, controls]
+  - id: interiors
+    name: Interiors
+    keywords: [interior, fitout, partition, gypsum, ceiling, flooring, tiling, painting, furniture, joinery]
+    capabilities: [quantity_takeoff, boq, procurement]
+  - id: electrical
+    name: Electrical
+    keywords: [electrical, cable, panel, mdb, db, lighting, socket, earthing, transformer]
+    capabilities: [engineering_calculation, quantity_takeoff, boq, compliance]
+  - id: civil
+    name: Civil / Building Construction
+    keywords: [civil, concrete, rebar, reinforcement, masonry, brickwork, excavation, slab, foundation]
+    capabilities: [engineering_calculation, quantity_takeoff, boq]
+  - id: lsg_audit
+    name: LSG / Life-Safety Audit
+    keywords: [lsg audit, life safety audit, safety audit, fire safety audit, building safety audit]
+    capabilities: [audit, compliance, evidence_review, corrective_action]
+  - id: energy_audit
+    name: Energy Audit
+    keywords: [energy audit, energy assessment, energy baseline, energy consumption, energy efficiency]
+    capabilities: [audit, energy_analysis, compliance, decarbonization]
+  - id: decarbonization
+    name: Decarbonization
+    keywords: [decarbonization, decarbonisation, carbon reduction, net zero, emissions reduction, abatement]
+    capabilities: [carbon_accounting, scenario_analysis, energy_analysis, project_planning]
+  - id: carbon_credits
+    name: Carbon Credits / Carbon Projects
+    keywords: [carbon credit, carbon credits, carbon project, carbon registry, mrv, additionality, offset]
+    capabilities: [carbon_accounting, mrv, evidence_review, registry_workflow]
+  - id: renewable_energy
+    name: Renewable Energy / PPA
+    keywords: [solar, renewable energy, ppa, open access, rooftop, bess, battery storage]
+    capabilities: [engineering_calculation, energy_analysis, commercial_analysis, quantity_takeoff]
+
+recipes:
+  - id: gypsum_wall_partition
+    name: Gypsum Wall Partition
+    verticals: [interiors]
+    base_unit: sqft
+    aliases: [gypsum partition, gypsum wall, drywall partition, gypsum board partition]
+    quantity_patterns:
+      - '(\\d[\\d,.]*)\\s*(?:sq\\.?\\s*ft|sqft|square\\s*feet)'
+    materials:
+      - {name: Gypsum Board 12mm, unit: sqft, consumption_per_unit: 2.1, wastage_percent: 5}
+      - {name: Floor/Ceiling Track, unit: rft, consumption_per_unit: 0.22, wastage_percent: 5}
+      - {name: E Section / Stud, unit: rft, consumption_per_unit: 0.7, wastage_percent: 5}
+      - {name: Screws, unit: nos, consumption_per_unit: 4, wastage_percent: 5}
+      - {name: Jointing Compound, unit: kg, consumption_per_unit: 0.1, wastage_percent: 5}
+      - {name: Gypsum Tape, unit: m, consumption_per_unit: 0.5, wastage_percent: 5}
+      - {name: Anchors/Fasteners, unit: nos, consumption_per_unit: 0.5, wastage_percent: 5}
+  - id: vitrified_tile_flooring
+    name: Vitrified Tile Flooring
+    verticals: [interiors]
+    base_unit: sqft
+    aliases: [vitrified tile, tile flooring, floor tiling, vitrified flooring]
+    quantity_patterns:
+      - '(\\d[\\d,.]*)\\s*(?:sq\\.?\\s*ft|sqft|square\\s*feet)'
+    materials:
+      - {name: Vitrified Tiles, unit: sqft, consumption_per_unit: 1.05, wastage_percent: 5}
+      - {name: Cement, unit: kg, consumption_per_unit: 4, wastage_percent: 5}
+      - {name: Sand, unit: kg, consumption_per_unit: 10, wastage_percent: 5}
+      - {name: Tile Adhesive, unit: kg, consumption_per_unit: 3, wastage_percent: 5}
+      - {name: Grout, unit: kg, consumption_per_unit: 0.3, wastage_percent: 0}
+      - {name: Spacers, unit: nos, consumption_per_unit: 4, wastage_percent: 0}
