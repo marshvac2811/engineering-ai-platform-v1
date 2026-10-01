@@ -302,7 +302,12 @@ class APIApp:
                     assumptions_context=body.get("assumptions_context", {}),
                     provider=provider,
                 )
-                job = service.create_from_plan(plan)
+                attachments = body.get("attachments", [])
+                if attachments is None:
+                    attachments = []
+                if not isinstance(attachments, list):
+                    raise ValueError("attachments must be an array")
+                job = service.create_from_plan(plan, attachments=attachments, provider=provider)
                 return self._json(start_response, "201 Created", {"plan": job.orchestration or plan.to_dict(), "job": job.to_dict()})
 
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "api-keys" and method == "POST":
