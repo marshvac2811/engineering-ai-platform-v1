@@ -32,13 +32,31 @@ def _dependency_ready(task: Dict[str, Any], tasks: Dict[str, Dict[str, Any]]) ->
     return all(tasks.get(dep, {}).get("status") == "completed" for dep in task.get("depends_on", []))
 
 
-def _dependency_outputs(task: Dict[str, Any], outputs: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-    merged: Dict[str, Any] = {}
-    for dep in task.get("depends_on", []):
-        result = outputs.get(dep, {}).get("engineering_result") or {}
-        if isinstance(result, dict):
-            merged.update(deepcopy(result))
-    return merged
+def _dependency_outputs(task: Dict[str, Any], outputs: Dict[str, Dict[str, Any]]) -> tuple[Dict[str, Any], List[str]]:
+    bindings = dict(task.get("input_bindings") or {})
+    if not bindings:
+        merged: Dict[str, Any] = {}
+        for dep in task.get("depends_on", []):
+            result = outputs.get(dep, {}).get("engineering_result") or {}
+            if isinstance(result, dict): merged.update(deepcopy(result))
+        return merged, []
+    bound: Dict[str, Any] = {}
+    errors: List[str] = []
+    for target, source in bindings.items():
+        text = str(source)
+        if "." not in text:
+            errors.append(f"{target}: invalid binding {text!r}; expected task-id.output-name")
+            continue
+        source_task, output_name = text.split(".", 1)
+        if source_task not in task.get("depends_on", []):
+            errors.append(f"{target}: source task {source_task} is not a declared dependency")
+            continue
+        result = outputs.get(source_task, {}).get("engineering_result") or {}
+        if output_name not in result:
+            errors.append(f"{target}: output {output_name} is not present in {source_task}")
+            continue
+        bound[target] = deepcopy(result[output_name])
+    return bound, errors
 
 
 def execute_engineering_plan(
@@ -103,7 +121,12 @@ def execute_engineering_plan(
                 continue
 
             task_inputs = dict(inputs)
-            task_inputs.update(_dependency_outputs(task, outputs))
+            dependency_inputs, binding_errors = _dependency_outputs(task, outputs)
+            if binding_errors:
+                task["status"] = "blocked"
+                blockers.extend(f"{task_id}: {e}" for e in binding_errors)
+                continue
+            task_inputs.update(dependency_inputs)
             definition = registry.get(capability_id)
             resolution = resolve_input_requirements(definition, task_inputs)
             if resolution.missing_inputs:
