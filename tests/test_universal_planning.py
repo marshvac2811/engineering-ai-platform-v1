@@ -45,3 +45,27 @@ def test_planner_refuses_unknown_capability():
     assert plan["status"] == "capability_required"
     assert plan["tasks"][0]["status"] == "capability_required"
     assert plan["tasks"][0]["capability_id"] is None
+
+
+def test_planner_preserves_ai_task_dependencies_and_parallel_ready_tasks():
+    registry = _registry()
+    plan = build_engineering_plan(
+        understanding={
+            "objective": "Coordinate engineering assessment",
+            "tasks": [
+                {"capability_id": "pump_head", "objective": "Calculate pump duty"},
+                {"capability_id": "duct_sizing", "objective": "Size supply duct", "depends_on": []},
+            ],
+        },
+        registry=registry,
+        inputs={
+            "flow_m3hr": 25, "diameter_mm": 80, "straight_length_m": 120,
+            "static_head_m": 12, "margin_pct": 10, "material": "gi",
+            "airflow": 2000, "method": "velocity", "duct_type": "round",
+            "target_velocity_ms": 6, "material": "gi",
+        },
+    )
+    assert len(plan["tasks"]) == 2
+    assert plan["tasks"][0]["task_id"] == "task-1"
+    assert plan["tasks"][1]["task_id"] == "task-2"
+    assert plan["tasks"][1]["depends_on"] == []
