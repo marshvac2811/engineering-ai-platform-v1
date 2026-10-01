@@ -35,6 +35,24 @@ def _number(value: str) -> float:
 
 
 def _quantity_for_recipe(text: str, recipe: dict) -> float | None:
+    aliases = [_norm(recipe.get("name", ""))] + [_norm(x) for x in recipe.get("aliases", [])]
+    aliases = [a for a in aliases if a]
+    candidates = []
+    for alias in aliases:
+        for match in re.finditer(re.escape(alias), text, re.IGNORECASE):
+            candidates.append(match.start())
+    if candidates:
+        area_patterns = [
+            r"(\\d[\\d,.]*)\\s*(?:sq\\.?\\s*ft|sqft|square\\s*feet)",
+            r"(\\d[\\d,.]*)\\s*(?:m2|m\\s*2|square\\s*met(?:er|re)s)",
+            r"(\\d[\\d,.]*)\\s*(?:rft|rm|m|nos|units?)",
+        ]
+        matches = []
+        for pattern in area_patterns:
+            matches.extend(re.finditer(pattern, text, re.IGNORECASE))
+        if matches:
+            best = min(matches, key=lambda m: min(abs(m.start() - pos) for pos in candidates))
+            return _number(best.group(1))
     for pattern in recipe.get("quantity_patterns", []):
         m = re.search(pattern, text, re.IGNORECASE)
         if m:
