@@ -306,6 +306,12 @@ class RuleBasedIntentProvider:
             return requested_skill_id, [IntentCandidate(requested_skill_id, 999, ["Explicit skill_id supplied by caller."])], 1.0
 
         t = text.lower()
+        # Broad life-safety inspection requests must not be routed to an unrelated
+        # specialist merely because a generic word overlaps a routing phrase.
+        if ("life-safety" in t or "life safety" in t or "fire pump room" in t) and not any(
+            phrase in t for phrase in ("cleanroom", "air changes", "isolation room", "operating room", "ach")
+        ):
+            return None, [], 0.0
         candidates: List[IntentCandidate] = []
         for skill_id, terms in ROUTING_RULES.items():
             matched = [term for term in terms if term in t]
