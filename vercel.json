@@ -13,12 +13,20 @@
       "dest": "/api/index.py/health"
     },
     {
+      "src": "/",
+      "dest": "/web/app.html"
+    },
+    {
       "src": "/login",
-      "dest": "/index.html"
+      "dest": "/web/app.html"
+    },
+    {
+      "src": "/app",
+      "dest": "/web/app.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/web/app.html"
     }
   ],
   "headers": [
@@ -31,7 +39,7 @@
       ]
     },
     {
-      "source": "/index.html",
+      "source": "/web/app.html",
       "headers": [
         {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
         {"key": "Pragma", "value": "no-cache"},
