@@ -207,7 +207,15 @@ def execute_engineering_plan(
     ]
 
     engineering_results = [
-        {"task_id": task_id, "capability_id": result.get("capability_id"), "status": result.get("status"), "engineering_result": result.get("engineering_result", {})}
+        {
+            "task_id": task_id,
+            "capability_id": result.get("capability_id"),
+            "status": result.get("status"),
+            "engineering_result": result.get("engineering_result", {}),
+            "calculation_trace": result.get("calculation_trace") or [],
+            "assumptions": result.get("assumptions") or [],
+            "warnings": result.get("warnings") or [],
+        }
         for task_id, result in outputs.items()
     ]
     return {
