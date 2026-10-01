@@ -370,6 +370,9 @@ class JobService:
                 if validation_errors:
                     raise ValueError("Job cannot be approved because " + capability_id + " validation failed: " + "; ".join(validation_errors))
 
+        qa = dict(result.get("qa") or {})
+        if qa.get("status") != "ready_for_human_review":
+            raise ValueError("Job cannot be approved because final QA is not ready for human review")
         job.transition(JobStatus.APPROVED, "Engineering draft approved by human reviewer.", reviewer=reviewer, comment=comment)
         self.store.save(job)
         return job
