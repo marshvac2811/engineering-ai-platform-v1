@@ -439,6 +439,8 @@ class JobService:
         job.dispatch_result = {**(job.dispatch_result or {}), **(result or {})}
         job.transition(JobStatus.DISPATCHED, "Dispatch completed.")
         job.transition(JobStatus.COMPLETED, "Job completed after dispatch.")
+        if hasattr(self.store, "mark_dispatch_complete"):
+            self.store.mark_dispatch_complete(job)
         if job.result:
             job.result["evidence_bundle"] = refresh_evidence_bundle(job=job)
         self.store.save(job)
