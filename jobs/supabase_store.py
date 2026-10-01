@@ -221,7 +221,10 @@ class SupabaseJobStore(JobStore):
         }).eq("report_id", report_id).execute()
 
         signed = self.client.storage.from_(bucket).create_signed_url(pdf_path, 86400)
-        signed_url = signed.get("signedURL") if isinstance(signed, dict) else None
+        signed_data = signed.get("data") if isinstance(signed, dict) else getattr(signed, "data", None)
+        if signed_data is None and isinstance(signed, dict):
+            signed_data = signed
+        signed_url = (signed_data or {}).get("signedURL") or (signed_data or {}).get("signedUrl")
         return {
             "report_id": report_id,
             "version": version,
