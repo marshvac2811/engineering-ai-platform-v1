@@ -21,10 +21,6 @@
       "dest": "/api/index.py/app"
     },
     {
-      "src": "/",
-      "dest": "/api/index.py/app"
-    },
-    {
       "src": "/(.*)",
       "dest": "/api/index.py/app"
     }
@@ -50,7 +46,7 @@
       "source": "/login",
       "headers": [
         {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
-        {"key": "Pragma", "no-cache"},
+        {"key": "Pragma", "value": "no-cache"},
         {"key": "Expires", "value": "0"}
       ]
     }
