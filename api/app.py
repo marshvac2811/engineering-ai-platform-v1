@@ -670,9 +670,14 @@ class APIApp:
                     return self._json(start_response, "405 Method Not Allowed", {"error": "POST required"})
                 ctx.require_scope("jobs:write")
                 updates = body.get("inputs", {})
+                if updates is None:
+                    updates = {}
                 if not isinstance(updates, dict):
                     raise ValueError("inputs must be an object")
-                job = service.provide_missing_information(job_id, updates)
+                message = body.get("message")
+                if message is not None and not isinstance(message, str):
+                    raise ValueError("message must be a string")
+                job = service.provide_missing_information(job_id, updates, message=message)
                 return self._json(start_response, "200 OK", job.to_dict())
 
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs":
