@@ -237,7 +237,7 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "height_mm": [r"(?:height|(?<![a-z])h)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b"],
         "target_velocity_ms": [r"(?:target\s*)?velocity\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m/s", r"(?:at\s+)?([\d,.]+)\s*m/s(?:\s+velocity)?\b"],
         "target_friction_pa_per_m": [r"(?:friction|friction\s*rate)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*pa\s*/?\s*m\b"],
-        "straight_length_m": [r"(?:total\s+)?straight(?:\s+pipe)?\s+length\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"(?:pipe\s+length)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"([\d,.]+)\s*m\s*(?:straight\s+pipe\s+length|pipe\s+length)\b"],
+        "straight_length_m": [r"(?:total\s+)?straight(?:\s+pipe)?\s+length\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"(?:pipe\s+length)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"([\d,.]+)\s*m\s*(?:straight(?:\s+pipe)?\s+length|pipe\s+length)\b"],
         "static_head_m": [r"(?:static\s*(?:/|or\s+)?\s*elevation|elevation)\s*(?:head|lift)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"static\s+head\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"([\d,.]+)\s*m\s*(?:static|elevation)\s*(?:head|lift)\b"],
         "margin_pct": [r"(?:design\s+)?(?:margin|allowance)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:%|percent)\b", r"([\d,.]+)\s*(?:%|percent)\s*(?:design\s+)?(?:margin|allowance)\b"],
         "wet_bulb_c": [r"wet\s*bulb\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
@@ -448,6 +448,12 @@ def build_plan(
 
     extracted = extract_facts(text)
     merged = {**provider_extracted, **extracted, **provided_inputs}
+    if skill_id == "cleanroom_ach" and not any(
+        phrase in text.lower() for phrase in ("cleanroom", "air changes", "isolation room", "operating room", "ach")
+    ):
+        skill_id = None
+        candidates = []
+
     # Scope is an AI interpretation concern, not a recipe/library lookup.
     # Keep the field for API compatibility, but do not derive engineering work
     # from a quantity catalog.
