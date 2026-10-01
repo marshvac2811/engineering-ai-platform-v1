@@ -68,7 +68,7 @@ def build_engineering_plan(
         candidates = [{
             "capability_id": x.get("capability_id") or x.get("skill_id"),
             "objective": x.get("objective"),
-            "depends_on": x.get("depends_on") or [],
+            "depends_on": x.get("depends_on") if "depends_on" in x else None,
             "requested_outputs": x.get("requested_outputs") or understanding.get("requested_outputs") or [],
             "methodology": x.get("methodology") or understanding.get("methodology") or {},
         } for x in ai_tasks]
@@ -97,7 +97,7 @@ def build_engineering_plan(
             objective=str(item.get("objective") or understanding.get("objective") or f"Execute {capability_id}"),
             capability_id=capability_id,
             sequence=index,
-            depends_on=[str(x) for x in (item.get("depends_on") or [])] or ([f"task-{index-1}"] if index > 1 else []),
+            depends_on=( [str(x) for x in item.get("depends_on", [])] if "depends_on" in item else ([f"task-{index-1}"] if index > 1 else []) ),
             status=task_status,
             required_inputs=required,
             missing_inputs=list(resolution.missing_inputs),
