@@ -27,7 +27,7 @@ def test_ready_pump_job_generates_report_with_skill_profile_and_trace():
     report = report_service.get(processed.result["report_id"], include_content=True)
     assert processed.status == JobStatus.HUMAN_REVIEW
     assert report.report["work_items"][0]["skill_id"] == "pump_head"
-    assert report.report["work_items"][0]["result"]["engineering_result"]["calculation_trace"]
+    assert report.report["work_items"][0]["calculation_trace"]
     assert report.report["report_type"] == "pump_head_calculation"
     assert "unsupported_scope" in report.report
     assert report.report["human_review"]["required"] is True
