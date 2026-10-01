@@ -31,11 +31,14 @@ _OPENAI_SCHEMA = {
         "requested_outputs_json": {"type": "string"},
         "methodology_json": {"type": "string"},
         "governance_json": {"type": "string"},
+        "entities_json": {"type": "string"},
+        "constraints_json": {"type": "string"},
+        "tasks_json": {"type": "string"},
         "rationale": {"type": "array", "items": {"type": "string"}},
     },
     "required": ["selected_skill_id", "confidence", "extracted_inputs_json", "objective",
                  "disciplines_json", "requested_outputs_json", "methodology_json",
-                 "governance_json", "rationale"],
+                 "governance_json", "entities_json", "constraints_json", "tasks_json", "rationale"],
     "additionalProperties": False,
 }
 
@@ -148,6 +151,9 @@ class OpenAIIntentProvider:
             "requested_outputs": _json_value("requested_outputs_json", []),
             "methodology": _json_value("methodology_json", {}),
             "governance": _json_value("governance_json", {}),
+            "entities": _json_value("entities_json", []),
+            "constraints": _json_value("constraints_json", []),
+            "tasks": _json_value("tasks_json", []),
             "rationale": [str(x) for x in payload.get("rationale", [])],
         }
 
