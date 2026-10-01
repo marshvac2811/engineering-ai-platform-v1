@@ -629,7 +629,22 @@ class APIApp:
                 if artifact is None:
                     report = (job.result or {}).get("compliance_report")
                     if report is None:
-                        return self._json(start_response, "404 Not Found", {"error": "Engineering report not available"})
+                        # Universal workflow results are already the authoritative
+                        # engineering envelope. Expose a governed report view from
+                        # that envelope instead of requiring a separate legacy
+                        # report artifact store.
+                        result = job.result or {}
+                        engineering = result.get("engineering_result") or {}
+                        checks = list(engineering.get("compliance") or result.get("compliance") or [])
+                        report = {
+                            "report_type": "engineering_compliance_report",
+                            "engineering_result": engineering,
+                            "compliance_checks": checks,
+                            "checks": checks,
+                            "request_understanding": result.get("request_understanding") or {},
+                            "governance": result.get("governance") or {},
+                            "human_review": result.get("human_review") or {"required": True},
+                        }
                     artifact = {
                         "report_id": job.report_id if hasattr(job, "report_id") else None,
                         "job_id": job.job_id,
