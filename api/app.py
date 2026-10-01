@@ -663,6 +663,20 @@ class APIApp:
                     }
                 return self._json(start_response, "200 OK", artifact)
 
+            if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "evidence" and method == "GET":
+                job_id = parts[2]
+                ctx.require_scope("jobs:read")
+                job = service._get(job_id)
+                bundle = (job.result or {}).get("evidence_bundle")
+                if not bundle:
+                    return self._json(start_response, "404 Not Found", {"error": "Evidence bundle is not available for this job"})
+                return self._json(start_response, "200 OK", {
+                    "job_id": job.job_id,
+                    "report_id": job.report_id,
+                    "status": job.status.value,
+                    "evidence_bundle": bundle,
+                })
+
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "compliance" and method == "GET":
                 job_id = parts[2]
                 ctx.require_scope("jobs:read")
