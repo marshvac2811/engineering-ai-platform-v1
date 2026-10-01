@@ -296,6 +296,21 @@ class JobService:
             "human_review_required": True,
         }
 
+        if workflow["status"] == "completed" and workflow["engineering_results"] and self.report_service is not None:
+            report_items = [
+                {
+                    "skill_id": item.get("capability_id"),
+                    "result": {
+                        "status": item.get("status"),
+                        "engineering_result": item.get("engineering_result") or {},
+                    },
+                }
+                for item in workflow["engineering_results"]
+                if item.get("capability_id")
+            ]
+            report = self.report_service.build(job, report_items)
+            job.result["report_id"] = report.report_id
+
         if workflow["status"] == "completed" and workflow["engineering_results"]:
             job.errors = []
             job.transition(JobStatus.DRAFT_READY, "Universal engineering workflow produced a draft.", task_count=len(workflow["engineering_results"]))
