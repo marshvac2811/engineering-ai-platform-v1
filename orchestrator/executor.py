@@ -69,7 +69,7 @@ def execute_engineering_plan(
     while progress:
         progress = False
         for task_id, task in tasks.items():
-            if task.get("status") == "completed":
+            if task.get("status") in {"completed", "awaiting_information", "failed", "capability_required", "blocked"}:
                 continue
             capability_id = task.get("capability_id")
             if not capability_id:
