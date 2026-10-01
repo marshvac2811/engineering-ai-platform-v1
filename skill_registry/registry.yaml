@@ -813,7 +813,8 @@ crm_pipeline:
   source_path: scope_engine/catalog.yaml
   execution: deterministic_recipe_engine
   classification: quantity_takeoff
-  integration_status: integrated
+  integration_status: registered
+  executable: false
   human_review_required: true
   required_inputs:
   - name: request_text
