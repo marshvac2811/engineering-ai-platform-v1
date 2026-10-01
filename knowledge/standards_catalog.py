@@ -70,7 +70,7 @@ def candidate_sources(*, jurisdiction: str | None, domains: List[str] | None) ->
     rows = []
     for source in SOURCES:
         source_jur = set(source["jurisdictions"])
-        domain_match = not requested or bool(requested & set(source["domains"]))
+        domain_match = bool(requested) and bool(requested & set(source["domains"]))
         jurisdiction_match = not jur or jur in source_jur or "GLOBAL" in source_jur
         if domain_match and jurisdiction_match:
             rows.append({
