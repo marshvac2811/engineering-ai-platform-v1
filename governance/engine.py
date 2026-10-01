@@ -9,12 +9,22 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable
 
 from knowledge.evidence import build_evidence_bundle
+from knowledge.applicability import build_applicability_context
 
 def build_governance_context(*, skill_id: str | None, project_context: Dict[str, Any] | None = None,
                              standards_context: Dict[str, Any] | None = None,
                              methodology: Dict[str, Any] | None = None) -> Dict[str, Any]:
     project_context = dict(project_context or {})
     supplied = dict(standards_context or {})
+    objective = str((methodology or {}).get("objective") or supplied.get("objective") or "")
+    disciplines = list(supplied.get("disciplines") or [])
+    applicability = build_applicability_context(
+        jurisdiction=project_context.get("jurisdiction") or supplied.get("jurisdiction"),
+        skill_id=skill_id,
+        disciplines=disciplines,
+        objective=objective,
+        supplied=supplied,
+    )
     evidence_bundle = build_evidence_bundle(governance=supplied, project_context=project_context)
     return {
         "status": "governance_required",
@@ -23,9 +33,10 @@ def build_governance_context(*, skill_id: str | None, project_context: Dict[str,
         "standards": list(supplied.get("standards") or []),
         "methodology": dict(methodology or supplied.get("methodology") or {}),
         "references": list(supplied.get("references") or []),
-        "applicability": supplied.get("applicability") or {},
+        "applicability": applicability,
         "evidence": evidence_bundle["records"],
         "evidence_bundle": evidence_bundle,
+        "candidate_sources": applicability["candidate_sources"],
         "limitations": [
             "A standard is not treated as authoritative merely because an LLM names it.",
             "Compliance claims require a verified governing source and established project applicability.",

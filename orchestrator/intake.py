@@ -486,10 +486,13 @@ def build_plan(
             + "; ".join(registry_resolution.invalid_inputs)
         )
 
+    governance_input = dict(standards_context or {})
+    governance_input["disciplines"] = list(request_understanding.get("disciplines") or governance_input.get("disciplines") or [])
+    governance_input["objective"] = request_understanding.get("objective") or governance_input.get("objective") or text.strip()
     governance = build_governance_context(
         skill_id=skill_id,
         project_context=project_context,
-        standards_context=standards_context,
+        standards_context=governance_input,
         methodology=request_understanding.get("methodology"),
     )
     from orchestrator.planner import build_engineering_plan
