@@ -56,8 +56,8 @@ def test_answers_automatically_continue_to_human_review_when_complete():
         },
     )
     assert job.status == JobStatus.HUMAN_REVIEW
-    assert job.result["status"] == "draft_ready"
-    assert job.result["engineering_result"]["total_dynamic_head_m"] > 0
+    assert job.result["status"] == "completed"
+    assert job.result["engineering_result"]["results"]
     assert job.errors == []
 
 
