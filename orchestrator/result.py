@@ -39,6 +39,15 @@ def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Di
         result_evidence=evidence,
     )
 
+    ai_reasoning = {
+        "reasoning": dict(request_understanding.get("reasoning") or {}),
+        "evidence_usage": list(request_understanding.get("evidence_usage") or []),
+        "missing_evidence": list(request_understanding.get("missing_evidence") or []),
+        "compliance_claims": list(request_understanding.get("compliance_claims") or []),
+        "claim_gate": dict((governance.get("governed_knowledge") or {}).get("claim_gate") or {}),
+    }
+    if not ai_reasoning["claim_gate"].get("compliance_claim_allowed", False):
+        ai_reasoning["compliance_claims"] = []
     task_statuses = [
         {"task_id": t.get("task_id"), "status": t.get("status"),
          "capability_id": t.get("capability_id"), "depends_on": t.get("depends_on", [])}
@@ -66,6 +75,7 @@ def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Di
     return {
         "status": workflow.get("status"),
         "request_understanding": request_understanding,
+        "ai_reasoning": ai_reasoning,
         "governance": governance,
         "inputs": inputs,
         "assumptions": assumptions_out + list(assumptions.get("items") or []) if isinstance(assumptions, dict) else assumptions_out,
