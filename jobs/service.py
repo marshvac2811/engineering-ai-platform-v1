@@ -16,7 +16,7 @@ from validators.governance import validate_governance_context
 from validators.registered_skill_inputs import validate_registered_skill_inputs
 from ingestion.service import IngestionService
 from reports.service import ReportService
-from reports.evidence import build_evidence_bundle
+from reports.evidence import build_evidence_bundle, refresh_evidence_bundle
 
 from .models import Job, JobStatus
 from .store import JobStore
@@ -398,6 +398,8 @@ class JobService:
         if qa.get("status") != "ready_for_human_review":
             raise ValueError("Job cannot be approved because final QA is not ready for human review")
         job.transition(JobStatus.APPROVED, "Engineering draft approved by human reviewer.", reviewer=reviewer, comment=comment)
+        if job.result:
+            job.result["evidence_bundle"] = refresh_evidence_bundle(job=job)
         self.store.save(job)
         return job
 
@@ -421,15 +423,24 @@ class JobService:
         job.transition(JobStatus.DISPATCHING, "Dispatch started.")
         self.store.save(job)
         try:
+            if not hasattr(self.store, "create_dispatch_artifacts"):
+                raise RuntimeError("Dispatch requires a persistent artifact store; no artifact generator is configured")
+            artifacts = self.store.create_dispatch_artifacts(job)
+            job.dispatch_result = {"artifacts": artifacts}
+            self.store.save(job)
             result = self.dispatcher(job)
         except Exception as exc:  # external providers should not crash the lifecycle
             job.errors.append(str(exc))
             job.transition(JobStatus.FAILED, "Dispatch failed.", error=str(exc))
+            if job.result:
+                job.result["evidence_bundle"] = refresh_evidence_bundle(job=job)
             self.store.save(job)
             return job
-        job.dispatch_result = result
+        job.dispatch_result = {**(job.dispatch_result or {}), **(result or {})}
         job.transition(JobStatus.DISPATCHED, "Dispatch completed.")
         job.transition(JobStatus.COMPLETED, "Job completed after dispatch.")
+        if job.result:
+            job.result["evidence_bundle"] = refresh_evidence_bundle(job=job)
         self.store.save(job)
         return job
 
