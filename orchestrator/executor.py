@@ -76,7 +76,7 @@ def execute_engineering_plan(
     """
     registry = load_skill_registry(REGISTRY_PATH)
     tasks = _task_map(plan)
-    outputs: Dict[str, Dict[str, Any]] = {}
+    outputs: Dict[str, Dict[str, Any]] = {str(k): deepcopy(v) for k, v in (plan.get("task_outputs") or {}).items() if isinstance(v, dict)}
     trace: List[Dict[str, Any]] = []
     blockers: List[str] = []
 
@@ -198,6 +198,8 @@ def execute_engineering_plan(
         status = "pending"
 
     planned["tasks"] = list(tasks.values())
+    planned["task_outputs"] = deepcopy(outputs)
+    planned["execution_trace"] = deepcopy(trace)
     planned["status"] = status
     planned["ready_tasks"] = [
         t["task_id"] for t in tasks.values()
