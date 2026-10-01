@@ -16,6 +16,8 @@ def build_report_envelope(*, skill_id: str, result: Dict[str, Any], inputs: Dict
     standards = list(result.get("standards") or engineering.get("standards") or [])
     assumptions = list(result.get("assumptions") or engineering.get("assumptions") or [])
     warnings = list(result.get("warnings") or [])
+    request_understanding = dict(result.get("request_understanding") or {})
+    governance = dict(result.get("governance") or standards_context or {})
     trace = list(result.get("calculation_trace") or engineering.get("calculation_trace") or [])
 
     return {
@@ -28,6 +30,8 @@ def build_report_envelope(*, skill_id: str, result: Dict[str, Any], inputs: Dict
         "inputs": inputs,
         "project_context": project_context,
         "standards_context": standards_context or {},
+        "request_understanding": request_understanding,
+        "governance": governance,
         "standards_applicability": build_standards_applicability(skill_id, project_context),
         "standards_scope_references": scope_references_for_skill(skill_id),
         "compliance_gate": {
