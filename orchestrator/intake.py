@@ -436,10 +436,24 @@ def build_plan(
                     "Please describe the engineering objective and provide any project drawings, specifications, measurements, or other data you have. "
                     "I will determine the discipline, methodology and governing requirements rather than asking you to select a skill.")
         return OrchestrationPlan(
-            status, text.strip(), None, confidence, candidates, merged, [], [question],
-            assumptions_context, build_governance_context(skill_id=None, project_context=project_context, standards_context=standards_context), project_context,
-            ["AI could not establish a safe executable capability from the registered capability set."], provider.name,
-            [], [], scope_analysis, request_understanding
+            status=status,
+            normalized_request=text.strip(),
+            selected_skill_id=None,
+            confidence=confidence,
+            candidates=candidates,
+            extracted_inputs=merged,
+            missing_inputs=[],
+            questions=[question],
+            assumptions_context=assumptions_context,
+            standards_context=build_governance_context(skill_id=None, project_context=project_context, standards_context=standards_context),
+            project_context=project_context,
+            rationale=["AI could not establish a safe executable capability from the registered capability set."],
+            provider=provider.name,
+            work_items=[],
+            unsupported_scope=[],
+            scope_analysis=scope_analysis,
+            request_understanding=request_understanding,
+            engineering_plan={"status": "capability_required", "tasks": [], "execution_order": [], "human_review_required": True},
         )
 
     registry_path = Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
