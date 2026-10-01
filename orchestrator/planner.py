@@ -24,6 +24,7 @@ class EngineeringTask:
     required_inputs: List[str] = field(default_factory=list)
     missing_inputs: List[str] = field(default_factory=list)
     requested_outputs: List[str] = field(default_factory=list)
+    input_bindings: Dict[str, str] = field(default_factory=dict)
     methodology: Dict[str, Any] = field(default_factory=dict)
     governance: Dict[str, Any] = field(default_factory=dict)
     execution_mode: str = "deterministic_or_capability"
@@ -71,6 +72,7 @@ def build_engineering_plan(
             "depends_on": x.get("depends_on") if "depends_on" in x else None,
             "requested_outputs": x.get("requested_outputs") or understanding.get("requested_outputs") or [],
             "methodology": x.get("methodology") or understanding.get("methodology") or {},
+            "input_bindings": x.get("input_bindings") or {},
         } for x in ai_tasks]
 
     for index, item in enumerate(candidates, 1):
@@ -102,6 +104,7 @@ def build_engineering_plan(
             required_inputs=required,
             missing_inputs=list(resolution.missing_inputs),
             requested_outputs=list(item.get("requested_outputs") or understanding.get("requested_outputs") or []),
+            input_bindings={str(k): str(v) for k, v in dict(item.get("input_bindings") or {}).items()},
             methodology=dict(item.get("methodology") or understanding.get("methodology") or {}),
             governance=governance,
         ))
