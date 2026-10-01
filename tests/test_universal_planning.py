@@ -29,7 +29,7 @@ def test_planner_builds_registered_task_without_calculating():
         },
         governance=build_governance_context(skill_id="pump_head"),
     )
-    assert plan["status"] == "ready"
+    assert plan["status"] == "ready_for_execution"
     assert plan["tasks"][0]["capability_id"] == "pump_head"
     assert plan["tasks"][0]["status"] == "ready"
     assert "total_dynamic_head" not in plan["tasks"][0]

@@ -629,7 +629,28 @@ class APIApp:
                 if artifact is None:
                     report = (job.result or {}).get("compliance_report")
                     if report is None:
-                        return self._json(start_response, "404 Not Found", {"error": "Engineering report not available"})
+                        # Universal workflow results are already the authoritative
+                        # engineering envelope. Expose a governed report view from
+                        # that envelope instead of requiring a separate legacy
+                        # report artifact store.
+                        result = job.result or {}
+                        engineering = result.get("engineering_result") or {}
+                        checks = list(engineering.get("compliance") or result.get("compliance") or [])
+                        if not checks:
+                            for task_result in list(engineering.get("task_results") or engineering.get("results") or []):
+                                if isinstance(task_result, dict):
+                                    task_engineering = task_result.get("engineering_result") or {}
+                                    if isinstance(task_engineering, dict):
+                                        checks.extend(task_engineering.get("compliance") or [])
+                        report = {
+                            "report_type": "engineering_compliance_report",
+                            "engineering_result": engineering,
+                            "compliance_checks": checks,
+                            "checks": checks,
+                            "request_understanding": result.get("request_understanding") or {},
+                            "governance": result.get("governance") or {},
+                            "human_review": result.get("human_review") or {"required": True},
+                        }
                     artifact = {
                         "report_id": job.report_id if hasattr(job, "report_id") else None,
                         "job_id": job.job_id,
@@ -649,7 +670,14 @@ class APIApp:
                 if hasattr(service.store, "get_compliance_checks"):
                     checks = service.store.get_compliance_checks(job_id, tenant_id=service.tenant_id)
                 else:
-                    checks = list(((job.result or {}).get("engineering_result") or {}).get("compliance") or [])
+                    engineering = (job.result or {}).get("engineering_result") or {}
+                checks = list(engineering.get("compliance") or [])
+                if not checks:
+                    for task_result in list(engineering.get("task_results") or engineering.get("results") or []):
+                        if isinstance(task_result, dict):
+                            task_engineering = task_result.get("engineering_result") or {}
+                            if isinstance(task_engineering, dict):
+                                checks.extend(task_engineering.get("compliance") or [])
                 return self._json(start_response, "200 OK", {"job_id": job.job_id, "checks": checks, "count": len(checks)})
 
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "attachments" and method == "POST":

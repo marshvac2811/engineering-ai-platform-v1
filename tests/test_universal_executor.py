@@ -68,48 +68,28 @@ def test_executor_stops_at_missing_task_inputs_without_calculating():
 
 
 def test_executor_honors_dependency_outputs():
-    # The second task intentionally has no independent input contract in this
-    # test; a mocked capability would consume the first task output. This test
-    # verifies the dependency gate at the plan level without duplicating a
-    # vertical-specific calculation.
+    # Resume a dependency-gated workflow where the upstream task has already
+    # completed and its outputs are persisted.
     plan = {
-        "status": "ready_for_execution",
+        "status": "pending",
         "tasks": [
-            {
-                "task_id": "task-1",
-                "objective": "First engineering task",
-                "capability_id": "pump_head",
-                "sequence": 1,
-                "depends_on": [],
-                "status": "ready",
-            },
-            {
-                "task_id": "task-2",
-                "objective": "Dependent engineering task",
-                "capability_id": "pump_head",
-                "sequence": 2,
-                "depends_on": ["task-1"],
-                "status": "ready",
-            },
+            {"task_id": "task-1", "objective": "First engineering task", "capability_id": "pump_head", "sequence": 1, "depends_on": [], "status": "completed"},
+            {"task_id": "task-2", "objective": "Dependent engineering task", "capability_id": "pump_head", "sequence": 2, "depends_on": ["task-1"], "status": "ready"},
         ],
+        "task_outputs": {
+            "task-1": {"status": "draft_ready", "capability_id": "pump_head", "engineering_result": {"upstream_marker": 1}}
+        },
     }
     workflow = execute_engineering_plan(
         plan=plan,
         inputs={
-            "flow_m3hr": 25,
-            "diameter_mm": 80,
-            "roughness_mm": 0.15,
-            "straight_length_m": 120,
-            "static_head_m": 12,
-            "margin_pct": 10,
-            "material": "gi",
+            "flow_m3hr": 25, "diameter_mm": 80, "roughness_mm": 0.15,
+            "straight_length_m": 120, "static_head_m": 12, "margin_pct": 10, "material": "gi",
         },
-        project_context={},
-        standards_context={},
-        assumptions_context={},
+        project_context={}, standards_context={}, assumptions_context={},
     )
     assert workflow["status"] == "completed"
-    assert [x["task_id"] for x in workflow["execution_trace"]] == ["task-1", "task-2"]
+    assert [x["task_id"] for x in workflow["execution_trace"]] == ["task-2"]
     assert workflow["engineering_plan"]["tasks"][1]["depends_on"] == ["task-1"]
 
 

@@ -6,7 +6,7 @@ from orchestrator.intake import IntentCandidate, OrchestrationPlan
 
 
 def test_uploaded_project_document_becomes_ai_project_context():
-    service = JobService(InMemoryJobStore(), ingestion_service=IngestionService())
+    service = JobService(InMemoryJobStore(), tenant_id="test-tenant", ingestion_service=IngestionService())
     plan = OrchestrationPlan(
         status="awaiting_information",
         normalized_request="Calculate pump head for this project",

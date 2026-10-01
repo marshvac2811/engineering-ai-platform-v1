@@ -9,7 +9,7 @@ API = ROOT / "api" / "app.py"
 def test_dashboard_file_and_authenticated_api_contract():
     html = APP.read_text(encoding="utf-8")
     assert "engineering_ai_access_token" in html
-    assert 'fetch("/v1/intake"' in html or 'authFetch("/v1/intake"' in html
+    assert 'api("/v1/intake"' in html
     assert "/v1/jobs/" in html
     assert "/information" in html
     assert "formatResult" in html
@@ -18,9 +18,9 @@ def test_dashboard_file_and_authenticated_api_contract():
 
 def test_dashboard_renders_plan_questions_and_unsupported_scope_safely():
     html = APP.read_text(encoding="utf-8")
-    assert "plan.questions" in html
-    assert "plan.work_items" in html
-    assert "plan.unsupported_scope" in html
+    assert "engineeringPlan.tasks" in html
+    assert "AI Request Understanding" in html
+    assert "AI Decision & Evidence" in html
     assert "esc(" in html
 
 

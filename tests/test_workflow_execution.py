@@ -16,7 +16,12 @@ def test_ready_pump_job_generates_report_with_skill_profile_and_trace():
         "Calculate pump head for 20 m3/hr, 80 mm pipe, roughness 0.045 mm, "
         "60 m straight length, 8 m static head and 10% margin"
     )
-    job = service.create_from_plan(plan)
+    job = service.create_job(
+        tenant_id=TENANT, source="test", requested_skill_id="pump_head",
+        inputs=plan.extracted_inputs, project_context=plan.project_context,
+        standards_context=plan.standards_context, assumptions_context=plan.assumptions_context,
+        orchestration=plan.to_dict(),
+    )
     service.enqueue(job.job_id)
     processed = service.process(job.job_id)
     report = report_service.get(processed.result["report_id"], include_content=True)

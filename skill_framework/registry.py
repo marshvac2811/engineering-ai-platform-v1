@@ -45,6 +45,18 @@ class SkillRegistry:
             if not entry.definition.executable
         )
 
+    def __contains__(self, skill_id: object) -> bool:
+        return skill_id in self.entries
+
+    def __iter__(self):
+        return iter(self.entries)
+
+    def values(self):
+        return (entry.definition for entry in self.entries.values())
+
+    def items(self):
+        return ((skill_id, entry.definition) for skill_id, entry in self.entries.items())
+
     def get(self, skill_id: str) -> SkillDefinition:
         try:
             return self.entries[skill_id].definition

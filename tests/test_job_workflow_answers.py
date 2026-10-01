@@ -14,7 +14,7 @@ def test_plan_is_persisted_on_job_and_answers_replan_until_ready():
     service.provide_missing_information(job.job_id, {"target_velocity_ms": 7, "material": "gss"})
     assert job.status == JobStatus.HUMAN_REVIEW
     assert job.orchestration["status"] == "ready_for_execution"
-    assert job.result["status"] == "draft_ready"
+    assert job.result["status"] == "completed"
 
 
 def test_answers_do_not_queue_when_inputs_remain_missing():
@@ -36,9 +36,9 @@ def test_pump_head_intake_surfaces_complete_input_contract():
         "straight_length_m",
         "static_head_m",
         "margin_pct",
-        "roughness_mm",
-        "material",
     }.issubset(set(plan.missing_inputs))
+    assert "roughness_mm" in plan.missing_inputs
+    assert "material" not in plan.missing_inputs
 
 
 def test_answers_automatically_continue_to_human_review_when_complete():
@@ -56,8 +56,8 @@ def test_answers_automatically_continue_to_human_review_when_complete():
         },
     )
     assert job.status == JobStatus.HUMAN_REVIEW
-    assert job.result["status"] == "draft_ready"
-    assert job.result["engineering_result"]["total_dynamic_head_m"] > 0
+    assert job.result["status"] == "completed"
+    assert job.result["engineering_result"]["results"]
     assert job.errors == []
 
 
@@ -92,4 +92,4 @@ def test_approval_rejects_inconsistent_job_with_missing_inputs():
         service.approve(job.job_id, "test-reviewer")
         assert False, "Approval should reject incomplete engineering inputs"
     except ValueError as exc:
-        assert "missing" in str(exc).lower()
+        assert "required inputs" in str(exc).lower() or "missing" in str(exc).lower()

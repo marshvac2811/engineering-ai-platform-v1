@@ -99,7 +99,7 @@ def build_engineering_plan(
             objective=str(item.get("objective") or understanding.get("objective") or f"Execute {capability_id}"),
             capability_id=capability_id,
             sequence=index,
-            depends_on=( [str(x) for x in item.get("depends_on", [])] if "depends_on" in item else ([f"task-{index-1}"] if index > 1 else []) ),
+            depends_on=([str(x) for x in (item.get("depends_on") or [])] if "depends_on" in item else ([f"task-{index-1}"] if index > 1 else [])),
             status=task_status,
             required_inputs=required,
             missing_inputs=list(resolution.missing_inputs),

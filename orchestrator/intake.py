@@ -234,10 +234,10 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "diameter_mm": [r"(?:pipe\s+internal\s+)?diameter\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b", r"(?:pipe|dia(?:meter)?)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b", r"([\d,.]+)\s*mm\s*(?:pipe|dia(?:meter)?)\b"],
         "roughness_mm": [r"roughness\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b", r"([\d,.]+)\s*mm\s*(?:roughness|roughness\s*value)\b"],
         "width_mm": [r"(?:width|w)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b"],
-        "height_mm": [r"(?:height|(?<![a-z])h)\s*(?:is|of|=|:)\s*([\d,.]+)\s*mm\b"],
+        "height_mm": [r"(?:height|(?<![a-z])h)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b"],
         "target_velocity_ms": [r"(?:target\s*)?velocity\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m/s", r"(?:at\s+)?([\d,.]+)\s*m/s(?:\s+velocity)?\b"],
         "target_friction_pa_per_m": [r"(?:friction|friction\s*rate)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*pa\s*/?\s*m\b"],
-        "straight_length_m": [r"(?:total\s+)?straight\s+pipe\s+length\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"(?:pipe\s+length)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"([\d,.]+)\s*m\s*(?:straight\s+pipe\s+length|pipe\s+length)\b"],
+        "straight_length_m": [r"(?:total\s+)?straight(?:\s+pipe)?\s+length\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"(?:pipe\s+length)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"([\d,.]+)\s*m\s*(?:straight(?:\s+pipe)?\s+length|pipe\s+length)\b"],
         "static_head_m": [r"(?:static\s*(?:/|or\s+)?\s*elevation|elevation)\s*(?:head|lift)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"static\s+head\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"([\d,.]+)\s*m\s*(?:static|elevation)\s*(?:head|lift)\b"],
         "margin_pct": [r"(?:design\s+)?(?:margin|allowance)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:%|percent)\b", r"([\d,.]+)\s*(?:%|percent)\s*(?:design\s+)?(?:margin|allowance)\b"],
         "wet_bulb_c": [r"wet\s*bulb\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
@@ -306,6 +306,12 @@ class RuleBasedIntentProvider:
             return requested_skill_id, [IntentCandidate(requested_skill_id, 999, ["Explicit skill_id supplied by caller."])], 1.0
 
         t = text.lower()
+        # Broad life-safety inspection requests must not be routed to an unrelated
+        # specialist merely because a generic word overlaps a routing phrase.
+        if ("life-safety" in t or "life safety" in t or "fire pump room" in t) and not any(
+            phrase in t for phrase in ("cleanroom", "air changes", "isolation room", "operating room", "ach")
+        ):
+            return None, [], 0.0
         candidates: List[IntentCandidate] = []
         for skill_id, terms in ROUTING_RULES.items():
             matched = [term for term in terms if term in t]
@@ -442,6 +448,12 @@ def build_plan(
 
     extracted = extract_facts(text)
     merged = {**provider_extracted, **extracted, **provided_inputs}
+    if skill_id == "cleanroom_ach" and not any(
+        phrase in text.lower() for phrase in ("cleanroom", "air changes", "isolation room", "operating room") or bool(re.search(r"\bach\b", text, re.IGNORECASE))
+    ):
+        skill_id = None
+        candidates = []
+
     # Scope is an AI interpretation concern, not a recipe/library lookup.
     # Keep the field for API compatibility, but do not derive engineering work
     # from a quantity catalog.
