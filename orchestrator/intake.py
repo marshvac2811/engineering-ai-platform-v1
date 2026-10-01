@@ -45,6 +45,7 @@ class OrchestrationPlan:
     work_items: List["OrchestrationWorkItem"] = field(default_factory=list)
     unsupported_scope: List[str] = field(default_factory=list)
     scope_analysis: Dict[str, Any] = field(default_factory=dict)
+    request_understanding: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
@@ -384,6 +385,7 @@ def build_plan(
 
     provider_extracted: Dict[str, Any] = {}
     provider_rationale: List[str] = []
+    request_understanding: Dict[str, Any] = {}
     if requested_skill_id:
         skill_id, candidates, confidence = provider.route(text, requested_skill_id)
     elif hasattr(provider, "classify_and_extract"):
@@ -400,6 +402,15 @@ def build_plan(
         confidence = float(decision.get("confidence", 0.0))
         provider_extracted = dict(decision.get("extracted_inputs") or {})
         provider_rationale = [str(x) for x in decision.get("rationale") or []]
+        request_understanding = {
+            "objective": decision.get("objective", ""),
+            "disciplines": list(decision.get("disciplines") or []),
+            "requested_outputs": list(decision.get("requested_outputs") or []),
+            "methodology": dict(decision.get("methodology") or {}),
+            "governance": dict(decision.get("governance") or {}),
+            "confidence": confidence,
+            "source": provider.name,
+        }
         candidates = (
             [IntentCandidate(skill_id, int(round(confidence * 1000)), provider_rationale)]
             if skill_id
@@ -424,7 +435,7 @@ def build_plan(
             status, text.strip(), None, confidence, candidates, merged, [], [question],
             assumptions_context, build_governance_context(skill_id=None, project_context=project_context, standards_context=standards_context), project_context,
             ["AI could not establish a safe executable capability from the registered capability set."], provider.name,
-            [], [], scope_analysis
+            [], [], scope_analysis, request_understanding
         )
 
     registry_path = Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
@@ -468,5 +479,6 @@ def build_plan(
         work_items=[OrchestrationWorkItem(skill_id=skill_id, normalized_request=text.strip(), extracted_inputs=merged, missing_inputs=missing, questions=questions, status=status, report_type=_report_type_for_skill(skill_id))],
         unsupported_scope=scope_analysis.get("unsupported_scope", []),
         scope_analysis=scope_analysis,
+        request_understanding=request_understanding,
     )
 
