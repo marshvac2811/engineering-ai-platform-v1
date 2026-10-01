@@ -213,6 +213,10 @@ class JobService:
         # not a privileged execution path.
         result = execute(request)
         result_dict = result.to_dict()
+        # Carry the AI interpretation forward so every engineering result is
+        # traceable to the understood objective and governance context.
+        result_dict["request_understanding"] = dict(job.orchestration.get("request_understanding") or {})
+        result_dict["governance"] = dict(job.orchestration.get("standards_context") or job.standards_context or {})
         job.result = result_dict
         if result.status not in {"input_validation_failed", "calculation_failed", "skill_not_registered"}:
             if self.report_service is not None:
