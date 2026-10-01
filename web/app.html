@@ -28,6 +28,14 @@ button:disabled{opacity:.55;cursor:wait}
 .actions{display:flex;gap:8px;margin-top:10px}
 .empty{color:#697386;padding:8px 0}
 .small{font-size:12px;color:#697386}
+
+.dropzone{border:2px dashed #cbd5e1;border-radius:12px;padding:18px;text-align:center;background:#fbfcfe;cursor:pointer}
+.dropzone.drag{border-color:#1769e0;background:#f2f7ff}
+.file-list{margin-top:10px;font-size:12px;color:#4b5563}.file-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #edf0f4}
+.trial-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.trial{border:1px solid #e1e5eb;border-radius:10px;padding:13px;background:#fff}
+.trial h3{margin:0 0 6px;font-size:14px}.trial p{margin:0 0 10px;color:#697386;font-size:12px;line-height:1.4}
+.json-result{margin-top:10px;overflow:auto}.json-result table{width:100%;border-collapse:collapse;font-size:12px}.json-result th,.json-result td{border:1px solid #e1e5eb;padding:7px;text-align:left;vertical-align:top}.json-result th{background:#f5f7fa}
 </style>
 </head>
 <body>
@@ -36,9 +44,27 @@ button:disabled{opacity:.55;cursor:wait}
 <section class="card">
 <h2>New Engineering Request</h2>
 <p class="muted">Describe the engineering outcome you need in normal language. AI interprets the request, determines the engineering work, identifies governing requirements, asks only for missing information, executes verified capabilities when available, and routes the result for human review.</p>
-<textarea id="request" rows="5" placeholder="Example: Audit this hospital for energy savings, assess HVAC optimization, rooftop solar and BESS options, and prepare a decarbonization roadmap using applicable standards and the available project data."></textarea>
+<textarea id="request" rows="5" placeholder="Example: Upload the plant data above, then ask: Audit this hospital for energy savings, assess HVAC optimization, rooftop solar and BESS options, and prepare a decarbonization roadmap using applicable standards and the available project data."></textarea>
 <button id="submit" style="margin-top:12px" onclick="submitRequest()">Submit Request</button>
 <div id="requestMsg" class="msg"></div>
+</section>
+
+<section class="card">
+<h2>Energy Data Intake & Trial Lab</h2>
+<p class="muted">Upload the plant data the client already has. The platform will send the files with the engineering request so the AI can use them as project evidence. You can also launch controlled trials against registered energy capabilities.</p>
+<div id="dropzone" class="dropzone" onclick="document.getElementById('plantFiles').click()">
+  <strong>Drop plant files here or click to browse</strong>
+  <div class="small" style="margin-top:6px">Excel · CSV · PDF · BMS/SCADA exports · utility bills · audit reports · equipment schedules</div>
+</div>
+<input id="plantFiles" type="file" multiple hidden accept=".xlsx,.xls,.csv,.pdf,.txt,.json,.doc,.docx">
+<div id="fileList" class="file-list"></div>
+<div class="trial-grid" style="margin-top:14px">
+  <div class="trial"><h3>HVAC Decarbonisation — Impact</h3><p>Baseline energy, efficiency improvement, tariff, O&M and asset-life impact.</p><button class="secondary" onclick="runTrial('hvac_decarbonisation','impact')">Run trial</button></div>
+  <div class="trial"><h3>HVAC Decarbonisation — Scenarios</h3><p>Do-nothing vs proper O&M vs full retrofit over a planning horizon.</p><button class="secondary" onclick="runTrial('hvac_decarbonisation','scenarios')">Run trial</button></div>
+  <div class="trial"><h3>Energy Retrofit Payback</h3><p>Old/new equipment efficiency, annual energy, investment, savings and lifecycle economics.</p><button class="secondary" onclick="runTrial('energy_payback')">Run trial</button></div>
+  <div class="trial"><h3>VFD Energy Savings</h3><p>Motor power, speed reduction, static-head correction, annual hours and tariff.</p><button class="secondary" onclick="runTrial('vfd_energy_savings')">Run trial</button></div>
+</div>
+<div id="trialMsg" class="msg"></div>
 </section>
 
 <section class="card">
@@ -81,6 +107,68 @@ async function api(url,opt={}){
   if(e?.name==="AbortError") throw Error("API request timed out after 15 seconds: "+url);
   throw e;
  }finally{clearTimeout(timeout);}
+}
+
+const selectedPlantFiles=[];
+const fileInput=document.getElementById("plantFiles");
+const dropzone=document.getElementById("dropzone");
+fileInput.addEventListener("change",()=>{selectedPlantFiles.splice(0,selectedPlantFiles.length,...Array.from(fileInput.files));renderFiles();});
+["dragenter","dragover"].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove("drag");}));
+dropzone.addEventListener("drop",e=>{selectedPlantFiles.splice(0,selectedPlantFiles.length,...Array.from(e.dataTransfer.files));renderFiles();});
+function renderFiles(){
+ const box=document.getElementById("fileList");
+ if(!selectedPlantFiles.length){box.innerHTML="";return;}
+ box.innerHTML=selectedPlantFiles.map((f,i)=>'<div class="file-row"><span>'+esc(f.name)+'</span><span>'+Math.round(f.size/1024)+' KB</span></div>').join("");
+}
+function readFileBase64(file){
+ return new Promise((resolve,reject)=>{
+  const r=new FileReader();r.onload=()=>resolve(String(r.result).split(",")[1]||"");r.onerror=()=>reject(r.error||Error("Could not read "+file.name));r.readAsDataURL(file);
+ });
+}
+async function buildAttachments(){
+ const total=selectedPlantFiles.reduce((n,f)=>n+f.size,0);
+ if(total>20*1024*1024)throw Error("Plant upload bundle is limited to 20 MB for this trial.");
+ const out=[];
+ for(const f of selectedPlantFiles){
+  if(f.size>8*1024*1024)throw Error(f.name+" exceeds the 8 MB per-file trial limit.");
+  out.push({filename:f.name,mime_type:f.type||"application/octet-stream",content_base64:await readFileBase64(f),metadata:{intake_role:"plant_data"}})
+ }
+ return out;
+}
+async function runTrial(skill,mode){
+ const msg=document.getElementById("trialMsg");
+ const buttons=document.querySelectorAll(".trial button");buttons.forEach(b=>b.disabled=true);
+ showMsg(msg,true,"Running "+skill+(mode?" / "+mode:"")+" trial...");
+ try{
+  const attachments=await buildAttachments();
+  const samples={
+   hvac_decarbonisation:{
+    annual_energy_kwh:1500000,tariff:8.5,mode:mode||"impact",efficiency_gain_pct:8,om_program_cost:350000,
+    capacity_tr:250,replacement_cost:9000000,life_extension_years:6,grid_emission_factor:0.716,horizon_years:10,
+    neglect_creep_pct:4,failure_year:6,emergency_premium_pct:25,retrofit_efficiency_gain_pct:35,retrofit_cost:12000000,retrofit_om_cost:140000
+   },
+   energy_payback:{
+    capacity_old:500,efficiency_old:1.05,capacity_new:500,efficiency_new:0.72,annual_hours:4000,
+    load_factor_pct:65,tariff_per_kwh:8.5,investment:4500000,incremental_om:100000,project_life_years:10
+   },
+   vfd_energy_savings:{
+    motor_kw:75,speed_reduction_pct:15,static_head_fraction:25,annual_hours:6000,tariff_per_kwh:8.5
+   }
+  };
+  const request={
+   hvac_decarbonisation:"Perform a complete HVAC energy saving, decarbonisation, asset-life and scenario assessment using the supplied plant data.",
+   energy_payback:"Assess the energy, financial and lifecycle payback of the proposed equipment retrofit using the supplied plant data.",
+   vfd_energy_savings:"Calculate VFD energy savings and economic impact for the supplied motor/system data."
+  }[skill]||"Perform an energy engineering assessment using the supplied plant data.";
+  const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+   message:request,requested_skill_id:skill,inputs:samples[skill],attachments
+  })});
+  const d=await r.json();if(!r.ok)throw Error(d.error||"Trial failed");
+  showMsg(msg,true,"Trial submitted: "+(d.job?.job_id||"job created")+". Results will appear under Jobs.");
+  await loadJobs();
+ }catch(e){showMsg(msg,false,e.message);}
+ finally{buttons.forEach(b=>b.disabled=false);}
 }
 
 async function loadAccount(){
@@ -141,47 +229,27 @@ async function dispatch(jobId){
 }
 
 function formatResult(result){
- const labels={
-  method:"Method",flow_m3hr:"Design flow",diameter_mm:"Pipe diameter",roughness_mm:"Pipe roughness",
-  straight_length_m:"Straight length",velocity_ms:"Velocity",reynolds_number:"Reynolds number",
-  friction_factor:"Friction factor",friction_head_m:"Friction head",static_head_m:"Static head",
-  fittings_equivalent_length_m:"Fitting equivalent length",total_equivalent_length_m:"Total equivalent length",
-  equipment_losses_m:"Equipment losses",subtotal_head_m:"Subtotal head",margin_pct:"Design margin",margin_head_m:"Margin head",
-  total_dynamic_head_m:"Total dynamic head",total_dynamic_head_kpa:"Total dynamic head (kPa)",
-  total_dynamic_head_bar:"Total dynamic head (bar)",total_dynamic_head_ft:"Total dynamic head (ft)",
-  total_dynamic_head_psi:"Total dynamic head (psi)",
-  target_velocity_ms:"Target velocity",required_diameter_mm:"Required diameter",recommended_diameter_mm:"Recommended diameter",
-  actual_velocity_ms:"Actual velocity",actual_friction_pa_per_m:"Friction loss",
-  input_airflow:"Input airflow",input_airflow_unit:"Airflow unit"
+ const humanize=k=>String(k).replace(/([a-z])([A-Z])/g,"$1 $2").replace(/_/g," ").replace(/\\b\\w/g,m=>m.toUpperCase());
+ const fmt=v=>typeof v==="number"?(Number.isInteger(v)?String(v):String(Number(v.toFixed(3)))):String(v??"");
+ const scalar=(k,v)=>'<div class="metric"><span class="label">'+esc(humanize(k))+'</span><span class="value">'+esc(fmt(v))+'</span></div>';
+ const table=(rows)=>{
+  if(!Array.isArray(rows)||!rows.length||typeof rows[0]!=="object")return "";
+  const cols=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+  return '<div class="json-result"><table><thead><tr>'+cols.map(c=>'<th>'+esc(humanize(c))+'</th>').join("")+'</tr></thead><tbody>'+
+   rows.map(r=>'<tr>'+cols.map(c=>'<td>'+esc(typeof r[c]==="object"&&r[c]!==null?JSON.stringify(r[c]):fmt(r[c]))+'</td>').join("")+'</tr>').join("")+
+   '</tbody></table></div>';
  };
- const units={
-  flow_m3hr:" m³/h",diameter_mm:" mm",roughness_mm:" mm",straight_length_m:" m",
-  velocity_ms:" m/s",friction_head_m:" m",static_head_m:" m",
-  fittings_equivalent_length_m:" m",total_equivalent_length_m:" m",equipment_losses_m:" m",
-  subtotal_head_m:" m",margin_pct:" %",margin_head_m:" m",total_dynamic_head_m:" m",
-  total_dynamic_head_kpa:" kPa",total_dynamic_head_bar:" bar",total_dynamic_head_ft:" ft",
-  total_dynamic_head_psi:" psi",target_velocity_ms:" m/s",required_diameter_mm:" mm",
-  recommended_diameter_mm:" mm",actual_velocity_ms:" m/s",actual_friction_pa_per_m:" Pa/m"
- };
- const preferred=["method","flow_m3hr","diameter_mm","roughness_mm","straight_length_m","velocity_ms","reynolds_number","friction_factor",
-  "friction_head_m","static_head_m","fittings_equivalent_length_m","total_equivalent_length_m","equipment_losses_m","subtotal_head_m","margin_pct","margin_head_m",
-  "total_dynamic_head_m","total_dynamic_head_kpa","total_dynamic_head_bar","total_dynamic_head_ft","total_dynamic_head_psi",
-  "input_airflow","input_airflow_unit","target_velocity_ms","required_diameter_mm","recommended_diameter_mm","actual_velocity_ms","actual_friction_pa_per_m"];
- const humanize=(k)=>k.replace(/([a-z])([A-Z])/g,"$1 $2").replace(/_/g," ").replace(/\\b\\w/g,m=>m.toUpperCase());
- const fmt=(v)=>{
-  if(v===null||v===undefined)return "";
-  if(typeof v==="number")return Number.isInteger(v)?String(v):String(Number(v.toFixed(3)));
-  return String(v);
- };
- const scalarKeys=Object.keys(result).filter(k=>result[k]===null||["string","number","boolean"].includes(typeof result[k]));
- const ordered=[...preferred.filter(k=>scalarKeys.includes(k)),...scalarKeys.filter(k=>!preferred.includes(k))];
- const items=ordered.map(k=>{
-  const value=fmt(result[k]);
-  const unit=units[k]||"";
-  return '<div class="metric"><span class="label">'+esc(labels[k]||humanize(k))+'</span><span class="value">'+esc(value+unit)+'</span></div>';
- }).join("");
- const note=result.velocity_note?'<div class="small" style="margin-top:10px">'+esc(result.velocity_note)+'</div>':"";
- return '<div class="result"><h3>Engineering Result</h3><div class="result-grid">'+items+'</div>'+note+'</div>';
+ let html='<div class="result"><h3>Engineering Result</h3>';
+ const scalars=Object.entries(result||{}).filter(([k,v])=>v===null||["string","number","boolean"].includes(typeof v));
+ html+='<div class="result-grid">'+scalars.map(([k,v])=>scalar(k,v)).join("")+'</div>';
+ for(const [k,v] of Object.entries(result||{})){
+  if(Array.isArray(v)){
+   html+='<div style="margin-top:12px"><strong>'+esc(humanize(k))+'</strong>'+table(v)+(Array.isArray(v)&&v.length&&typeof v[0]!=="object"?'<div class="small" style="margin-top:6px">'+esc(v.join(", "))+'</div>':"")+'</div>';
+  }else if(v&&typeof v==="object"){
+   html+='<div style="margin-top:12px"><strong>'+esc(humanize(k))+'</strong><div class="result-grid" style="margin-top:7px">'+Object.entries(v).filter(([a,b])=>b===null||["string","number","boolean"].includes(typeof b)).map(([a,b])=>scalar(a,b)).join("")+'</div></div>';
+  }
+ }
+ html+='</div>';return html;
 }
 function fieldLabel(field){
  const labels={
