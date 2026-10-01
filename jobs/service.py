@@ -114,10 +114,19 @@ class JobService:
         self.store.save(job)
         return job
 
-    def provide_missing_information(self, job_id: str, updates: Dict[str, Any]) -> Job:
+    def provide_missing_information(self, job_id: str, updates: Dict[str, Any] | None = None, message: str | None = None) -> Job:
         job = self._get(job_id)
         if job.status != JobStatus.AWAITING_INFORMATION:
             raise ValueError("Job is not awaiting information")
+        updates = dict(updates or {})
+        if message and str(message).strip():
+            from orchestrator.intake import extract_facts
+            # Accept a normal-language client reply. Structured inputs remain
+            # supported, but the client never needs to know field names.
+            extracted = extract_facts(str(message))
+            updates = {**extracted, **updates}
+        if not updates:
+            raise ValueError("Provide information either as normal-language message or structured inputs.")
         # Dashboard form values arrive as strings. Normalize them against the
         # authoritative skill registry before re-planning/execution so numeric
         # engineering inputs are passed to validators/calculators as numbers.
