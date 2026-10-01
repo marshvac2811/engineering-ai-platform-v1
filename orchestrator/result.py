@@ -57,22 +57,27 @@ def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Di
     ]
     completed = sum(1 for t in task_statuses if t["status"] == "completed")
     total = len(task_statuses)
+    task_ids = {str(t["task_id"]) for t in task_statuses}
+    trace_task_ids = {str(x.get("task_id")) for x in (workflow.get("execution_trace") or []) if isinstance(x, dict)}
+    result_task_ids = {str(x.get("task_id")) for x in results if isinstance(x, dict)}
+    dependency_integrity = all(dep in task_ids for t in task_statuses for dep in t["depends_on"])
+    trace_integrity = bool(total) and all(task_id in trace_task_ids for task_id in task_ids)
+    result_integrity = bool(total) and all(task_id in result_task_ids for task_id in task_ids)
+    evidence_gate_consistent = (not decision_package.get("compliance_claims") or bool((decision_package.get("claim_gate") or {}).get("compliance_claim_allowed")))
+    decision_status = str(decision_package.get("status") or "")
+    qa_ready = (workflow.get("status") == "completed" and completed == total and bool(total) and dependency_integrity and trace_integrity and result_integrity and evidence_gate_consistent and decision_status != "evidence_incomplete")
     qa = {
-        "status": "ready_for_human_review" if workflow.get("status") == "completed" and completed == total else "not_ready",
+        "status": "ready_for_human_review" if qa_ready else "not_ready",
         "task_count": total,
         "completed_tasks": completed,
         "all_tasks_completed": bool(total) and completed == total,
-        "dependency_integrity": all(
-            dep in {t["task_id"] for t in task_statuses}
-            for t in task_statuses for dep in t["depends_on"]
-        ),
+        "dependency_integrity": dependency_integrity,
+        "trace_integrity": trace_integrity,
+        "result_integrity": result_integrity,
+        "evidence_gate_consistent": evidence_gate_consistent,
+        "decision_package_status": decision_status,
         "calculation_authority": workflow.get("calculation_authority"),
-        "checks": [
-            "All planned tasks must complete before the workflow can enter human review.",
-            "Results are attributable to registered capabilities.",
-            "Dependency relationships are retained in the execution trace.",
-            "Standards/governance references are metadata unless verified evidence establishes applicability.",
-        ],
+        "checks": ["All planned tasks must complete before the workflow can enter human review.", "Every planned task must have an execution trace and attributable result.", "Dependency relationships must reference planned tasks.", "Compliance claims are permitted only when the governed evidence gate is open.", "Standards/governance references remain metadata unless verified evidence establishes applicability."],
     }
     return {
         "status": workflow.get("status"),
