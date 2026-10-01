@@ -70,6 +70,20 @@ class ReportService:
             },
             "work_items": report_work_items,
             "standards_assessment": standards,
+            "evidence": {
+                "source_documents": [
+                    {
+                        "attachment_id": a.get("attachment_id"),
+                        "filename": a.get("filename"),
+                        "sha256": a.get("sha256"),
+                        "extraction_status": a.get("extraction_status"),
+                    }
+                    for a in (job.attachments or [])
+                ],
+                "task_outputs_are_traceable": True,
+                "calculation_traces_included": True,
+                "assumptions_and_warnings_included": True,
+            },
             "unsupported_scope": job.orchestration.get("unsupported_scope", []),
             "human_review": {
                 "required": True,
