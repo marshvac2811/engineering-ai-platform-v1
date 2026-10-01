@@ -87,7 +87,7 @@ def build_evidence_bundle(*, job, workflow: Dict[str, Any], consolidated: Dict[s
         "result": consolidated,
         "qa": consolidated.get("qa") or {},
         "governance": consolidated.get("governance") or {},
-        "delivery": job.dispatch_result or {},
+        "delivery": getattr(job, "dispatch_result", None) or {},
         "review": {
             "required": True,
             "status": "approved" if job.status.value in {"approved", "dispatching", "dispatched", "completed"} else "pending",
