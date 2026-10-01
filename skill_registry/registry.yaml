@@ -753,60 +753,6 @@ skills:
   - fenestration u factor
   - thermal transmittance of facade
 
-crm_pipeline:
-  domain: COMMERCIAL
-  source: marshvac2811/pipeline/pipeline.html
-  status: integrated
-  stages:
-  - budgetary
-  - tendering
-  - quotation
-  - followup
-  - negotiation
-  - won
-  - lost
-  categories:
-  - Project Sales
-  - Retrofit Jobs
-  - Energy Optimization
-  stakeholders:
-  - Consultant
-  - Builder
-  - Developer
-  - Contractor
-  - End Client
-  - Other
-  canonical: true
-  external_adapters:
-  - hubspot
-crm_pipeline:
-  domain: COMMERCIAL
-  source: marshvac2811/pipeline/pipeline.html
-  status: integrated
-  stages:
-  - budgetary
-  - tendering
-  - quotation
-  - followup
-  - negotiation
-  - won
-  - lost
-  categories:
-  - Project Sales
-  - Retrofit Jobs
-  - Energy Optimization
-  stakeholders:
-  - Consultant
-  - Builder
-  - Developer
-  - Contractor
-  - End Client
-  - Other
-  canonical: true
-  external_adapters:
-  - hubspot
-
-
 - skill_id: quantity_takeoff
   domain: CROSS_VERTICAL
   source_repository: platform-scope-engine
@@ -833,3 +779,57 @@ crm_pipeline:
   - bill of quantities
   - material list
   - material requirement
+
+crm_pipeline:
+  domain: COMMERCIAL
+  source: marshvac2811/pipeline/pipeline.html
+  status: integrated
+  stages:
+  - budgetary
+  - tendering
+  - quotation
+  - followup
+  - negotiation
+  - won
+  - lost
+  categories:
+  - Project Sales
+  - Retrofit Jobs
+  - Energy Optimization
+  stakeholders:
+  - Consultant
+  - Builder
+  - Developer
+  - Contractor
+  - End Client
+  - Other
+  canonical: true
+  external_adapters:
+  - hubspot
+crm_pipeline:
+  domain: COMMERCIAL
+  source: marshvac2811/pipeline/pipeline.html
+  status: integrated
+  stages:
+  - budgetary
+  - tendering
+  - quotation
+  - followup
+  - negotiation
+  - won
+  - lost
+  categories:
+  - Project Sales
+  - Retrofit Jobs
+  - Energy Optimization
+  stakeholders:
+  - Consultant
+  - Builder
+  - Developer
+  - Contractor
+  - End Client
+  - Other
+  canonical: true
+  external_adapters:
+  - hubspot
+
