@@ -55,6 +55,6 @@ def test_evidence_bundle_captures_task_outputs_and_hashes():
     assert bundle["manifest"]["task_count"] == 1
     assert bundle["manifest"]["input_hash"]
     assert bundle["manifest"]["bundle_sha256"]
-    assert bundle["source_evidence"] if "source_evidence" in bundle else True
+    assert bundle["manifest"]["source_evidence"][0]["sha256"] == "abc"
     assert bundle["tasks"][0]["engineering_result"]["annual_saving_kwh"] == 8000
     assert bundle["tasks"][0]["calculation_trace"] == ["baseline * efficiency_gain"]
