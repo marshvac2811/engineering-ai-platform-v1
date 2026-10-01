@@ -208,14 +208,10 @@ class JobService:
             assumptions_context=job.assumptions_context,
             request_id=job.job_id,
         )
-        if job.skill_id == "quantity_takeoff":
-            # Generic cross-vertical takeoff is intentionally not loaded into
-            # the global startup skill map. It is invoked only for requests
-            # that the scope engine has already classified for this capability.
-            from skills.commercial.quantity_takeoff import QuantityTakeoffSkill
-            result = QuantityTakeoffSkill().run(request)
-        else:
-            result = execute(request)
+        # All engineering execution goes through the registered capability
+        # interface. AI selects capabilities internally; quantity recipes are
+        # not a privileged execution path.
+        result = execute(request)
         result_dict = result.to_dict()
         job.result = result_dict
         if result.status not in {"input_validation_failed", "calculation_failed", "skill_not_registered"}:
