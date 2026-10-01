@@ -8,11 +8,14 @@ documents, or a trusted knowledge provider.
 from __future__ import annotations
 from typing import Any, Dict, Iterable
 
+from knowledge.evidence import build_evidence_bundle
+
 def build_governance_context(*, skill_id: str | None, project_context: Dict[str, Any] | None = None,
                              standards_context: Dict[str, Any] | None = None,
                              methodology: Dict[str, Any] | None = None) -> Dict[str, Any]:
     project_context = dict(project_context or {})
     supplied = dict(standards_context or {})
+    evidence_bundle = build_evidence_bundle(governance=supplied, project_context=project_context)
     return {
         "status": "governance_required",
         "jurisdiction": project_context.get("jurisdiction") or supplied.get("jurisdiction"),
@@ -21,7 +24,8 @@ def build_governance_context(*, skill_id: str | None, project_context: Dict[str,
         "methodology": dict(methodology or supplied.get("methodology") or {}),
         "references": list(supplied.get("references") or []),
         "applicability": supplied.get("applicability") or {},
-        "evidence": list(supplied.get("evidence") or []),
+        "evidence": evidence_bundle["records"],
+        "evidence_bundle": evidence_bundle,
         "limitations": [
             "A standard is not treated as authoritative merely because an LLM names it.",
             "Compliance claims require a verified governing source and established project applicability.",
