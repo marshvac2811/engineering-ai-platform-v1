@@ -31,6 +31,7 @@ def test_health_and_job_lifecycle_api():
     assert job['status']=='queued'
     status, job=call(app,'POST',f'/v1/jobs/{jid}/process')
     assert job['status']=='human_review'
+    assert job['report_id']
     status, job=call(app,'POST',f'/v1/jobs/{jid}/approve',{'reviewer':'eng-1','comment':'approved'})
     assert job['status']=='approved'
     status, job=call(app,'POST',f'/v1/jobs/{jid}/dispatch')
