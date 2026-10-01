@@ -5,7 +5,6 @@ knowledge lives in scope_engine/catalog.yaml, not in this calculator.
 """
 from __future__ import annotations
 from skills.common import SkillRequest, SkillResult
-from scope_engine.analyzer import analyze_scope
 
 
 class QuantityTakeoffSkill:
@@ -19,6 +18,7 @@ class QuantityTakeoffSkill:
         errors = self.validate(request)
         if errors:
             return SkillResult(self.skill_id, "input_validation_failed", validation_errors=errors)
+        from scope_engine.analyzer import analyze_scope
         scope = analyze_scope(str(request.inputs["request_text"]))
         if not scope["work_items"]:
             return SkillResult(
