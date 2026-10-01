@@ -52,7 +52,7 @@ def test_pump_head_intake_surfaces_either_or_inputs():
     assert "margin_pct" in plan.missing_inputs
     assert "roughness_mm" in plan.missing_inputs
     assert "material" not in plan.missing_inputs
-    assert len(plan.questions) == 1
+    assert len(plan.questions) == 3
 
 
 def test_successful_retry_clears_stale_errors():
