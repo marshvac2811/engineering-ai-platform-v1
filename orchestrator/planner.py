@@ -109,7 +109,13 @@ def build_engineering_plan(
     task_ids = {t.task_id for t in tasks}
     for task in tasks:
         task.depends_on = [d for d in task.depends_on if d in task_ids and d != task.task_id]
-    ready_ids = [t.task_id for t in tasks if t.status == "ready"]
+    # A task is executable now only when its own inputs are complete and all
+    # dependency tasks are complete. For planning, unknown dependency status
+    # remains pending rather than being treated as executable.
+    ready_ids = [
+        t.task_id for t in tasks
+        if t.status == "ready" and not t.depends_on
+    ]
     return {
         "status": "ready" if tasks and all(t.status == "ready" for t in tasks) else ("awaiting_information" if tasks else "capability_required"),
         "tasks": [t.to_dict() for t in tasks],
