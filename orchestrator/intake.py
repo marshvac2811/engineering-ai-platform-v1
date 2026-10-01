@@ -19,6 +19,8 @@ from skill_framework.registry import load_skill_registry
 from skill_framework.input_resolver import resolve_input_requirements
 from governance.engine import build_governance_context
 from knowledge.retrieval import build_ai_project_context
+from knowledge.governed_retrieval import retrieve_governed_knowledge
+from knowledge.reasoning_context import build_reasoning_context
 
 
 @dataclass
@@ -388,6 +390,8 @@ def build_plan(
     provider_extracted: Dict[str, Any] = {}
     provider_rationale: List[str] = []
     request_understanding: Dict[str, Any] = {}
+    governed_knowledge = retrieve_governed_knowledge(query=text, project_context=project_context, jurisdiction=project_context.get("jurisdiction") or standards_context.get("jurisdiction"), skill_id=requested_skill_id, standards_context=standards_context)
+    reasoning_context = build_reasoning_context(governed_knowledge)
     if requested_skill_id:
         skill_id, candidates, confidence = provider.route(text, requested_skill_id)
     elif hasattr(provider, "classify_and_extract"):
@@ -404,6 +408,8 @@ def build_plan(
                 },
                 "standards_context": standards_context,
                 "assumptions_context": assumptions_context,
+                "governed_knowledge": governed_knowledge,
+                "reasoning_context": reasoning_context,
             },
         )
         skill_id = decision.get("skill_id")
@@ -495,6 +501,18 @@ def build_plan(
         standards_context=governance_input,
         methodology=request_understanding.get("methodology"),
     )
+    governed_knowledge = retrieve_governed_knowledge(
+        query=text,
+        project_context=project_context,
+        jurisdiction=project_context.get("jurisdiction") or governance_input.get("jurisdiction"),
+        skill_id=skill_id,
+        disciplines=request_understanding.get("disciplines") or [],
+        objective=request_understanding.get("objective") or text.strip(),
+        standards_context=governance_input,
+    )
+    reasoning_context = build_reasoning_context(governed_knowledge)
+    governance["governed_knowledge"] = governed_knowledge
+    governance["reasoning_context"] = reasoning_context
     from orchestrator.planner import build_engineering_plan
     understanding_for_planner = dict(request_understanding)
     understanding_for_planner["capability_id"] = skill_id
