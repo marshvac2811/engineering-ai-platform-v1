@@ -17,7 +17,6 @@ from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
 from orchestrator.engine import SKILLS
 from skill_framework.registry import load_skill_registry
 from skill_framework.input_resolver import resolve_input_requirements
-from scope_engine.analyzer import analyze_scope
 
 
 @dataclass
@@ -410,6 +409,7 @@ def build_plan(
 
     extracted = extract_facts(text)
     merged = {**provider_extracted, **extracted, **provided_inputs}
+    from scope_engine.analyzer import analyze_scope
     scope_analysis = analyze_scope(text)
 
     # Cross-vertical fallback: recipe knowledge lives in configuration.
