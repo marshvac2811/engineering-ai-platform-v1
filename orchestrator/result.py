@@ -7,6 +7,8 @@ remains the responsibility of registered capabilities and human review.
 from __future__ import annotations
 from typing import Any, Dict, List
 
+from knowledge.evidence import build_evidence_bundle
+
 
 def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Dict[str, Any],
                           governance: Dict[str, Any], inputs: Dict[str, Any],
@@ -30,6 +32,12 @@ def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Di
             "capability_id": item.get("capability_id"),
             "outputs": er,
         })
+
+    evidence_bundle = build_evidence_bundle(
+        governance=governance,
+        project_context=workflow.get("project_context") or {},
+        result_evidence=evidence,
+    )
 
     task_statuses = [
         {"task_id": t.get("task_id"), "status": t.get("status"),
@@ -65,7 +73,8 @@ def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Di
         "results": results,
         "recommendations": [],
         "risks_warnings": warnings + list(workflow.get("blockers") or []),
-        "evidence": evidence,
+        "evidence": evidence_bundle["records"],
+        "evidence_bundle": evidence_bundle,
         "qa": qa,
         "task_statuses": task_statuses,
         "execution_trace": workflow.get("execution_trace") or [],
