@@ -806,3 +806,29 @@ crm_pipeline:
   external_adapters:
   - hubspot
 
+
+- skill_id: quantity_takeoff
+  domain: CROSS_VERTICAL
+  source_repository: platform-scope-engine
+  source_path: scope_engine/catalog.yaml
+  execution: deterministic_recipe_engine
+  classification: quantity_takeoff
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: request_text
+    data_type: string
+    description: Original client request used to identify work items and material recipes.
+    required: true
+    question: Please describe the work and quantities you need in normal language.
+  optional_inputs: []
+  conditional_inputs: []
+  implementation_binding: skills.commercial.quantity_takeoff:QuantityTakeoffSkill
+  routing_terms:
+  - quantity takeoff
+  - material quantity
+  - material takeoff
+  - boq material
+  - bill of quantities
+  - material list
+  - material requirement
