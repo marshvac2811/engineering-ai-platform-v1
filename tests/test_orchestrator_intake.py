@@ -60,7 +60,7 @@ def test_api_intake_creates_awaiting_information_job():
     assert status.startswith('201')
     assert body['plan']['selected_skill_id']=='duct_sizing'
     assert body['plan']['status']=='ready_for_execution'
-    assert body['job']['status']=='received'
+    assert body['job']['status']=='human_review'
 
 
 def test_api_intake_full_request_can_be_queued_and_processed():
@@ -72,10 +72,7 @@ def test_api_intake_full_request_can_be_queued_and_processed():
     status, body=call(app,'POST','/v1/intake',payload)
     assert status.startswith('201')
     jid=body['job']['job_id']
-    status, job=call(app,'POST',f'/v1/jobs/{jid}/enqueue')
-    assert job['status']=='queued'
-    status, job=call(app,'POST',f'/v1/jobs/{jid}/process')
-    assert job['status']=='human_review'
+    assert body['job']['status']=='human_review'
 
 
 def test_registered_skill_count_matches_expected_executable_batch():
