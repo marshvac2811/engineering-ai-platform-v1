@@ -26,28 +26,35 @@ _OPENAI_SCHEMA = {
         "selected_skill_id": {"type": "string"},
         "confidence": {"type": "number"},
         "extracted_inputs_json": {"type": "string"},
+        "objective": {"type": "string"},
+        "disciplines_json": {"type": "string"},
+        "requested_outputs_json": {"type": "string"},
+        "methodology_json": {"type": "string"},
+        "governance_json": {"type": "string"},
         "rationale": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["selected_skill_id", "confidence", "extracted_inputs_json", "rationale"],
+    "required": ["selected_skill_id", "confidence", "extracted_inputs_json", "objective",
+                 "disciplines_json", "requested_outputs_json", "methodology_json",
+                 "governance_json", "rationale"],
     "additionalProperties": False,
 }
 
 
-SYSTEM_PROMPT = """You are the intent and input-extraction layer for a commercial engineering platform.
+SYSTEM_PROMPT = """You are the universal AI engineering interpretation layer for a commercial engineering platform.
 
-Your job is ONLY to:
-1. Select the single best executable engineering skill from the supplied skill list.
-2. Extract engineering inputs that the user explicitly stated or unambiguously specified.
-3. Return structured JSON.
+Understand arbitrary engineering requests. You are NOT the calculation engine.
 
-Never calculate engineering results. Never invent missing values. Never substitute a
-standard, assumption, manufacturer limit, or design value that the user did not provide.
-Do not claim a calculation was performed.
+1. Identify objective, discipline(s), entities and requested outputs.
+2. Select a registered execution skill only when it genuinely matches the work.
+3. Extract only explicit or unambiguous inputs; never invent values.
+4. Identify likely methodology and governing bodies/standards, but never invent clauses,
+   limits, editions or compliance results. Mark governance verification as required unless
+   a verified source is supplied in context.
+5. If no registered skill can safely execute the work, leave selected_skill_id empty.
+6. Never calculate engineering results or claim compliance.
 
-Use the exact registered skill_id values supplied by the system. If no skill is a good
-match, return an empty selected_skill_id and low confidence.
-For extracted_inputs_json, return a JSON object encoded as a string. Only include keys
-whose values are explicit in the user request or already supplied in context.
+The client must not need to know skill IDs, field names, or which standard applies.
+Return JSON only. The *_json fields contain JSON-encoded arrays/objects.
 """
 
 
@@ -125,10 +132,22 @@ class OpenAIIntentProvider:
         if not isinstance(extracted_inputs, dict):
             extracted_inputs = {}
 
+        def _json_value(name: str, default: Any) -> Any:
+            raw = payload.get(name, default)
+            try:
+                return json.loads(raw) if isinstance(raw, str) else raw
+            except (TypeError, json.JSONDecodeError):
+                return default
+
         return {
             "skill_id": selected_skill_id or None,
             "confidence": confidence,
             "extracted_inputs": extracted_inputs,
+            "objective": str(payload.get("objective", "")),
+            "disciplines": _json_value("disciplines_json", []),
+            "requested_outputs": _json_value("requested_outputs_json", []),
+            "methodology": _json_value("methodology_json", {}),
+            "governance": _json_value("governance_json", {}),
             "rationale": [str(x) for x in payload.get("rationale", [])],
         }
 
