@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
 from orchestrator.engine import SKILLS
 from skill_framework.registry import load_skill_registry
 from skill_framework.input_resolver import resolve_input_requirements
+from governance.engine import build_governance_context
 
 
 @dataclass
@@ -409,30 +410,21 @@ def build_plan(
 
     extracted = extract_facts(text)
     merged = {**provider_extracted, **extracted, **provided_inputs}
-    from scope_engine.analyzer import analyze_scope
-    scope_analysis = analyze_scope(text)
-
-    # Cross-vertical fallback: recipe knowledge lives in configuration.
-    if skill_id is None and scope_analysis.get("recipe_count", 0) > 0:
-        skill_id = "quantity_takeoff"
-        confidence = max(confidence, 0.95)
-        candidates = [IntentCandidate("quantity_takeoff", 950, ["Matched registered cross-vertical material recipes."])]
-        merged["request_text"] = text.strip()
+    # Scope is an AI interpretation concern, not a recipe/library lookup.
+    # Keep the field for API compatibility, but do not derive engineering work
+    # from a quantity catalog.
+    scope_analysis = {"status": "ai_interpretation_pending", "verticals": [], "capabilities": [], "unsupported_scope": []}
 
     if skill_id is None:
-        if scope_analysis.get("verticals"):
-            names = ", ".join(v["name"] for v in scope_analysis["verticals"])
-            capabilities = ", ".join(scope_analysis.get("capabilities", [])) or "specialized workflow"
-            question = f"I identified {names}. This request needs a registered specialist workflow for {capabilities}. Please provide the specific audit, calculation, compliance, or BOQ objective and any project data you have."
-            status = "awaiting_information"
-        else:
-            status = "ambiguous" if candidates else "unroutable"
-            question = "Which engineering task should I perform?" if not candidates else "Which of these engineering tasks did you intend?"
+        status = "awaiting_information"
+        question = ("I understand this is an engineering request, but I cannot safely map it to a registered execution capability yet. "
+                    "Please describe the engineering objective and provide any project drawings, specifications, measurements, or other data you have. "
+                    "I will determine the discipline, methodology and governing requirements rather than asking you to select a skill.")
         return OrchestrationPlan(
             status, text.strip(), None, confidence, candidates, merged, [], [question],
-            assumptions_context, standards_context, project_context,
-            ["Scope was analyzed before requesting clarification."], provider.name,
-            [], scope_analysis.get("unsupported_scope", []), scope_analysis
+            assumptions_context, build_governance_context(skill_id=None, project_context=project_context, standards_context=standards_context), project_context,
+            ["AI could not establish a safe executable capability from the registered capability set."], provider.name,
+            [], [], scope_analysis
         )
 
     registry_path = Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
@@ -458,6 +450,7 @@ def build_plan(
             + "; ".join(registry_resolution.invalid_inputs)
         )
 
+    governance = build_governance_context(skill_id=skill_id, project_context=project_context, standards_context=standards_context)
     return OrchestrationPlan(
         status,
         text.strip(),
@@ -468,7 +461,7 @@ def build_plan(
         missing,
         questions,
         assumptions_context,
-        standards_context,
+        governance,
         project_context,
         rationale,
         provider.name,
