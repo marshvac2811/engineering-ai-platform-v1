@@ -361,7 +361,7 @@ class JobService:
             if skill is not None and hasattr(skill, "validate"):
                 validation_errors = list(skill.validate(SkillRequest(
                     skill_id=capability_id,
-                    inputs=job.inputs,
+                    inputs=task_inputs,
                     project_context=job.project_context,
                     standards_context=job.standards_context,
                     assumptions_context=job.assumptions_context,
