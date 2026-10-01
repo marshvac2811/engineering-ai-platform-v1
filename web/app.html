@@ -199,7 +199,7 @@ function jobHtml(j){
    '</div><div class="actions"><button id="btn-'+id+'">Continue</button></div>'+
    '<div id="msg-'+id+'" class="msg"></div></div>';
  }
- if(result)html+=formatResult(result);
+ if(j.orchestration?.scope_analysis?.verticals?.length) html+="<div class=\"small\" style=\"margin-top:8px\"><strong>Vertical:</strong> "+esc(j.orchestration.scope_analysis.verticals.map(v=>v.name).join(", "))+"</div>";\n if(result)html+=formatResult(result);\n if(result?.material_boq?.length) html+="<div class=\"result\"><h3>Material BOQ / Quantity Takeoff</h3>"+result.material_boq.map(x=>"<div class=\"metric\"><span class=\"label\">"+esc(x.material_name)+" ("+esc(x.unit)+")</span><span class=\"value\">"+esc(x.quantity)+"</span><div class=\"small\">"+esc(x.basis)+"</div></div>").join("")+"</div>";
  if(j.errors?.length)html+='<div style="color:#a12626;margin-top:8px">'+esc(j.errors.join("; "))+'</div>';
  if(review)html+='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button></div>';
  if(status==="approved")html+='<div class="actions"><button onclick="dispatch(\''+id+'\')">Dispatch</button></div>';
