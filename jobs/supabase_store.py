@@ -129,7 +129,10 @@ class SupabaseJobStore(JobStore):
                 report_id = rows[0].get("report_id") if rows else None
 
             if report_id:
-                self.client.table(self.jobs_table).update({"report_id": report_id}).eq("job_id", job.job_id).execute()
+                job.report_id = report_id
+                if job.result is not None:
+                    job.result["report_id"] = report_id
+                self.client.table(self.jobs_table).update({"report_id": report_id, "result": job.result}).eq("job_id", job.job_id).execute()
 
             for check in checks:
                 row = {
@@ -218,6 +221,7 @@ class SupabaseJobStore(JobStore):
             "xlsx_storage_path": xlsx_path,
             "xlsx_filename": f"engineering-evidence-{job.job_id}.xlsx",
             "watermark_text": watermark,
+            "dispatched_at": None,
         }).eq("report_id", report_id).execute()
 
         signed = self.client.storage.from_(bucket).create_signed_url(pdf_path, 86400)
