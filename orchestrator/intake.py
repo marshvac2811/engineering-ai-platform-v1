@@ -46,6 +46,7 @@ class OrchestrationPlan:
     unsupported_scope: List[str] = field(default_factory=list)
     scope_analysis: Dict[str, Any] = field(default_factory=dict)
     request_understanding: Dict[str, Any] = field(default_factory=dict)
+    engineering_plan: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
@@ -461,7 +462,22 @@ def build_plan(
             + "; ".join(registry_resolution.invalid_inputs)
         )
 
-    governance = build_governance_context(skill_id=skill_id, project_context=project_context, standards_context=standards_context)
+    governance = build_governance_context(
+        skill_id=skill_id,
+        project_context=project_context,
+        standards_context=standards_context,
+        methodology=request_understanding.get("methodology"),
+    )
+    from orchestrator.planner import build_engineering_plan
+    understanding_for_planner = dict(request_understanding)
+    understanding_for_planner["capability_id"] = skill_id
+    engineering_plan = build_engineering_plan(
+        understanding=understanding_for_planner,
+        registry=registry,
+        inputs=merged,
+        work_items=[{"capability_id": skill_id, "objective": request_understanding.get("objective") or text.strip()}],
+        governance=governance,
+    )
     return OrchestrationPlan(
         status,
         text.strip(),
@@ -480,5 +496,6 @@ def build_plan(
         unsupported_scope=scope_analysis.get("unsupported_scope", []),
         scope_analysis=scope_analysis,
         request_understanding=request_understanding,
+        engineering_plan=engineering_plan,
     )
 
