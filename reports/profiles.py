@@ -41,6 +41,7 @@ _PROFILES = {
     "hvac_boq": ("hvac_boq", "hvac_bill_of_quantities", "HVAC Bill of Quantities", ("boq",)),
     "deviation_statement": ("deviation_statement", "technical_deviation_statement", "Technical Deviation Statement", ("technical_statement",)),
     "facade_u_factor": ("facade_u_factor", "facade_thermal_performance", "Facade Thermal Performance Report", ("calculation_report", "compliance_assessment")),
+    "quantity_takeoff": ("quantity_takeoff", "universal_material_boq", "Universal Material BOQ / Quantity Takeoff", ("boq", "material_schedule")),
 }
 
 
