@@ -18,6 +18,8 @@ from typing import Callable, Dict, Tuple
 from jobs.service import JobService
 from jobs.models import JobStatus
 from jobs.store import InMemoryJobStore
+from reports.service import ReportService
+from reports.store import InMemoryReportStore
 from jobs.supabase_store import build_supabase_job_store_from_env
 from ingestion.factory import build_ingestion_service
 from orchestrator.registry_loader import load_registry
@@ -56,7 +58,7 @@ class APIApp:
     def __init__(self, service_factory: Callable[[str], JobService] | None = None, *,
                  development_authenticator=None, api_keys=None, usage_store=None,
                  gmail_client=None, gmail_token_store=None, gmail_state_store=None,
-                 store=None, ingestion=None, crm_store=None, integration_store=None, workflow_task_store=None) -> None:
+                 store=None, ingestion=None, crm_store=None, integration_store=None, workflow_task_store=None, report_store=None) -> None:
         self.store = store or build_supabase_job_store_from_env() or InMemoryJobStore()
         self.ingestion = ingestion or build_ingestion_service()
         self.api_keys = api_keys or InMemoryApiKeyStore()
@@ -64,6 +66,11 @@ class APIApp:
         self.crm_store = crm_store or build_supabase_crm_store_from_env() or InMemoryCRMStore()
         self.integration_store = integration_store or build_supabase_integration_store_from_env() or InMemoryIntegrationStore()
         self.workflow_task_store = workflow_task_store or (build_supabase_workflow_task_store_from_env() if store is None else InMemoryWorkflowTaskStore())
+        # ReportService is an in-process report builder; the authoritative
+        # SupabaseJobStore persists the generated report into
+        # engineering_report_artifacts when the job is saved. Keeping these
+        # concerns separate avoids treating a JobStore as a ReportStore.
+        self.report_store = report_store or InMemoryReportStore()
         self.upwork_state_store = UpworkOAuthStateStore()
         self.upwork_token_store = TrialUpworkTokenStore()
         self.gmail_token_store = gmail_token_store or TrialGmailTokenStore()
@@ -77,7 +84,7 @@ class APIApp:
         self.api_key_authenticator = ApiKeyAuthenticator(self.api_keys.lookup)
         # Lazy-load Supabase JWT verification so startup does not require Supabase env vars.
         self.supabase_jwt_authenticator = None
-        self.service_factory = service_factory or (lambda tenant: JobService(self.store, tenant_id=tenant, ingestion_service=self.ingestion))
+        self.service_factory = service_factory or (lambda tenant: JobService(\n            self.store,\n            tenant_id=tenant,\n            ingestion_service=self.ingestion,\n            report_service=ReportService(self.report_store, tenant_id=tenant),\n        ))
 
     def _authenticate(self, environ) -> AuthContext:
         # Vercel Edge Middleware performs Supabase JWT signature verification
