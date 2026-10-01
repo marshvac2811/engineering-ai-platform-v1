@@ -138,28 +138,40 @@ function formatResult(result){
   method:"Method",flow_m3hr:"Design flow",diameter_mm:"Pipe diameter",roughness_mm:"Pipe roughness",
   straight_length_m:"Straight length",velocity_ms:"Velocity",reynolds_number:"Reynolds number",
   friction_factor:"Friction factor",friction_head_m:"Friction head",static_head_m:"Static head",
-  fittings_equivalent_length_m:"Fitting equivalent length",equipment_losses_m:"Equipment losses",
-  subtotal_head_m:"Subtotal head",margin_pct:"Design margin",margin_head_m:"Margin head",
-  total_dynamic_head_m:"Total dynamic head",total_dynamic_head_kpa:"Total dynamic head",
-  total_dynamic_head_bar:"Total dynamic head",total_dynamic_head_ft:"Total dynamic head",
-  total_dynamic_head_psi:"Total dynamic head",
+  fittings_equivalent_length_m:"Fitting equivalent length",total_equivalent_length_m:"Total equivalent length",
+  equipment_losses_m:"Equipment losses",subtotal_head_m:"Subtotal head",margin_pct:"Design margin",margin_head_m:"Margin head",
+  total_dynamic_head_m:"Total dynamic head",total_dynamic_head_kpa:"Total dynamic head (kPa)",
+  total_dynamic_head_bar:"Total dynamic head (bar)",total_dynamic_head_ft:"Total dynamic head (ft)",
+  total_dynamic_head_psi:"Total dynamic head (psi)",
   target_velocity_ms:"Target velocity",required_diameter_mm:"Required diameter",recommended_diameter_mm:"Recommended diameter",
   actual_velocity_ms:"Actual velocity",actual_friction_pa_per_m:"Friction loss",
   input_airflow:"Input airflow",input_airflow_unit:"Airflow unit"
  };
+ const units={
+  flow_m3hr:" m³/h",diameter_mm:" mm",roughness_mm:" mm",straight_length_m:" m",
+  velocity_ms:" m/s",friction_head_m:" m",static_head_m:" m",
+  fittings_equivalent_length_m:" m",total_equivalent_length_m:" m",equipment_losses_m:" m",
+  subtotal_head_m:" m",margin_pct:" %",margin_head_m:" m",total_dynamic_head_m:" m",
+  total_dynamic_head_kpa:" kPa",total_dynamic_head_bar:" bar",total_dynamic_head_ft:" ft",
+  total_dynamic_head_psi:" psi",target_velocity_ms:" m/s",required_diameter_mm:" mm",
+  recommended_diameter_mm:" mm",actual_velocity_ms:" m/s",actual_friction_pa_per_m:" Pa/m"
+ };
  const preferred=["method","flow_m3hr","diameter_mm","roughness_mm","straight_length_m","velocity_ms","reynolds_number","friction_factor",
-  "friction_head_m","static_head_m","fittings_equivalent_length_m","equipment_losses_m","subtotal_head_m","margin_pct","margin_head_m",
+  "friction_head_m","static_head_m","fittings_equivalent_length_m","total_equivalent_length_m","equipment_losses_m","subtotal_head_m","margin_pct","margin_head_m",
   "total_dynamic_head_m","total_dynamic_head_kpa","total_dynamic_head_bar","total_dynamic_head_ft","total_dynamic_head_psi",
   "input_airflow","input_airflow_unit","target_velocity_ms","required_diameter_mm","recommended_diameter_mm","actual_velocity_ms","actual_friction_pa_per_m"];
- const fmt=(k,v)=>{
+ const humanize=(k)=>k.replace(/([a-z])([A-Z])/g,"$1 $2").replace(/_/g," ").replace(/\\b\\w/g,m=>m.toUpperCase());
+ const fmt=(v)=>{
   if(v===null||v===undefined)return "";
   if(typeof v==="number")return Number.isInteger(v)?String(v):String(Number(v.toFixed(3)));
   return String(v);
  };
- const items=preferred.filter(k=>Object.prototype.hasOwnProperty.call(result,k)).map(k=>{
-  const value=fmt(k,result[k]);
-  const unit=k==="flow_m3hr"?" m³/h":k==="target_velocity_ms"||k==="actual_velocity_ms"?" m/s":k==="required_diameter_mm"||k==="recommended_diameter_mm"?" mm":k==="actual_friction_pa_per_m"?" Pa/m":"";
-  return '<div class="metric"><span class="label">'+esc(labels[k]||k)+'</span><span class="value">'+esc(value+unit)+'</span></div>';
+ const scalarKeys=Object.keys(result).filter(k=>result[k]===null||["string","number","boolean"].includes(typeof result[k]));
+ const ordered=[...preferred.filter(k=>scalarKeys.includes(k)),...scalarKeys.filter(k=>!preferred.includes(k))];
+ const items=ordered.map(k=>{
+  const value=fmt(result[k]);
+  const unit=units[k]||"";
+  return '<div class="metric"><span class="label">'+esc(labels[k]||humanize(k))+'</span><span class="value">'+esc(value+unit)+'</span></div>';
  }).join("");
  const note=result.velocity_note?'<div class="small" style="margin-top:10px">'+esc(result.velocity_note)+'</div>':"";
  return '<div class="result"><h3>Engineering Result</h3><div class="result-grid">'+items+'</div>'+note+'</div>';
