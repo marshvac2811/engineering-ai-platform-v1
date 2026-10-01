@@ -409,6 +409,9 @@ def build_plan(
             "requested_outputs": list(decision.get("requested_outputs") or []),
             "methodology": dict(decision.get("methodology") or {}),
             "governance": dict(decision.get("governance") or {}),
+            "entities": list(decision.get("entities") or []),
+            "constraints": list(decision.get("constraints") or []),
+            "tasks": list(decision.get("tasks") or []),
             "confidence": confidence,
             "source": provider.name,
         }
@@ -471,11 +474,23 @@ def build_plan(
     from orchestrator.planner import build_engineering_plan
     understanding_for_planner = dict(request_understanding)
     understanding_for_planner["capability_id"] = skill_id
+    ai_tasks = list(request_understanding.get("tasks") or [])
+    planned_items = []
+    if ai_tasks:
+        for task in ai_tasks:
+            if not isinstance(task, dict):
+                continue
+            planned_items.append({
+                "capability_id": task.get("capability_id") or task.get("skill_id"),
+                "objective": task.get("objective") or text.strip(),
+            })
+    if not planned_items:
+        planned_items = [{"capability_id": skill_id, "objective": request_understanding.get("objective") or text.strip()}]
     engineering_plan = build_engineering_plan(
         understanding=understanding_for_planner,
         registry=registry,
         inputs=merged,
-        work_items=[{"capability_id": skill_id, "objective": request_understanding.get("objective") or text.strip()}],
+        work_items=planned_items,
         governance=governance,
     )
     return OrchestrationPlan(
