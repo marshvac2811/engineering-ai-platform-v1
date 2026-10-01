@@ -342,7 +342,8 @@ def build_plan(
     provider: Optional[IntentProvider] = None,
     _compound: bool = True,
 ) -> OrchestrationPlan:
-    if _compound:
+    provider = provider or RuleBasedIntentProvider()
+    if _compound and not hasattr(provider, "classify_and_extract"):
         clauses = [part.strip(" ;") for part in re.split(r";\s*|\s+also\s+", text.strip(), flags=re.IGNORECASE) if part.strip()]
         expanded: List[str] = []
         for clause in clauses:
@@ -378,7 +379,6 @@ def build_plan(
                     work_items=supported,
                     unsupported_scope=unsupported,
                 )
-    provider = provider or RuleBasedIntentProvider()
     project_context = project_context or {}
     standards_context = standards_context or {}
     assumptions_context = assumptions_context or {}
@@ -493,6 +493,11 @@ def build_plan(
         work_items=planned_items,
         governance=governance,
     )
+    if engineering_plan.get("status") == "capability_required":
+        status = "awaiting_information"
+        questions = list(questions) + ["Part of this request requires an engineering capability that is not currently registered. No calculation has been performed for that part."]
+    elif engineering_plan.get("status") == "awaiting_information":
+        status = "awaiting_information"
     return OrchestrationPlan(
         status,
         text.strip(),
