@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from knowledge.evidence import build_evidence_bundle
+from orchestrator.reasoning import build_decision_package
 
 
 def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Dict[str, Any],
@@ -48,6 +49,7 @@ def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Di
     }
     if not ai_reasoning["claim_gate"].get("compliance_claim_allowed", False):
         ai_reasoning["compliance_claims"] = []
+    decision_package = build_decision_package(request_understanding, governance)
     task_statuses = [
         {"task_id": t.get("task_id"), "status": t.get("status"),
          "capability_id": t.get("capability_id"), "depends_on": t.get("depends_on", [])}
@@ -76,6 +78,7 @@ def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Di
         "status": workflow.get("status"),
         "request_understanding": request_understanding,
         "ai_reasoning": ai_reasoning,
+        "decision_package": decision_package,
         "governance": governance,
         "inputs": inputs,
         "assumptions": assumptions_out + list(assumptions.get("items") or []) if isinstance(assumptions, dict) else assumptions_out,
