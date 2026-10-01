@@ -168,15 +168,22 @@ def resolve_input_requirements(
             second = second_match.group(1) if second_match else None
             alternatives = [name for name in (first, second) if name in optional_by_name]
             if alternatives and not any(_is_present(inputs, name) for name in alternatives):
+                # This is one logical requirement, not two independent fields.
+                # Surface a single client-friendly clarification. The client may
+                # answer with either alternative in ordinary language.
+                primary = alternatives[0]
+                if primary not in missing:
+                    missing.append(primary)
+                descriptions = []
                 for name in alternatives:
-                    if name not in missing:
-                        missing.append(name)
                     item = optional_by_name[name]
-                    questions.append(
-                        item.question
-                        or item.description
-                        or f"Please provide the engineering input: {name}."
-                    )
+                    descriptions.append(item.question or item.description or name)
+                questions.append(
+                    "Please provide "
+                    + " or ".join(alternatives)
+                    + ". "
+                    + "You may reply in normal language; one of these is sufficient."
+                )
 
     seen = set()
 
