@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 import re
+import unicodedata
 from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
 
 from orchestrator.engine import SKILLS
@@ -195,9 +196,18 @@ def _extract_number(text: str, patterns: Sequence[str]) -> Optional[float]:
     return None
 
 
+def _normalize_intake_text(text: str) -> str:
+    """Normalize common engineering-unit Unicode variants before extraction."""
+    normalized = unicodedata.normalize("NFKC", text or "").lower()
+    normalized = normalized.replace("³", "3").replace("²", "2")
+    normalized = normalized.replace("°", " deg ")
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized.strip()
+
+
 def extract_facts(text: str) -> Dict[str, Any]:
-    """Extract only unambiguous numeric/text facts from natural language."""
-    t = text.lower()
+    """Extract unambiguous engineering facts from natural-language prose."""
+    t = _normalize_intake_text(text)
     out: Dict[str, Any] = {}
 
     if re.search(r"\bcfm\b", t, re.IGNORECASE):
@@ -213,16 +223,16 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "capacity_new": [r"new\s*(?:capacity\s*)?([\d,.]+)\s*(?:tr|ton)"],
         "total_load_tr": [r"([\d,.]+)\s*(?:tr|tons?)\b"],
         "chiller_tr": [r"([\d,.]+)\s*(?:tr|tons?)\b"],
-        "flow_m3hr": [r"([\d,.]+)\s*m3\s*/?\s*h(?:r)?", r"([\d,.]+)\s*mÂ³\s*/?\s*h(?:r)?"],
-        "diameter_mm": [r"(?:dia(?:meter)?|pipe)\s*[:=]?\s*([\d,.]+)\s*mm", r"([\d,.]+)\s*mm\s*(?:pipe|dia(?:meter)?)"],
-        "roughness_mm": [r"roughness\s*[:=]?\s*([\d,.]+)\s*mm", r"([\d,.]+)\s*mm\s*(?:roughness|roughness\s*value)\b"],
-        "width_mm": [r"(?:width|w)\s*[:=]?\s*([\d,.]+)\s*mm"],
-        "height_mm": [r"(?:height|(?<![a-z])h)\s*[:=]?\s*([\d,.]+)\s*mm"],
-        "target_velocity_ms": [r"(?:target\s*)?velocity\s*[:=]?\s*([\d,.]+)\s*m/s", r"(?:at\s+)?([\d,.]+)\s*m/s(?:\s+velocity)?\b"],
-        "target_friction_pa_per_m": [r"(?:friction|friction\s*rate)\s*[:=]?\s*([\d,.]+)\s*pa\s*/?\s*m"],
-        "straight_length_m": [r"(?:straight\s*(?:length|pipe)|pipe\s*length)\s*[:=]?\s*([\d,.]+)\s*m", r"([\d,.]+)\s*m\s*(?:straight\s*length|pipe\s*length)\b"],
-        "static_head_m": [r"(?:static|elevation)\s*(?:head|lift)\s*[:=]?\s*([\d,.]+)\s*m", r"([\d,.]+)\s*m\s*(?:static|elevation)\s*(?:head|lift)\b"],
-        "margin_pct": [r"(?:margin|allowance)\s*[:=]?\s*([\d,.]+)\s*(?:%|percent)\b", r"([\d,.]+)\s*(?:%|percent)\s*(?:margin|allowance)\b"],
+        "flow_m3hr": [r"(?:design\s+water\s+)?flow(?:\s+rate)?\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m3\s*/?\s*h(?:r)?\b", r"([\d,.]+)\s*m3\s*/?\s*h(?:r)?\b"],
+        "diameter_mm": [r"(?:pipe\s+internal\s+)?diameter\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b", r"(?:pipe|dia(?:meter)?)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b", r"([\d,.]+)\s*mm\s*(?:pipe|dia(?:meter)?)\b"],
+        "roughness_mm": [r"roughness\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b", r"([\d,.]+)\s*mm\s*(?:roughness|roughness\s*value)\b"],
+        "width_mm": [r"(?:width|w)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b"],
+        "height_mm": [r"(?:height|(?<![a-z])h)\s*(?:is|of|=|:)\s*([\d,.]+)\s*mm\b"],
+        "target_velocity_ms": [r"(?:target\s*)?velocity\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m/s", r"(?:at\s+)?([\d,.]+)\s*m/s(?:\s+velocity)?\b"],
+        "target_friction_pa_per_m": [r"(?:friction|friction\s*rate)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*pa\s*/?\s*m\b"],
+        "straight_length_m": [r"(?:total\s+)?straight\s+pipe\s+length\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"(?:pipe\s+length)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"([\d,.]+)\s*m\s*(?:straight\s+pipe\s+length|pipe\s+length)\b"],
+        "static_head_m": [r"(?:static\s*(?:/|or\s+)?\s*elevation|elevation)\s*(?:head|lift)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"static\s+head\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"([\d,.]+)\s*m\s*(?:static|elevation)\s*(?:head|lift)\b"],
+        "margin_pct": [r"(?:design\s+)?(?:margin|allowance)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:%|percent)\b", r"([\d,.]+)\s*(?:%|percent)\s*(?:design\s+)?(?:margin|allowance)\b"],
         "wet_bulb_c": [r"wet\s*bulb\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
         "approach_c": [r"approach\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
         "range_c": [r"(?:range|delta\s*t|Î”t)\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
