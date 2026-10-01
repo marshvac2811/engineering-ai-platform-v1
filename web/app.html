@@ -71,9 +71,16 @@ async function refresh(){
 
 async function api(url,opt={}){
  let h=Object.assign({},opt.headers||{},{"Authorization":"Bearer "+token});
- let r=await fetch(url,Object.assign({},opt,{headers:h}));
- if(r.status===401){await refresh();h.Authorization="Bearer "+token;r=await fetch(url,Object.assign({},opt,{headers:h}));}
- return r;
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),15000);
+ try{
+  let r=await fetch(url,Object.assign({},opt,{headers:h,signal:controller.signal}));
+  if(r.status===401){await refresh();h.Authorization="Bearer "+token;r=await fetch(url,Object.assign({},opt,{headers:h,signal:controller.signal}));}
+  return r;
+ }catch(e){
+  if(e?.name==="AbortError") throw Error("API request timed out after 15 seconds: "+url);
+  throw e;
+ }finally{clearTimeout(timeout);}
 }
 
 async function loadAccount(){
