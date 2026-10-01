@@ -425,6 +425,10 @@ def build_plan(
             "entities": list(decision.get("entities") or []),
             "constraints": list(decision.get("constraints") or []),
             "tasks": list(decision.get("tasks") or []),
+            "reasoning": dict(decision.get("reasoning") or {}),
+            "evidence_usage": list(decision.get("evidence_usage") or []),
+            "missing_evidence": list(decision.get("missing_evidence") or []),
+            "compliance_claims": list(decision.get("compliance_claims") or []),
             "confidence": confidence,
             "source": provider.name,
         }
