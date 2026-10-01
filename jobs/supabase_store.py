@@ -13,6 +13,7 @@ import json
 
 from .models import Job, JobEvent, JobStatus
 from .store import JobStore
+from reports.artifacts import build_approved_pdf, build_evidence_xlsx, sha256_bytes
 
 
 class SupabaseJobStore(JobStore):
@@ -167,6 +168,77 @@ class SupabaseJobStore(JobStore):
         except Exception:
             # Artifact persistence must not break the authoritative job lifecycle.
             return
+
+    def create_dispatch_artifacts(self, job: Job) -> Dict[str, Any]:
+        """Create and persist the final watermarked PDF plus internal evidence workbook."""
+        result = job.result or {}
+        evidence_bundle = result.get("evidence_bundle")
+        if not evidence_bundle:
+            raise RuntimeError("Evidence bundle is missing; final dispatch is not permitted")
+
+        response = (self.client.table("engineering_report_artifacts")
+                    .select("*")
+                    .eq("job_id", job.job_id)
+                    .eq("tenant_id", job.tenant_id)
+                    .order("version", desc=True)
+                    .limit(1)
+                    .execute())
+        rows = getattr(response, "data", None) or []
+        if not rows:
+            raise RuntimeError("Engineering report artifact is missing; final dispatch is not permitted")
+        artifact = rows[0]
+        report_id = artifact.get("report_id")
+        version = int(artifact.get("version") or 1)
+
+        watermark = "ENGINEERING AI PLATFORM • APPROVED CONTROLLED DOCUMENT"
+        pdf = build_approved_pdf(job=job, evidence_bundle=evidence_bundle, watermark=watermark)
+        xlsx = build_evidence_xlsx(job=job, evidence_bundle=evidence_bundle)
+        pdf_sha = sha256_bytes(pdf)
+        xlsx_sha = sha256_bytes(xlsx)
+        prefix = f"{job.tenant_id}/{job.job_id}/v{version}"
+        pdf_path = f"{prefix}/engineering-report-{job.job_id}.pdf"
+        xlsx_path = f"{prefix}/engineering-evidence-{job.job_id}.xlsx"
+        bucket = "engineering-artifacts"
+
+        self.client.storage.from_(bucket).upload(
+            pdf_path, pdf,
+            {"content-type": "application/pdf", "cache-control": "private, max-age=0", "upsert": "false"},
+        )
+        self.client.storage.from_(bucket).upload(
+            xlsx_path, xlsx,
+            {"content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "cache-control": "private, max-age=0", "upsert": "false"},
+        )
+
+        self.client.table("engineering_report_artifacts").update({
+            "evidence_sha256": evidence_bundle.get("manifest", {}).get("bundle_sha256"),
+            "pdf_sha256": pdf_sha,
+            "pdf_storage_path": pdf_path,
+            "pdf_filename": f"engineering-report-{job.job_id}.pdf",
+            "xlsx_sha256": xlsx_sha,
+            "xlsx_storage_path": xlsx_path,
+            "xlsx_filename": f"engineering-evidence-{job.job_id}.xlsx",
+            "watermark_text": watermark,
+        }).eq("report_id", report_id).execute()
+
+        signed = self.client.storage.from_(bucket).create_signed_url(pdf_path, 86400)
+        signed_url = signed.get("signedURL") if isinstance(signed, dict) else None
+        return {
+            "report_id": report_id,
+            "version": version,
+            "pdf": {
+                "filename": f"engineering-report-{job.job_id}.pdf",
+                "storage_path": pdf_path,
+                "sha256": pdf_sha,
+                "watermark": watermark,
+                "signed_url": signed_url,
+            },
+            "evidence_workbook": {
+                "filename": f"engineering-evidence-{job.job_id}.xlsx",
+                "storage_path": xlsx_path,
+                "sha256": xlsx_sha,
+            },
+            "evidence_sha256": evidence_bundle.get("manifest", {}).get("bundle_sha256"),
+        }
 
     def get_report_artifact(self, job_id: str, *, tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         query = self.client.table("engineering_report_artifacts").select("*").eq("job_id", job_id).order("version", desc=True).limit(1)
