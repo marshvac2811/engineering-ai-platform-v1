@@ -257,6 +257,51 @@ class JobService:
         job = self._get(job_id)
         if job.status != JobStatus.HUMAN_REVIEW:
             raise ValueError("Only jobs in human_review can be approved")
+
+        # Approval is a hard lifecycle gate. A stale/inconsistent persisted job
+        # must never become approved merely because its status says human_review.
+        # Re-check the authoritative registry contract and deterministic skill
+        # validator against the exact inputs that produced the result.
+        result = job.result or {}
+        result_status = str(result.get("status") or "")
+        if result_status in {"input_validation_failed", "calculation_failed", "skill_not_registered"}:
+            raise ValueError("Job cannot be approved because the engineering result is not valid")
+        if not isinstance(result.get("engineering_result"), dict) or not result.get("engineering_result"):
+            raise ValueError("Job cannot be approved because no engineering result is present")
+
+        from skill_framework.registry import load_skill_registry
+        from skill_framework.input_resolver import resolve_input_requirements
+
+        registry_path = __import__("pathlib").Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
+        definition = load_skill_registry(registry_path).get(job.requested_skill_id or job.skill_id or "")
+        resolution = resolve_input_requirements(definition, job.inputs)
+        if resolution.missing_inputs:
+            raise ValueError(
+                "Job cannot be approved because required inputs are still missing: "
+                + ", ".join(resolution.missing_inputs)
+            )
+        if resolution.invalid_inputs:
+            raise ValueError(
+                "Job cannot be approved because inputs are invalid: "
+                + "; ".join(resolution.invalid_inputs)
+            )
+
+        skill = SKILLS.get(job.skill_id or job.requested_skill_id or "")
+        if skill is not None and hasattr(skill, "validate"):
+            validation_errors = list(skill.validate(SkillRequest(
+                skill_id=job.skill_id or job.requested_skill_id or "",
+                inputs=job.inputs,
+                project_context=job.project_context,
+                standards_context=job.standards_context,
+                assumptions_context=job.assumptions_context,
+                request_id=job.job_id,
+            )))
+            if validation_errors:
+                raise ValueError(
+                    "Job cannot be approved because engineering validation failed: "
+                    + "; ".join(validation_errors)
+                )
+
         job.transition(JobStatus.APPROVED, "Engineering draft approved by human reviewer.", reviewer=reviewer, comment=comment)
         self.store.save(job)
         return job
