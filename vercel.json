@@ -13,33 +13,25 @@
       "dest": "/api/index.py/health"
     },
     {
-      "src": "/",
-      "dest": "/web/app.html"
-    },
-    {
       "src": "/login",
-      "dest": "/web/app.html"
+      "dest": "/api/index.py/login"
     },
     {
       "src": "/app",
-      "dest": "/web/app.html"
+      "dest": "/api/index.py/app"
+    },
+    {
+      "src": "/",
+      "dest": "/api/index.py/app"
     },
     {
       "src": "/(.*)",
-      "dest": "/web/app.html"
+      "dest": "/api/index.py/app"
     }
   ],
   "headers": [
     {
       "source": "/",
-      "headers": [
-        {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
-        {"key": "Pragma", "value": "no-cache"},
-        {"key": "Expires", "value": "0"}
-      ]
-    },
-    {
-      "source": "/web/app.html",
       "headers": [
         {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
         {"key": "Pragma", "value": "no-cache"},
@@ -58,7 +50,7 @@
       "source": "/login",
       "headers": [
         {"key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate"},
-        {"key": "Pragma", "value": "no-cache"},
+        {"key": "Pragma", "no-cache"},
         {"key": "Expires", "value": "0"}
       ]
     }
