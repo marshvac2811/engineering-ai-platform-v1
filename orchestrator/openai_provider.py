@@ -34,11 +34,15 @@ _OPENAI_SCHEMA = {
         "entities_json": {"type": "string"},
         "constraints_json": {"type": "string"},
         "tasks_json": {"type": "string"},
+        "reasoning_json": {"type": "string"},
+        "evidence_usage_json": {"type": "string"},
+        "missing_evidence_json": {"type": "string"},
+        "compliance_claims_json": {"type": "string"},
         "rationale": {"type": "array", "items": {"type": "string"}},
     },
     "required": ["selected_skill_id", "confidence", "extracted_inputs_json", "objective",
                  "disciplines_json", "requested_outputs_json", "methodology_json",
-                 "governance_json", "entities_json", "constraints_json", "tasks_json", "rationale"],
+                 "governance_json", "entities_json", "constraints_json", "tasks_json", "reasoning_json", "evidence_usage_json", "missing_evidence_json", "compliance_claims_json", "rationale"],
     "additionalProperties": False,
 }
 
@@ -58,6 +62,7 @@ Understand arbitrary engineering requests. You are NOT the calculation engine.
 7. Treat reasoning_context as bounded evidence. Distinguish project evidence, verified governance evidence, and candidate sources.
 8. Preserve evidence_id references when a conclusion depends on supplied evidence. If evidence is missing, identify the missing evidence instead of filling it from model knowledge.
 9. A candidate source or standard name is not proof of applicability, a clause, a limit, or compliance.
+10. Produce an auditable reasoning package: concise engineering reasoning, evidence IDs used, missing evidence, and any compliance claims. Compliance claims must be empty unless the claim gate explicitly allows them.
 
 The client must not need to know skill IDs, field names, or which standard applies.
 Return JSON only. The *_json fields contain JSON-encoded arrays/objects.
@@ -157,6 +162,10 @@ class OpenAIIntentProvider:
             "entities": _json_value("entities_json", []),
             "constraints": _json_value("constraints_json", []),
             "tasks": _json_value("tasks_json", []),
+            "reasoning": _json_value("reasoning_json", {}),
+            "evidence_usage": _json_value("evidence_usage_json", []),
+            "missing_evidence": _json_value("missing_evidence_json", []),
+            "compliance_claims": _json_value("compliance_claims_json", []),
             "rationale": [str(x) for x in payload.get("rationale", [])],
         }
 
