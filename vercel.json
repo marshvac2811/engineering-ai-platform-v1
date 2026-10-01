@@ -6,11 +6,11 @@
     },
     {
       "src": "/v1/(.*)",
-      "dest": "/api/index.py?engineering_path=/v1/$1"
+      "dest": "/api/index.py/v1/$1"
     },
     {
       "src": "/health",
-      "dest": "/api/index.py?engineering_path=/health"
+      "dest": "/api/index.py/health"
     },
     {
       "src": "/login",
