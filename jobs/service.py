@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Optional
 
 from orchestrator.engine import execute, SKILLS
 from orchestrator.executor import execute_engineering_plan
+from orchestrator.result import build_workflow_result
 from skills.common import SkillRequest
 from validators.basic import require_positive
 from validators.governance import validate_governance_context
@@ -230,17 +231,20 @@ class JobService:
             request_id=job.job_id,
         )
         job.orchestration["engineering_plan"] = workflow["engineering_plan"]
+        consolidated = build_workflow_result(
+            workflow=workflow,
+            request_understanding=dict(job.orchestration.get("request_understanding") or {}),
+            governance=dict(job.orchestration.get("standards_context") or job.standards_context or {}),
+            inputs=job.inputs,
+            assumptions=job.assumptions_context,
+        )
         job.result = {
-            "status": workflow["status"],
+            **consolidated,
             "engineering_result": {
                 "task_results": workflow["engineering_results"],
                 "results": workflow["engineering_results"],
                 "blockers": workflow["blockers"],
             },
-            "task_outputs": workflow["task_outputs"],
-            "execution_trace": workflow["execution_trace"],
-            "request_understanding": dict(job.orchestration.get("request_understanding") or {}),
-            "governance": dict(job.orchestration.get("standards_context") or job.standards_context or {}),
             "human_review_required": True,
         }
 
@@ -280,34 +284,36 @@ class JobService:
         from skill_framework.input_resolver import resolve_input_requirements
 
         registry_path = __import__("pathlib").Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
-        definition = load_skill_registry(registry_path).get(job.requested_skill_id or job.skill_id or "")
-        resolution = resolve_input_requirements(definition, job.inputs)
-        if resolution.missing_inputs:
-            raise ValueError(
-                "Job cannot be approved because required inputs are still missing: "
-                + ", ".join(resolution.missing_inputs)
-            )
-        if resolution.invalid_inputs:
-            raise ValueError(
-                "Job cannot be approved because inputs are invalid: "
-                + "; ".join(resolution.invalid_inputs)
-            )
+        registry = load_skill_registry(registry_path)
+        plan_tasks = list(job.orchestration.get("engineering_plan", {}).get("tasks") or [])
+        if not plan_tasks:
+            plan_tasks = [{"task_id": "task-1", "capability_id": job.requested_skill_id or job.skill_id, "status": "completed"}]
+        incomplete = [str(t.get("task_id")) for t in plan_tasks if t.get("status") != "completed"]
+        if incomplete:
+            raise ValueError("Job cannot be approved because workflow tasks are incomplete: " + ", ".join(incomplete))
 
-        skill = SKILLS.get(job.skill_id or job.requested_skill_id or "")
-        if skill is not None and hasattr(skill, "validate"):
-            validation_errors = list(skill.validate(SkillRequest(
-                skill_id=job.skill_id or job.requested_skill_id or "",
-                inputs=job.inputs,
-                project_context=job.project_context,
-                standards_context=job.standards_context,
-                assumptions_context=job.assumptions_context,
-                request_id=job.job_id,
-            )))
-            if validation_errors:
-                raise ValueError(
-                    "Job cannot be approved because engineering validation failed: "
-                    + "; ".join(validation_errors)
-                )
+        for task in plan_tasks:
+            capability_id = task.get("capability_id")
+            if not capability_id or capability_id not in registry:
+                raise ValueError("Job cannot be approved because workflow capability is not registered: " + str(capability_id))
+            definition = registry.get(capability_id)
+            resolution = resolve_input_requirements(definition, job.inputs)
+            if resolution.missing_inputs:
+                raise ValueError("Job cannot be approved because " + capability_id + " still has required inputs: " + ", ".join(resolution.missing_inputs))
+            if resolution.invalid_inputs:
+                raise ValueError("Job cannot be approved because " + capability_id + " has invalid inputs: " + "; ".join(resolution.invalid_inputs))
+            skill = SKILLS.get(capability_id)
+            if skill is not None and hasattr(skill, "validate"):
+                validation_errors = list(skill.validate(SkillRequest(
+                    skill_id=capability_id,
+                    inputs=job.inputs,
+                    project_context=job.project_context,
+                    standards_context=job.standards_context,
+                    assumptions_context=job.assumptions_context,
+                    request_id=job.job_id,
+                )))
+                if validation_errors:
+                    raise ValueError("Job cannot be approved because " + capability_id + " validation failed: " + "; ".join(validation_errors))
 
         job.transition(JobStatus.APPROVED, "Engineering draft approved by human reviewer.", reviewer=reviewer, comment=comment)
         self.store.save(job)
