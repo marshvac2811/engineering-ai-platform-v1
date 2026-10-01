@@ -303,6 +303,7 @@ class JobService:
                     "result": {
                         "status": item.get("status"),
                         "engineering_result": item.get("engineering_result") or {},
+                        "calculation_trace": (item.get("engineering_result") or {}).get("calculation_trace") or [],
                     },
                 }
                 for item in workflow["engineering_results"]
