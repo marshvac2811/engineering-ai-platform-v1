@@ -63,6 +63,15 @@ def build_engineering_plan(
     candidates = work_items or []
     if not candidates and understanding.get("capability_id"):
         candidates = [{"capability_id": understanding.get("capability_id")}]
+    ai_tasks = [x for x in (understanding.get("tasks") or []) if isinstance(x, dict)]
+    if ai_tasks and not work_items:
+        candidates = [{
+            "capability_id": x.get("capability_id") or x.get("skill_id"),
+            "objective": x.get("objective"),
+            "depends_on": x.get("depends_on") or [],
+            "requested_outputs": x.get("requested_outputs") or understanding.get("requested_outputs") or [],
+            "methodology": x.get("methodology") or understanding.get("methodology") or {},
+        } for x in ai_tasks]
 
     for index, item in enumerate(candidates, 1):
         capability_id = item.get("capability_id") or item.get("skill_id")
@@ -88,20 +97,25 @@ def build_engineering_plan(
             objective=str(item.get("objective") or understanding.get("objective") or f"Execute {capability_id}"),
             capability_id=capability_id,
             sequence=index,
-            depends_on=[f"task-{index-1}"] if index > 1 else [],
+            depends_on=[str(x) for x in (item.get("depends_on") or [])] or ([f"task-{index-1}"] if index > 1 else []),
             status=task_status,
             required_inputs=required,
             missing_inputs=list(resolution.missing_inputs),
-            requested_outputs=list(understanding.get("requested_outputs") or []),
-            methodology=dict(understanding.get("methodology") or {}),
+            requested_outputs=list(item.get("requested_outputs") or understanding.get("requested_outputs") or []),
+            methodology=dict(item.get("methodology") or understanding.get("methodology") or {}),
             governance=governance,
         ))
 
+    task_ids = {t.task_id for t in tasks}
+    for task in tasks:
+        task.depends_on = [d for d in task.depends_on if d in task_ids and d != task.task_id]
+    ready_ids = [t.task_id for t in tasks if t.status == "ready"]
     return {
         "status": "ready" if tasks and all(t.status == "ready" for t in tasks) else ("awaiting_information" if tasks else "capability_required"),
         "tasks": [t.to_dict() for t in tasks],
         "execution_order": [t.task_id for t in tasks],
-        "parallel_groups": [],
+        "ready_tasks": ready_ids,
+        "parallel_groups": [ready_ids] if ready_ids else [],
         "human_review_required": True,
         "calculation_authority": "registered_engineering_capability",
         "ai_boundary": "AI interprets, plans and orchestrates; registered capabilities perform calculations/analysis.",
