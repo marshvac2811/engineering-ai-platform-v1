@@ -219,7 +219,7 @@ class APIApp:
             start_response("204 No Content", [("Content-Length", "0")])
             return [b""]
 
-        if path == "/app" and method == "GET":
+        if path in {"/", "/app"} and method == "GET":
             try:
                 data = DASHBOARD_PATH.read_bytes()
             except OSError as exc:
