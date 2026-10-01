@@ -7,7 +7,8 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional
 
-from orchestrator.engine import execute
+from orchestrator.engine import execute, SKILLS
+from orchestrator.executor import execute_engineering_plan
 from skills.common import SkillRequest
 from validators.basic import require_positive
 from validators.governance import validate_governance_context
@@ -192,80 +193,70 @@ class JobService:
             self.store.save(job)
             return job
 
-        if not job.requested_skill_id:
-            job.transition(JobStatus.AWAITING_INFORMATION, "A specific engineering skill has not been selected.")
-            job.add_event("skill_selection_required", "Provider-neutral V1 requires explicit skill selection; no LLM provider is assumed.")
-            self.store.save(job)
-            return job
+        plan = dict(job.orchestration.get("engineering_plan") or {})
+        if not plan.get("tasks"):
+            if not job.requested_skill_id:
+                job.transition(JobStatus.AWAITING_INFORMATION, "A specific engineering capability could not be established.")
+                job.add_event("skill_selection_required", "No executable capability was established by orchestration.")
+                self.store.save(job)
+                return job
+            plan = {
+                "status": "ready_for_execution",
+                "tasks": [{
+                    "task_id": "task-1",
+                    "objective": job.orchestration.get("request_understanding", {}).get("objective") or "Engineering analysis",
+                    "capability_id": job.requested_skill_id,
+                    "sequence": 1,
+                    "depends_on": [],
+                    "status": "ready",
+                    "missing_inputs": [],
+                    "requested_outputs": job.orchestration.get("request_understanding", {}).get("requested_outputs", []),
+                    "methodology": job.orchestration.get("request_understanding", {}).get("methodology", {}),
+                    "governance": job.standards_context,
+                    "human_review_required": True,
+                }],
+                "execution_order": ["task-1"],
+                "human_review_required": True,
+            }
 
         job.skill_id = job.requested_skill_id
-        job.transition(JobStatus.ENGINEERING_VALIDATION, "Executing registered deterministic engineering skill.", skill_id=job.skill_id)
-        request = SkillRequest(
-            skill_id=job.skill_id,
+        job.transition(JobStatus.ENGINEERING_VALIDATION, "Executing universal engineering workflow.")
+        workflow = execute_engineering_plan(
+            plan=plan,
             inputs=job.inputs,
             project_context=job.project_context,
             standards_context=job.standards_context,
             assumptions_context=job.assumptions_context,
             request_id=job.job_id,
         )
-        # All engineering execution goes through the registered capability
-        # interface. AI selects capabilities internally; quantity recipes are
-        # not a privileged execution path.
-        result = execute(request)
-        result_dict = result.to_dict()
-        # Carry the AI interpretation forward so every engineering result is
-        # traceable to the understood objective and governance context.
-        result_dict["request_understanding"] = dict(job.orchestration.get("request_understanding") or {})
-        result_dict["governance"] = dict(job.orchestration.get("standards_context") or job.standards_context or {})
-        job.result = result_dict
-        if result.status not in {"input_validation_failed", "calculation_failed", "skill_not_registered"}:
-            if self.report_service is not None:
-                report = self.report_service.build(job, [{"skill_id": job.skill_id, "result": result_dict}])
-                job.report_id = report.report_id
-                job.result["report_id"] = report.report_id
-                job.result["report"] = report.report
-            from reports.adapter import build_report_envelope
-            try:
-                job.result["report"] = build_report_envelope(
-                    skill_id=job.skill_id,
-                    result=result_dict,
-                    inputs=job.inputs,
-                    project_context=job.project_context,
-                    standards_context=job.standards_context,
-                    assumptions_context=job.assumptions_context,
-                )
-                if self.report_service is not None and job.report_id is None:
-                    report = self.report_service.build(job, [{"skill_id": job.skill_id, "result": result_dict}])
-                    job.report_id = report.report_id
-                    job.result["report_id"] = report.report_id
-            except KeyError as exc:
-                job.errors.append(str(exc))
-                job.transition(JobStatus.FAILED, "No registered report profile exists for the executed skill.", error=str(exc))
-                self.store.save(job)
-                return job
-        if result.engineering_result.get("compliance"):
-            from reports.compliance_report import build_compliance_report
-            job.result["compliance_report"] = build_compliance_report(
-                skill_id=job.skill_id,
-                engineering_result=result.engineering_result,
-            )
-        job.warnings.extend(result.warnings)
+        job.orchestration["engineering_plan"] = workflow["engineering_plan"]
+        job.result = {
+            "status": workflow["status"],
+            "engineering_result": {
+                "task_results": workflow["engineering_results"],
+                "results": workflow["engineering_results"],
+                "blockers": workflow["blockers"],
+            },
+            "task_outputs": workflow["task_outputs"],
+            "execution_trace": workflow["execution_trace"],
+            "request_understanding": dict(job.orchestration.get("request_understanding") or {}),
+            "governance": dict(job.orchestration.get("standards_context") or job.standards_context or {}),
+            "human_review_required": True,
+        }
 
-        # Errors from an earlier failed attempt are historical lifecycle data;
-        # they must not remain as active errors after a later successful run.
-        if result.status not in {"input_validation_failed", "calculation_failed", "skill_not_registered"}:
+        if workflow["status"] == "completed" and workflow["engineering_results"]:
             job.errors = []
-
-        if result.status == "input_validation_failed":
-            job.errors.extend(result.validation_errors)
-            self._update_orchestration_for_validation_errors(job, result.validation_errors)
-            job.transition(JobStatus.AWAITING_INFORMATION, "Engineering skill reported missing or invalid inputs.", errors=result.validation_errors)
-        elif result.status in {"calculation_failed", "skill_not_registered"}:
-            job.errors.extend(result.validation_errors)
-            job.transition(JobStatus.FAILED, "Engineering execution failed.", errors=result.validation_errors)
-        else:
-            job.transition(JobStatus.DRAFT_READY, "Engineering draft produced.", skill_status=result.status)
+            job.transition(JobStatus.DRAFT_READY, "Universal engineering workflow produced a draft.", task_count=len(workflow["engineering_results"]))
             job.transition(JobStatus.HUMAN_REVIEW, "Draft routed to human engineering review.")
+        elif workflow["status"] == "awaiting_information":
+            job.errors.extend(workflow["blockers"])
+            job.transition(JobStatus.AWAITING_INFORMATION, "Universal workflow requires additional engineering information.", blockers=workflow["blockers"])
+        elif workflow["status"] in {"blocked", "failed"}:
+            job.errors.extend(workflow["blockers"])
+            job.transition(JobStatus.FAILED, "Universal engineering workflow could not complete.", blockers=workflow["blockers"])
+        else:
+            job.add_event("workflow_pending", "Universal workflow has pending dependency-gated tasks.")
+
         self.store.save(job)
         return job
 
