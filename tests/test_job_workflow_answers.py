@@ -36,9 +36,9 @@ def test_pump_head_intake_surfaces_complete_input_contract():
         "straight_length_m",
         "static_head_m",
         "margin_pct",
-        "roughness_mm",
-        "material",
     }.issubset(set(plan.missing_inputs))
+    assert "roughness_mm" in plan.missing_inputs
+    assert "material" not in plan.missing_inputs
 
 
 def test_answers_automatically_continue_to_human_review_when_complete():
