@@ -14,4 +14,4 @@ def test_every_executable_skill_routes_from_a_registered_term():
 def test_tied_or_unknown_intent_does_not_select_unregistered_skill():
     plan = build_plan("engineering work")
     assert plan.selected_skill_id is None
-    assert plan.status in {"ambiguous", "unroutable"}
+    assert plan.status == "awaiting_information"
