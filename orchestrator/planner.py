@@ -116,12 +116,17 @@ def build_engineering_plan(
         t.task_id for t in tasks
         if t.status == "ready" and not t.depends_on
     ]
+    has_missing_inputs = any(t.status == "awaiting_information" for t in tasks)
+    has_capability_gap = any(t.status == "capability_required" for t in tasks)
+    has_dependencies = any(t.depends_on for t in tasks)
+    plan_status = "capability_required" if has_capability_gap else ("awaiting_information" if has_missing_inputs else ("ready_for_execution" if tasks else "capability_required"))
     return {
-        "status": "ready" if tasks and all(t.status == "ready" for t in tasks) else ("awaiting_information" if tasks else "capability_required"),
+        "status": plan_status,
         "tasks": [t.to_dict() for t in tasks],
         "execution_order": [t.task_id for t in tasks],
         "ready_tasks": ready_ids,
         "parallel_groups": [ready_ids] if ready_ids else [],
+        "dependency_gated": has_dependencies,
         "human_review_required": True,
         "calculation_authority": "registered_engineering_capability",
         "ai_boundary": "AI interprets, plans and orchestrates; registered capabilities perform calculations/analysis.",
