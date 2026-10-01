@@ -89,3 +89,28 @@ def test_natural_language_missing_engineering_input_is_asked():
     assert 'airflow' in plan.missing_inputs
     assert plan.questions
 
+
+
+def test_alternative_input_requirement_creates_one_client_clarification():
+    plan = build_plan("Calculate pump head. Flow 20 m3/hr, diameter 80 mm, straight length 60 m, static head 8 m, margin 10 percent.")
+    assert plan.selected_skill_id == "pump_head"
+    assert plan.status == "awaiting_information"
+    assert plan.missing_inputs == ["roughness_mm"]
+    assert len(plan.questions) == 1
+    assert "roughness_mm or material" in plan.questions[0]
+
+
+def test_client_can_reply_to_clarification_in_normal_language():
+    from jobs.service import JobService
+    app = APIApp()
+    status, body = call(app, "POST", "/v1/intake", {
+        "message": "Calculate pump head. Flow 20 m3/hr, diameter 80 mm, straight length 60 m, static head 8 m, margin 10 percent."
+    })
+    assert status.startswith("201")
+    job_id = body["job"]["job_id"]
+    status, job = call(app, "POST", f"/v1/jobs/{job_id}/information", {
+        "message": "Use GI pipe."
+    })
+    assert status == "200 OK"
+    assert job["inputs"]["material"] == "gi"
+    assert job["status"] == "human_review"
