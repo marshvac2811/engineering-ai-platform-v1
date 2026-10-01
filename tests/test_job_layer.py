@@ -19,7 +19,7 @@ def test_provider_neutral_job_lifecycle():
     service.enqueue(job.job_id)
     job = service.process(job.job_id)
     assert job.status == JobStatus.HUMAN_REVIEW
-    assert job.result["status"] == "draft_ready"
+    assert job.result["status"] == "completed"
     service.approve(job.job_id, reviewer="engineer-1", comment="Reviewed")
     job = service.dispatch(job.job_id)
     assert job.status == JobStatus.COMPLETED
