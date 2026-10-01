@@ -229,11 +229,12 @@ async function dispatch(jobId){
 }
 
 function formatResult(result){
+ result=result||{};
  const humanize=k=>String(k).replace(/([a-z])([A-Z])/g,"$1 $2").replace(/_/g," ").replace(/\\b\\w/g,m=>m.toUpperCase());
  const fmt=v=>typeof v==="number"?(Number.isInteger(v)?String(v):String(Number(v.toFixed(3)))):String(v??"");
  const labels={total_dynamic_head_m:"Total dynamic head",total_dynamic_head_kpa:"Total dynamic head (kPa)",total_dynamic_head_bar:"Total dynamic head (bar)",total_dynamic_head_ft:"Total dynamic head (ft)",total_dynamic_head_psi:"Total dynamic head (psi)"};
  const preferred=["total_dynamic_head_m","total_dynamic_head_kpa","total_dynamic_head_bar","total_dynamic_head_ft","total_dynamic_head_psi"];
- const scalarKeys=Object.keys(result||{}).filter(k=>result[k]===null||["string","number","boolean"].includes(typeof result[k]));
+ const scalarKeys=Object.keys(result).filter(k=>result[k]===null||["string","number","boolean"].includes(typeof result[k]));
  const scalar=(k,v)=>'<div class="metric"><span class="label">'+esc(labels[k]||humanize(k))+'</span><span class="value">'+esc(fmt(v))+'</span></div>';
  const table=(rows)=>{
   if(!Array.isArray(rows)||!rows.length||typeof rows[0]!=="object")return "";
