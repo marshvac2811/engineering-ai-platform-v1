@@ -47,7 +47,9 @@ def _bundle():
 def test_approved_pdf_is_watermarked_and_nonempty():
     data = build_approved_pdf(job=_job(), evidence_bundle=_bundle())
     assert data.startswith(b"%PDF")
-    assert b"APPROVED CONTROLLED DOCUMENT" in data
+    from pypdf import PdfReader
+    text = "\n".join(page.extract_text() or "" for page in PdfReader(BytesIO(data)).pages)
+    assert "APPROVED CONTROLLED DOCUMENT" in text
 
 
 def test_evidence_workbook_is_valid_xlsx():
