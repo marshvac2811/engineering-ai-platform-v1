@@ -103,7 +103,14 @@ def execute_engineering_plan(
                 assumptions_context=assumptions_context,
                 request_id=request_id,
             )
-            result = execute(request).to_dict()
+            try:
+                result = execute(request).to_dict()
+            except Exception as exc:
+                result = {
+                    "status": "calculation_failed",
+                    "engineering_result": {},
+                    "validation_errors": [f"{type(exc).__name__}: {exc}"],
+                }
             result["task_id"] = task_id
             result["capability_id"] = capability_id
             outputs[task_id] = result
@@ -169,4 +176,6 @@ def execute_engineering_plan(
         "blockers": blockers,
         "human_review_required": True,
         "calculation_authority": "registered_engineering_capability",
+        "project_context": deepcopy(project_context),
+        "standards_context": deepcopy(standards_context),
     }
