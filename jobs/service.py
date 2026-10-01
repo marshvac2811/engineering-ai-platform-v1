@@ -310,6 +310,7 @@ class JobService:
             ]
             report = self.report_service.build(job, report_items)
             job.result["report_id"] = report.report_id
+            job.report_id = report.report_id
 
         if workflow["status"] == "completed" and workflow["engineering_results"]:
             job.errors = []
