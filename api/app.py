@@ -636,6 +636,12 @@ class APIApp:
                         result = job.result or {}
                         engineering = result.get("engineering_result") or {}
                         checks = list(engineering.get("compliance") or result.get("compliance") or [])
+                        if not checks:
+                            for task_result in list(engineering.get("task_results") or engineering.get("results") or []):
+                                if isinstance(task_result, dict):
+                                    task_engineering = task_result.get("engineering_result") or {}
+                                    if isinstance(task_engineering, dict):
+                                        checks.extend(task_engineering.get("compliance") or [])
                         report = {
                             "report_type": "engineering_compliance_report",
                             "engineering_result": engineering,
