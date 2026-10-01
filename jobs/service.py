@@ -345,7 +345,14 @@ class JobService:
             if not capability_id or capability_id not in registry:
                 raise ValueError("Job cannot be approved because workflow capability is not registered: " + str(capability_id))
             definition = registry.get(capability_id)
-            resolution = resolve_input_requirements(definition, job.inputs)
+            task_inputs = dict(job.inputs)
+            for target, source in dict(task.get("input_bindings") or {}).items():
+                source_task, sep, output_name = str(source).partition(".")
+                persisted = dict(job.orchestration.get("engineering_plan", {}).get("task_outputs", {}).get(source_task, {}).get("engineering_result") or {})
+                if not sep or output_name not in persisted:
+                    raise ValueError("Job cannot be approved because bound output is missing: " + str(source))
+                task_inputs[str(target)] = persisted[output_name]
+            resolution = resolve_input_requirements(definition, task_inputs)
             if resolution.missing_inputs:
                 raise ValueError("Job cannot be approved because " + capability_id + " still has required inputs: " + ", ".join(resolution.missing_inputs))
             if resolution.invalid_inputs:
