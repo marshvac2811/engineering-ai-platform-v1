@@ -64,6 +64,24 @@ def execute_engineering_plan(
 
     # Work on a copy so the persisted orchestration plan is updated explicitly.
     planned = deepcopy(plan)
+    # Reject malformed dependency graphs before any engineering capability runs.
+    for task_id, task in tasks.items():
+        unknown = [d for d in task.get("depends_on", []) if d not in tasks or d == task_id]
+        if unknown:
+            task["status"] = "blocked"
+            blockers.append(f"{task_id}: invalid dependency {', '.join(map(str, unknown))}")
+    def visit(node: str, active: set[str], done: set[str]) -> bool:
+        if node in active: return True
+        if node in done: return False
+        active.add(node)
+        cycle = any(visit(str(dep), active, done) for dep in tasks[node].get("depends_on", []) if dep in tasks)
+        active.remove(node); done.add(node)
+        return cycle
+    done: set[str] = set()
+    for task_id in tasks:
+        if visit(task_id, set(), done):
+            tasks[task_id]["status"] = "blocked"
+            blockers.append(f"{task_id}: dependency cycle detected")
 
     progress = True
     while progress:
