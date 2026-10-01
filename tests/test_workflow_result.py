@@ -43,3 +43,17 @@ def test_workflow_result_blocks_incomplete_plan():
     )
     assert result["qa"]["status"] == "not_ready"
     assert result["human_review"]["status"] == "blocked"
+
+def test_workflow_result_requires_trace_and_result_integrity():
+    workflow = {
+        "status": "completed",
+        "engineering_plan": {"tasks": [{"task_id": "task-1", "status": "completed", "capability_id": "pump_head", "depends_on": []}]},
+        "engineering_results": [],
+        "execution_trace": [],
+        "blockers": [],
+        "calculation_authority": "registered_engineering_capability",
+    }
+    result = build_workflow_result(workflow=workflow, request_understanding={}, governance={}, inputs={}, assumptions={})
+    assert result["qa"]["status"] == "not_ready"
+    assert result["qa"]["trace_integrity"] is False
+    assert result["qa"]["result_integrity"] is False
