@@ -16,6 +16,7 @@ from validators.governance import validate_governance_context
 from validators.registered_skill_inputs import validate_registered_skill_inputs
 from ingestion.service import IngestionService
 from reports.service import ReportService
+from reports.evidence import build_evidence_bundle
 
 from .models import Job, JobStatus
 from .store import JobStore
@@ -295,6 +296,12 @@ class JobService:
             },
             "human_review_required": True,
         }
+        # Every engineering execution receives a reproducible evidence bundle.
+        job.result["evidence_bundle"] = build_evidence_bundle(
+            job=job,
+            workflow=workflow,
+            consolidated=consolidated,
+        )
 
         if workflow["status"] == "completed" and workflow["engineering_results"] and self.report_service is not None:
             report_items = [
