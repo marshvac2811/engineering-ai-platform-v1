@@ -234,7 +234,7 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "diameter_mm": [r"(?:pipe\s+internal\s+)?diameter\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b", r"(?:pipe|dia(?:meter)?)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b", r"([\d,.]+)\s*mm\s*(?:pipe|dia(?:meter)?)\b"],
         "roughness_mm": [r"roughness\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b", r"([\d,.]+)\s*mm\s*(?:roughness|roughness\s*value)\b"],
         "width_mm": [r"(?:width|w)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b"],
-        "height_mm": [r"(?:height|(?<![a-z])h)\s*(?:is|of|=|:)\s*([\d,.]+)\s*mm\b"],
+        "height_mm": [r"(?:height|(?<![a-z])h)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*mm\b"],
         "target_velocity_ms": [r"(?:target\s*)?velocity\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m/s", r"(?:at\s+)?([\d,.]+)\s*m/s(?:\s+velocity)?\b"],
         "target_friction_pa_per_m": [r"(?:friction|friction\s*rate)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*pa\s*/?\s*m\b"],
         "straight_length_m": [r"(?:total\s+)?straight\s+pipe\s+length\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"(?:pipe\s+length)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*m\b", r"([\d,.]+)\s*m\s*(?:straight\s+pipe\s+length|pipe\s+length)\b"],
