@@ -84,7 +84,12 @@ class APIApp:
         self.api_key_authenticator = ApiKeyAuthenticator(self.api_keys.lookup)
         # Lazy-load Supabase JWT verification so startup does not require Supabase env vars.
         self.supabase_jwt_authenticator = None
-        self.service_factory = service_factory or (lambda tenant: JobService(\n            self.store,\n            tenant_id=tenant,\n            ingestion_service=self.ingestion,\n            report_service=ReportService(self.report_store, tenant_id=tenant),\n        ))
+        self.service_factory = service_factory or (lambda tenant: JobService(
+            self.store,
+            tenant_id=tenant,
+            ingestion_service=self.ingestion,
+            report_service=ReportService(self.report_store, tenant_id=tenant),
+        ))
 
     def _authenticate(self, environ) -> AuthContext:
         # Vercel Edge Middleware performs Supabase JWT signature verification
