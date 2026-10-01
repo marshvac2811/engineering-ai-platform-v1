@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
 from orchestrator.engine import SKILLS
 from skill_framework.registry import load_skill_registry
 from skill_framework.input_resolver import resolve_input_requirements
+from scope_engine.analyzer import analyze_scope
 
 
 @dataclass
@@ -43,6 +44,7 @@ class OrchestrationPlan:
     provider: str = "rule_based"
     work_items: List["OrchestrationWorkItem"] = field(default_factory=list)
     unsupported_scope: List[str] = field(default_factory=list)
+    scope_analysis: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
@@ -408,11 +410,30 @@ def build_plan(
 
     extracted = extract_facts(text)
     merged = {**provider_extracted, **extracted, **provided_inputs}
+    scope_analysis = analyze_scope(text)
+
+    # Cross-vertical fallback: recipe knowledge lives in configuration.
+    if skill_id is None and scope_analysis.get("recipe_count", 0) > 0:
+        skill_id = "quantity_takeoff"
+        confidence = max(confidence, 0.95)
+        candidates = [IntentCandidate("quantity_takeoff", 950, ["Matched registered cross-vertical material recipes."])]
+        merged["request_text"] = text.strip()
 
     if skill_id is None:
-        status = "ambiguous" if candidates else "unroutable"
-        question = "Which engineering task should I perform?" if not candidates else "Which of these engineering tasks did you intend?"
-        return OrchestrationPlan(status, text.strip(), None, confidence, candidates, merged, [], [question], assumptions_context, standards_context, project_context, ["No unique engineering skill could be selected."])
+        if scope_analysis.get("verticals"):
+            names = ", ".join(v["name"] for v in scope_analysis["verticals"])
+            capabilities = ", ".join(scope_analysis.get("capabilities", [])) or "specialized workflow"
+            question = f"I identified {names}. This request needs a registered specialist workflow for {capabilities}. Please provide the specific audit, calculation, compliance, or BOQ objective and any project data you have."
+            status = "awaiting_information"
+        else:
+            status = "ambiguous" if candidates else "unroutable"
+            question = "Which engineering task should I perform?" if not candidates else "Which of these engineering tasks did you intend?"
+        return OrchestrationPlan(
+            status, text.strip(), None, confidence, candidates, merged, [], [question],
+            assumptions_context, standards_context, project_context,
+            ["Scope was analyzed before requesting clarification."], provider.name,
+            [], scope_analysis.get("unsupported_scope", []), scope_analysis
+        )
 
     registry_path = Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
     registry = load_skill_registry(registry_path)
@@ -452,6 +473,7 @@ def build_plan(
         rationale,
         provider.name,
         work_items=[OrchestrationWorkItem(skill_id=skill_id, normalized_request=text.strip(), extracted_inputs=merged, missing_inputs=missing, questions=questions, status=status, report_type=_report_type_for_skill(skill_id))],
-        unsupported_scope=[],
+        unsupported_scope=scope_analysis.get("unsupported_scope", []),
+        scope_analysis=scope_analysis,
     )
 
