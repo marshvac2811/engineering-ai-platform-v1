@@ -449,7 +449,7 @@ def build_plan(
     extracted = extract_facts(text)
     merged = {**provider_extracted, **extracted, **provided_inputs}
     if skill_id == "cleanroom_ach" and not any(
-        phrase in text.lower() for phrase in ("cleanroom", "air changes", "isolation room", "operating room", "ach")
+        phrase in text.lower() for phrase in ("cleanroom", "air changes", "isolation room", "operating room") or bool(re.search(r"\bach\b", text, re.IGNORECASE))
     ):
         skill_id = None
         candidates = []
