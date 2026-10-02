@@ -168,9 +168,14 @@ class SupabaseJobStore(JobStore):
                             "calculation_reference": str(evidence.get("calculation_reference") or evidence.get("calculationReference") or ""),
                             "metadata": evidence,
                         }).execute()
-        except Exception:
-            # Artifact persistence must not break the authoritative job lifecycle.
-            return
+        except Exception as exc:
+            # Engineering evidence is part of the authoritative record. Never
+            # silently discard persistence failures: surface them to the caller
+            # so a job cannot appear successfully processed while its evidence
+            # artifact/compliance record is missing.
+            raise RuntimeError(
+                f"Engineering artifact persistence failed for job {job.job_id}: {exc}"
+            ) from exc
 
     def create_dispatch_artifacts(self, job: Job) -> Dict[str, Any]:
         """Create and persist the final watermarked PDF plus internal evidence workbook."""
