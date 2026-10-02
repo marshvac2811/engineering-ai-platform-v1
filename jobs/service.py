@@ -314,6 +314,13 @@ class JobService:
                         "status": item.get("status"),
                         "engineering_result": item.get("engineering_result") or {},
                         "calculation_trace": item.get("calculation_trace") or (item.get("engineering_result") or {}).get("calculation_trace") or [],
+                        "standards": item.get("standards") or [],
+                        "compliance": item.get("compliance") or [],
+                        "evidence": item.get("evidence") or [],
+                        "assumptions": item.get("assumptions") or [],
+                        "warnings": item.get("warnings") or [],
+                        "validation_errors": item.get("validation_errors") or [],
+                        "source_revision": item.get("source_revision"),
                     },
                 }
                 for item in workflow["engineering_results"]

@@ -222,6 +222,19 @@ async function provideInfo(jobId,fields){
  }catch(e){showMsg(msg,false,e.message);button.disabled=false;}
 }
 
+async function viewArtifact(jobId,kind){
+ const box=document.getElementById("art-"+jobId);
+ if(!box)return;
+ if(box.style.display==="block"&&box.dataset.kind===kind){box.style.display="none";return;}
+ box.style.display="block";box.dataset.kind=kind;box.textContent="Loading "+kind+"...";
+ try{
+  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/"+kind);
+  const d=await r.json();
+  if(!r.ok)throw Error(d.error||(kind+" unavailable"));
+  box.textContent=JSON.stringify(d,null,2);
+ }catch(e){box.textContent="Could not load "+kind+": "+e.message;}
+}
+
 async function approve(jobId){
  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/approve",{
   method:"POST",headers:{"Content-Type":"application/json"},
@@ -312,6 +325,7 @@ function jobHtml(j){
  if(j.errors?.length)html+='<div style="color:#a12626;margin-top:8px">'+esc(j.errors.join("; "))+'</div>';
  if(review)html+='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button></div>';
  if(status==="approved")html+='<div class="actions"><button onclick="dispatch(\''+id+'\')">Dispatch</button></div>';
+ if(["human_review","approved","dispatching","dispatched","completed"].includes(status))html+='<div class="actions"><button onclick="viewArtifact(\''+id+'\',\'report\')">View Report</button><button onclick="viewArtifact(\''+id+'\',\'evidence\')">View Evidence</button></div><pre id="art-'+id+'" class="small" style="display:none;white-space:pre-wrap;max-height:360px;overflow:auto;margin-top:8px"></pre>';
  html+='</div>';return html;
 }
 
@@ -321,8 +335,9 @@ async function loadJobs(){
   const r=await api("/v1/jobs");const d=await r.json();
   if(!r.ok)throw Error(d.error||"Jobs unavailable");
   if(!d.jobs?.length){box.innerHTML='<div class="empty">No jobs yet.</div>';return;}
-  box.innerHTML=d.jobs.slice(0,20).map(jobHtml).join("");
-  d.jobs.slice(0,20).filter(j=>String(j.status||"")==="awaiting_information").forEach(j=>{
+  const shown=window.jobsShown||20;
+  box.innerHTML=d.jobs.slice(0,shown).map(jobHtml).join("")+(d.jobs.length>shown?'<div class="actions"><button onclick="window.jobsShown=(window.jobsShown||20)+20;loadJobs()">Show more ('+(d.jobs.length-shown)+' older)</button></div>':"");
+  d.jobs.slice(0,shown).filter(j=>String(j.status||"")==="awaiting_information").forEach(j=>{
    const b=document.getElementById("btn-"+j.job_id);
    if(b)b.onclick=()=>provideInfo(j.job_id,(j.orchestration?.missing_inputs||[]).map(String));
   });

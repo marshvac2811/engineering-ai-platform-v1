@@ -706,7 +706,7 @@ class APIApp:
                         "job_id": job.job_id,
                         "tenant_id": job.tenant_id,
                         "version": 1,
-                        "status": "approved" if job.status == JobStatus.APPROVED else "draft",
+                        "status": "approved" if job.status in {JobStatus.APPROVED, JobStatus.DISPATCHING, JobStatus.DISPATCHED, JobStatus.COMPLETED} else "draft",
                         "title": f"Engineering Report — {job.skill_id or job.requested_skill_id or 'analysis'}",
                         "skill_id": job.skill_id or job.requested_skill_id,
                         "report": report,

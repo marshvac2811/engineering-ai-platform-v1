@@ -215,6 +215,22 @@ def execute_engineering_plan(
             "calculation_trace": result.get("calculation_trace") or [],
             "assumptions": result.get("assumptions") or [],
             "warnings": result.get("warnings") or [],
+            # Preserve the full evidence chain produced by the skill so the
+            # evidence bundle and report are not thinner than the execution.
+            "objective": (tasks.get(task_id) or {}).get("objective"),
+            "inputs": deepcopy(
+                next((t.get("inputs") for t in trace if t.get("task_id") == task_id), None) or {}
+            ),
+            "standards": result.get("standards") or [],
+            "compliance": (
+                result.get("compliance")
+                or (result.get("engineering_result") or {}).get("compliance")
+                or []
+            ),
+            "evidence": result.get("evidence") or [],
+            "validation_errors": result.get("validation_errors") or [],
+            "source_revision": result.get("source_revision"),
+            "human_review_required": result.get("human_review_required", True),
         }
         for task_id, result in outputs.items()
     ]

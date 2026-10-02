@@ -101,3 +101,33 @@ def test_executor_enforces_explicit_dependency_binding():
     workflow = execute_engineering_plan(plan=plan, inputs={"flow_m3hr": 25, "diameter_mm": 80, "roughness_mm": 0.15, "straight_length_m": 120, "static_head_m": 12, "margin_pct": 10, "material": "gi"}, project_context={}, standards_context={}, assumptions_context={})
     assert workflow["engineering_plan"]["tasks"][1]["status"] == "blocked"
     assert any("not_an_output" in x for x in workflow["blockers"])
+
+
+def test_executor_preserves_standards_source_revision_and_inputs_in_results():
+    plan = {
+        "status": "ready_for_execution",
+        "tasks": [{
+            "task_id": "task-1",
+            "objective": "Calculate pump duty",
+            "capability_id": "pump_head",
+            "sequence": 1,
+            "depends_on": [],
+            "status": "ready",
+        }],
+    }
+    inputs = {
+        "flow_m3hr": 25, "diameter_mm": 80, "roughness_mm": 0.15,
+        "straight_length_m": 120, "static_head_m": 12, "margin_pct": 10, "material": "gi",
+    }
+    workflow = execute_engineering_plan(
+        plan=plan, inputs=inputs, project_context={}, standards_context={},
+        assumptions_context={}, request_id="test-job",
+    )
+    item = workflow["engineering_results"][0]
+    # Metadata keys must exist so the evidence bundle and report are not thinner
+    # than the underlying execution.
+    for key in ("standards", "compliance", "evidence", "validation_errors",
+                "source_revision", "objective", "inputs"):
+        assert key in item, key
+    assert item["objective"] == "Calculate pump duty"
+    assert item["inputs"].get("flow_m3hr") == 25
