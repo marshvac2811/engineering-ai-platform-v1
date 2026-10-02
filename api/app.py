@@ -61,9 +61,12 @@ class APIApp:
                  store=None, ingestion=None, crm_store=None, integration_store=None, workflow_task_store=None, report_store=None) -> None:
         configured_store = store or build_supabase_job_store_from_env()
         if configured_store is None and os.getenv("ENGINEERING_ENV", "").strip().lower() == "production":
+            supabase_url_present = bool((os.getenv("SUPABASE_URL") or "").strip())
+            service_role_key_present = bool((os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip())
             raise RuntimeError(
-                "Production requires a Supabase job store. Configure "
-                "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on Render."
+                "Production requires a Supabase job store. "
+                f"SUPABASE_URL={'PRESENT' if supabase_url_present else 'MISSING'}; "
+                f"SUPABASE_SERVICE_ROLE_KEY={'PRESENT' if service_role_key_present else 'MISSING'}."
             )
         self.store = configured_store or InMemoryJobStore()
         self.ingestion = ingestion or build_ingestion_service()
