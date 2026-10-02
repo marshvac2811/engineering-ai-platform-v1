@@ -144,3 +144,8 @@ contract as their authoritative source and applicability are verified.
 
 ## Universal engineering planning
 The platform now separates AI request interpretation from engineering execution: compound requests can be decomposed into ordered tasks, each mapped internally to a registered capability or explicitly marked as requiring a capability. Numerical engineering work remains outside the AI interpretation layer and subject to human review.
+
+
+## Deployment verification
+
+The production deployment must correspond to the latest tested `main` commit before end-to-end audit and dispatch trials.
