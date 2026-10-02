@@ -274,6 +274,29 @@ class SupabaseJobStore(JobStore):
         rows = getattr(response, "data", None) or []
         return rows[0] if rows else None
 
+    def list_report_register(self, *, tenant_id: Optional[str] = None, limit: int = 1000) -> list:
+        """All report versions for the tenant (newest first) merged with job status/request."""
+        from reports.register import rows_from_artifacts
+
+        query = (self.client.table("engineering_report_artifacts")
+                 .select("report_id,job_id,version,status,title,skill_id,reviewer,created_at,approved_at,dispatched_at,"
+                         "evidence_sha256,pdf_sha256,pdf_storage_path,pdf_filename,xlsx_sha256,xlsx_storage_path,xlsx_filename")
+                 .order("created_at", desc=True).limit(limit))
+        if tenant_id:
+            query = query.eq("tenant_id", tenant_id)
+        artifacts = getattr(query.execute(), "data", None) or []
+        jobs = {str(j.get("job_id")): dict(j) for j in self.list_summaries(tenant_id=tenant_id)}
+        try:  # optional: the request text lives inside the orchestration JSON
+            q2 = self.client.table(self.jobs_table).select("job_id,request:orchestration->>normalized_request")
+            if tenant_id:
+                q2 = q2.eq("tenant_id", tenant_id)
+            for row in getattr(q2.execute(), "data", None) or []:
+                if str(row.get("job_id")) in jobs:
+                    jobs[str(row["job_id"])]["request"] = row.get("request")
+        except Exception:
+            pass
+        return rows_from_artifacts(artifacts, jobs)
+
     def get_artifact_download(self, job_id: str, kind: str, *, tenant_id: Optional[str] = None,
                               expires_in: int = 600) -> Optional[Dict[str, Any]]:
         """Return a fresh short-lived signed download link for the dispatched PDF or XLSX.

@@ -720,6 +720,36 @@ class APIApp:
                     }
                 return self._json(start_response, "200 OK", artifact)
 
+            if len(parts) == 2 and parts[0] == "v1" and parts[1] == "reports" and method == "GET":
+                ctx.require_scope("jobs:read")
+                from reports.register import VIEWS, filter_rows, rows_from_jobs, view_counts
+                lister = getattr(service.store, "list_report_register", None)
+                rows = lister(tenant_id=service.tenant_id) if lister else rows_from_jobs(service.list_jobs())
+                view = (query.get("view") or ["all"])[0]
+                if view not in VIEWS:
+                    return self._json(start_response, "400 Bad Request", {"error": "Unknown view", "views": sorted(VIEWS)})
+                shown = filter_rows(rows, view=view, q=(query.get("q") or [""])[0], skill=(query.get("skill") or [""])[0])
+                try:
+                    limit = max(1, min(int((query.get("limit") or ["200"])[0]), 500))
+                    offset = max(0, int((query.get("offset") or ["0"])[0]))
+                except ValueError:
+                    limit, offset = 200, 0
+                return self._json(start_response, "200 OK", {
+                    "reports": shown[offset:offset + limit], "count": len(shown[offset:offset + limit]),
+                    "total": len(shown), "views": view_counts(rows),
+                    "skills": sorted({r["skill_id"] for r in rows if r["skill_id"]}),
+                })
+
+            if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "audit" and method == "GET":
+                ctx.require_scope("jobs:read")
+                try:
+                    job = service._get(parts[2])
+                except KeyError:
+                    return self._json(start_response, "404 Not Found", {"error": "Job not found"})
+                events = [{"created_at": e.created_at, "event_type": e.event_type, "status": e.status,
+                           "message": e.message, "metadata": e.metadata} for e in job.events]
+                return self._json(start_response, "200 OK", {"job_id": job.job_id, "report_id": job.report_id, "events": events, "count": len(events)})
+
             if len(parts) == 5 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "artifacts" and method == "GET":
                 job_id, kind = parts[2], parts[4]
                 ctx.require_scope("jobs:read")

@@ -68,6 +68,19 @@ button:disabled{opacity:.55;cursor:wait}
 </section>
 
 <section class="card">
+<h2>Engineering Report Register</h2>
+<p class="muted">Every engineering report in one place. Open the report, evidence or audit trail, or download the approved PDF and Excel workbook, without needing the job ID.</p>
+<div id="regTabs" class="actions" style="flex-wrap:wrap"></div>
+<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+ <input id="regSearch" placeholder="Search report ID, job ID, skill, reviewer or request" oninput="regSearchChanged()" style="flex:1;min-width:220px">
+ <select id="regSkill" onchange="loadRegister()" style="border:1px solid #ccd3df;border-radius:9px;padding:10px;font:inherit"><option value="">All skills</option></select>
+</div>
+<div id="register" class="empty" style="overflow-x:auto;margin-top:10px">Loading...</div>
+<div id="regMsg" class="small" style="color:#a12626;margin-top:6px"></div>
+<div id="regPanel" style="display:none;margin-top:10px"></div>
+</section>
+
+<section class="card">
 <h2>Jobs</h2>
 <div id="jobs" class="empty">Loading...</div>
 </section>
@@ -253,7 +266,7 @@ async function viewArtifact(jobId,kind){
  }catch(e){box.textContent="Could not load "+kind+": "+e.message;}
 }
 async function downloadArtifact(jobId,kind){
- const msg=document.getElementById("dlmsg-"+jobId);
+ const msg=document.getElementById("dlmsg-"+jobId)||document.getElementById("regMsg");
  if(msg)msg.textContent="Preparing download...";
  try{
   const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/artifacts/"+kind);
@@ -364,7 +377,60 @@ function jobHtml(j){
  html+='</div>';return html;
 }
 
+window.regView="all";window.regShown=50;
+const REG_TABS=[["all","All Reports"],["pending_review","Pending Review"],["approved","Approved"],["dispatched","Dispatched"],["completed","Completed"],["failed","Failed / Rework"]];
+let regTimer;
+const ACRONYMS={vfd:"VFD",hvac:"HVAC",bms:"BMS",vrf:"VRF",boq:"BOQ",cop:"COP",ach:"ACH"};
+function niceText(v){const t=String(v==null?"":v).replace(/_/g," ").trim().split(" ").map(w=>ACRONYMS[w.toLowerCase()]||w).join(" ");return t?t.charAt(0).toUpperCase()+t.slice(1):"-";}
+function fmtDate(v){if(!v)return"-";const d=new Date(v);return isNaN(d)?String(v):d.toLocaleString([],{dateStyle:"medium",timeStyle:"short"});}
+function regSearchChanged(){clearTimeout(regTimer);regTimer=setTimeout(()=>{window.regShown=50;loadRegister();},300);}
+function setRegView(v){window.regView=v;window.regShown=50;loadRegister();}
+function regClose(){const p=document.getElementById("regPanel");p.style.display="none";p.innerHTML="";}
+function auditHtml(d){
+ const rows=(d.events||[]).map(e=>'<tr><td>'+esc(fmtDate(e.created_at))+'</td><td>'+esc(niceText(e.event_type))+'</td><td>'+esc(niceText(e.status))+'</td><td>'+esc(e.message||"")+'</td></tr>').join("");
+ return '<div class="result"><h3>Audit Trail</h3><div class="small">Job '+esc(d.job_id)+' - '+esc(d.count)+' events</div><div class="json-result"><table><thead><tr><th>Time</th><th>Event</th><th>Status</th><th>Detail</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+async function regOpen(jobId,kind){
+ const p=document.getElementById("regPanel");
+ p.style.display="block";p.innerHTML='<div class="small">Loading '+esc(kind)+'...</div>';
+ try{
+  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/"+kind);const d=await r.json();
+  if(!r.ok)throw Error(d.error||(kind+" unavailable"));
+  p.innerHTML='<div class="actions"><button class="secondary" onclick="regClose()">Close</button></div>'+(kind==="audit"?auditHtml(d):summarizeArtifact(kind,d));
+  p.scrollIntoView({behavior:"smooth",block:"nearest"});
+ }catch(e){p.innerHTML='<div class="msg err" style="display:block">Could not load '+esc(kind)+': '+esc(e.message)+'</div>';}
+}
+async function loadRegister(){
+ const box=document.getElementById("register");if(!box)return;
+ try{
+  const q=encodeURIComponent(document.getElementById("regSearch").value.trim());
+  const skill=encodeURIComponent(document.getElementById("regSkill").value);
+  const r=await api("/v1/reports?view="+window.regView+"&q="+q+"&skill="+skill+"&limit="+window.regShown);
+  const d=await r.json();if(!r.ok)throw Error(d.error||"Register unavailable");
+  document.getElementById("regTabs").innerHTML=REG_TABS.map(([k,l])=>'<button class="'+(k===window.regView?"":"secondary")+'" onclick="setRegView(\''+k+'\')">'+l+' ('+((d.views||{})[k]||0)+')</button>').join("");
+  const sel=document.getElementById("regSkill"),cur=sel.value;
+  sel.innerHTML='<option value="">All skills</option>'+(d.skills||[]).map(x=>'<option value="'+esc(x)+'"'+(x===cur?" selected":"")+'>'+esc(niceText(x))+'</option>').join("");
+  if(!d.reports.length){box.innerHTML='<div class="empty">No reports match this view yet.</div>';return;}
+  const btn=(label,fn)=>'<button class="secondary" style="padding:5px 9px;font-size:12px" onclick="'+fn+'">'+label+'</button>';
+  box.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'+
+   ["Date","Report","Skill / request","Status","Rev","Reviewed by","Approved","Dispatched","Open"].map(h=>'<th style="text-align:left;border-bottom:2px solid #e1e5eb;padding:7px;white-space:nowrap">'+h+'</th>').join("")+'</tr></thead><tbody>'+
+   d.reports.map(x=>{const act=(fn,kind)=>fn+"('"+x.job_id+"','"+kind+"')";return '<tr style="border-bottom:1px solid #edf0f4;vertical-align:top">'+
+    '<td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.created_at))+'</td>'+
+    '<td style="padding:7px" title="Report '+esc(x.report_id)+' / Job '+esc(x.job_id)+'">'+esc(String(x.report_id||"").slice(0,8))+'<div class="small">job '+esc(String(x.job_id||"").slice(0,8))+'</div></td>'+
+    '<td style="padding:7px;min-width:160px"><strong>'+esc(niceText(x.skill_id))+'</strong>'+(x.request?'<div class="small">'+esc(String(x.request).slice(0,110))+'</div>':"")+'</td>'+
+    '<td style="padding:7px;font-weight:700">'+esc(niceText(x.status))+'</td>'+
+    '<td style="padding:7px">V'+esc(x.revision)+'</td>'+
+    '<td style="padding:7px">'+esc(x.reviewed_by||"-")+'</td>'+
+    '<td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.approved_at))+'</td>'+
+    '<td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.dispatched_at))+'</td>'+
+    '<td style="padding:7px"><div style="display:flex;gap:5px;flex-wrap:wrap">'+btn("Report",act("regOpen","report"))+btn("Evidence",act("regOpen","evidence"))+btn("Audit",act("regOpen","audit"))+
+     (x.pdf_available?btn("PDF",act("downloadArtifact","pdf")):"")+(x.xlsx_available?btn("Excel",act("downloadArtifact","xlsx")):"")+'</div></td></tr>';}).join("")+
+   '</tbody></table>'+(d.total>d.reports.length?'<div class="actions"><button onclick="window.regShown+=50;loadRegister()">Show more ('+(d.total-d.reports.length)+' more)</button></div>':"");
+ }catch(e){box.innerHTML='<div class="msg err" style="display:block">'+esc(e.message)+'</div>';}
+}
+
 async function loadJobs(){
+ loadRegister();
  const box=document.getElementById("jobs");
  try{
   const r=await api("/v1/jobs");const d=await r.json();
