@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable, Optional
 import hashlib
 import json
+import uuid
 
 from .models import Job, JobEvent, JobStatus
 from .store import JobStore
@@ -110,7 +111,9 @@ class SupabaseJobStore(JobStore):
                 }).eq("report_id", report_id).execute()
             else:
                 version = (int(latest_rows[0].get("version") or 0) + 1) if latest_rows else 1
+                report_id = str(uuid.uuid4())
                 response = self.client.table("engineering_report_artifacts").insert({
+                    "report_id": report_id,
                     "tenant_id": job.tenant_id,
                     "job_id": job.job_id,
                     "version": version,
