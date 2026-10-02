@@ -384,12 +384,28 @@ def build_supabase_job_store_from_env() -> Optional[SupabaseJobStore]:
 
     try:
         from supabase import create_client
+        from supabase.lib.client_options import ClientOptions
     except ImportError as exc:
         raise RuntimeError(
             "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set, "
             "but supabase-py is not installed"
         ) from exc
 
-    client = create_client(url, key)
+    # Production must fail fast rather than leaving a Render request hanging
+    # when the Supabase Data API is unavailable. The browser has its own
+    # request timeout, but the server-side client needs an explicit timeout too.
+    timeout_seconds = float(os.getenv("SUPABASE_POSTGREST_TIMEOUT_SECONDS", "10"))
+    if timeout_seconds <= 0:
+        raise RuntimeError("SUPABASE_POSTGREST_TIMEOUT_SECONDS must be greater than zero")
+    client = create_client(
+        url,
+        key,
+        options=ClientOptions(
+            postgrest_client_timeout=timeout_seconds,
+            storage_client_timeout=timeout_seconds,
+            auto_refresh_token=False,
+            persist_session=False,
+        ),
+    )
     return SupabaseJobStore(client)
 
