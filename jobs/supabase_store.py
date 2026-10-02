@@ -299,7 +299,7 @@ class SupabaseJobStore(JobStore):
         return tuple(self._hydrate(row) for row in (getattr(response, "data", None) or []))
 
     def list_summaries(self, *, tenant_id: Optional[str] = None) -> Iterable[Dict[str, Any]]:
-        columns = "job_id,tenant_id,source,requested_skill_id,status,skill_id,attempt,created_at,updated_at"
+        columns = "job_id,tenant_id,source,requested_skill_id,status,skill_id,report_id,attempt,created_at,updated_at"
         query = self.client.table(self.jobs_table).select(columns)
         if tenant_id:
             query = query.eq("tenant_id", tenant_id)
