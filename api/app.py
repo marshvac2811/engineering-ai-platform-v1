@@ -30,12 +30,12 @@ from api.auth import DevelopmentHeaderAuthenticator, ApiKeyAuthenticator, Supaba
 from api.security import InMemoryApiKeyStore, InMemoryUsageStore, UsageEvent
 from crm.service import CRMService
 from crm.store import InMemoryCRMStore
-from crm.supabase_store import build_supabase_crm_store_from_env
+from crm.supabase_store import build_supabase_crm_store_from_env, SupabaseCRMStore
 from integrations.service import IntegrationService, InMemoryIntegrationStore
-from integrations.supabase_store import build_supabase_integration_store_from_env
+from integrations.supabase_store import build_supabase_integration_store_from_env, SupabaseIntegrationStore
 from workflow.service import WorkflowTaskService
 from workflow.store import InMemoryWorkflowTaskStore
-from workflow.supabase_store import build_supabase_workflow_task_store_from_env
+from workflow.supabase_store import build_supabase_workflow_task_store_from_env, SupabaseWorkflowTaskStore
 from integrations.providers.upwork import (
     UpworkOAuthStateStore, TrialUpworkTokenStore, authorization_url as upwork_authorization_url,
     exchange_code as upwork_exchange_code, UpworkProviderError,
@@ -72,9 +72,18 @@ class APIApp:
         self.ingestion = ingestion or build_ingestion_service()
         self.api_keys = api_keys or InMemoryApiKeyStore()
         self.usage = usage_store or InMemoryUsageStore()
-        self.crm_store = crm_store or build_supabase_crm_store_from_env() or InMemoryCRMStore()
-        self.integration_store = integration_store or build_supabase_integration_store_from_env() or InMemoryIntegrationStore()
-        self.workflow_task_store = workflow_task_store or (build_supabase_workflow_task_store_from_env() if store is None else InMemoryWorkflowTaskStore())
+        # Reuse the already-created production Supabase client across all persistent
+        # stores. Creating several independent clients during Render startup can
+        # stall initialization before Uvicorn binds its port.
+        supabase_client = getattr(self.store, "client", None)
+        if supabase_client is not None:
+            self.crm_store = crm_store or SupabaseCRMStore(supabase_client)
+            self.integration_store = integration_store or SupabaseIntegrationStore(supabase_client)
+            self.workflow_task_store = workflow_task_store or SupabaseWorkflowTaskStore(supabase_client)
+        else:
+            self.crm_store = crm_store or build_supabase_crm_store_from_env() or InMemoryCRMStore()
+            self.integration_store = integration_store or build_supabase_integration_store_from_env() or InMemoryIntegrationStore()
+            self.workflow_task_store = workflow_task_store or (build_supabase_workflow_task_store_from_env() if store is None else InMemoryWorkflowTaskStore())
         # ReportService is an in-process report builder; the authoritative
         # SupabaseJobStore persists the generated report into
         # engineering_report_artifacts when the job is saved. Keeping these
