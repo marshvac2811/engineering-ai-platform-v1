@@ -113,7 +113,10 @@ class APIApp:
         # Vercel Edge Middleware performs Supabase JWT signature verification
         # before the Python function. This keeps Supabase JWKS/Auth off the
         # Python request path, which was failing with EBUSY in Vercel.
-        if environ.get("HTTP_X_ENGINEERING_AUTH"):
+        # SECURITY: the edge header is only trustworthy where that middleware actually
+        # runs (Vercel sets VERCEL=1). Anywhere else (e.g. Render) a client could forge
+        # it, so it is ignored and the signed Supabase bearer token is required.
+        if environ.get("HTTP_X_ENGINEERING_AUTH") and os.getenv("VERCEL"):
             return EdgeVerifiedAuthenticator().authenticate(environ)
 
         auth = environ.get("HTTP_AUTHORIZATION", "")
@@ -129,6 +132,10 @@ class APIApp:
 
             return self.api_key_authenticator.authenticate(environ)
 
+        # SECURITY: plain X-Tenant-ID/X-User-ID headers grant owner access and exist only
+        # for local development and tests. Never accept them in production.
+        if os.getenv("ENGINEERING_ENV", "").strip().lower() == "production" and os.getenv("ENGINEERING_ALLOW_DEV_AUTH", "").strip() != "1":
+            raise AuthenticationError("Authentication required: sign in to obtain a bearer token")
         return self.development_authenticator.authenticate(environ)
 
     def _meter(self, ctx: AuthContext, event_type: str, *, job_id=None, skill_id=None, units=1.0, metadata=None) -> None:
@@ -808,7 +815,9 @@ class APIApp:
                 elif action == "approve":
                     ctx.require_scope("jobs:approve")
                     ctx.require_scope_role("review")
-                    job = service.approve(job_id, body.get("reviewer", ctx.user_id), body.get("comment", ""))
+                    # The reviewer must be the verified signed-in person, never a name typed by the client.
+                    reviewer = body.get("reviewer", ctx.user_id) if ctx.auth_method == "development" else ctx.reviewer_label()
+                    job = service.approve(job_id, reviewer, body.get("comment", ""))
                 elif action == "dispatch":
                     ctx.require_scope("jobs:dispatch")
                     ctx.require_scope_role("dispatch")

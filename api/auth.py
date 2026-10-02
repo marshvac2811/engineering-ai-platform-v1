@@ -30,6 +30,11 @@ class AuthContext:
     auth_method: str = "development"
     api_key_id: Optional[str] = None
     scopes: FrozenSet[str] = frozenset()
+    email: Optional[str] = None
+
+    def reviewer_label(self) -> str:
+        """Verified human identity for approvals: login email when known, otherwise the user id."""
+        return (self.email or "").strip() or self.user_id
 
     def tenant_context(self) -> TenantContext:
         return TenantContext(tenant_id=self.tenant_id, user_id=self.user_id, role=self.role)
@@ -114,6 +119,7 @@ class EdgeVerifiedAuthenticator(Authenticator):
             role=role,
             auth_method="supabase_jwt",
             scopes=frozenset(str(x) for x in scopes),
+            email=(str(payload.get("email") or "").strip() or None),
         )
 
 
@@ -299,6 +305,7 @@ class SupabaseJWTAuthenticator(Authenticator):
                     "tenant_id": "",
                     "app_role": str((user.get("app_metadata") or {}).get("app_role") or "member"),
                     "scopes": [],
+                    "email": str(user.get("email") or ""),
                 }
             except AuthenticationError:
                 raise
@@ -335,6 +342,7 @@ class SupabaseJWTAuthenticator(Authenticator):
             role=role,
             auth_method="supabase_jwt",
             scopes=scopes,
+            email=(str(claims.get("email") or "").strip() or None),
         )
 
 

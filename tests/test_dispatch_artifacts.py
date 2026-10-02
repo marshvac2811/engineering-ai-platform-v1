@@ -60,3 +60,23 @@ def test_evidence_workbook_is_valid_xlsx():
         workbook = archive.read("xl/workbook.xml")
         assert b"Tasks" in workbook
         assert b"Manifest" in workbook
+
+
+def test_pdf_shows_tables_not_raw_json():
+    from pypdf import PdfReader
+    bundle = _bundle()
+    bundle["tasks"][0]["engineering_result"] = {"annual_savings_kwh": 130233, "savings_pct": 28.9}
+    data = build_approved_pdf(job=_job(), evidence_bundle=bundle)
+    text = "\n".join(page.extract_text() or "" for page in PdfReader(BytesIO(data)).pages)
+    assert "Annual Savings" in text and "130,233" in text and "kWh" in text
+    assert "{" not in text and '":' not in text  # no raw JSON dumped into the report
+
+
+def test_workbook_has_readable_result_sheets():
+    from openpyxl import load_workbook
+    wb = load_workbook(BytesIO(build_evidence_xlsx(job=_job(), evidence_bundle=_bundle())))
+    for name in ("Summary", "Inputs", "Results", "Calculation Steps", "Assumptions & Notes", "Compliance"):
+        assert name in wb.sheetnames, name
+    rows = list(wb["Results"].iter_rows(values_only=True))
+    assert rows[0] == ("Task", "Result", "Value", "Unit")
+    assert any(r[1] == "Annual Saving" and r[2] == 8000 and r[3] == "kWh" for r in rows[1:])

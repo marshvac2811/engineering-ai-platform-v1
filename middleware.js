@@ -168,6 +168,7 @@ export default async function middleware(request) {
       tenant_id: membership.tenant_id,
       role: membership.role,
       scopes: Array.isArray(claims.scopes) ? claims.scopes : [],
+      email: claims.email ? String(claims.email) : undefined,
       exp: Number(claims.exp),
     };
 

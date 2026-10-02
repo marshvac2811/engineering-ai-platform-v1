@@ -267,7 +267,7 @@ async function downloadArtifact(jobId,kind){
 async function approve(jobId){
  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/approve",{
   method:"POST",headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({reviewer:"dashboard",comment:"Approved from Engineering Operations dashboard"})
+  body:JSON.stringify({comment:"Approved from Engineering Operations dashboard"})
  });
  const d=await r.json();if(!r.ok){alert(d.error||"Approval failed");return;}await loadJobs();
 }
