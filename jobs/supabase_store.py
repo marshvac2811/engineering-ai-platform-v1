@@ -124,6 +124,7 @@ class SupabaseJobStore(JobStore):
                     "reviewer": next((e.metadata.get("reviewer") for e in reversed(job.events) if e.event_type == "status_change" and e.metadata.get("reviewer")), None),
                     "review_comment": next((e.metadata.get("comment", "") for e in reversed(job.events) if e.event_type == "status_change" and e.metadata.get("comment")), ""),
                     "approved_at": job.updated_at if status == "approved" else None,
+                    "created_at": job.updated_at or job.created_at,
                 }).execute()
                 rows = getattr(response, "data", None) or []
                 report_id = rows[0].get("report_id") if rows else None
@@ -150,6 +151,7 @@ class SupabaseJobStore(JobStore):
                     "edition": check.get("edition", ""),
                     "requirement_type": check.get("requirement_type", ""),
                     "evidence": check.get("evidence", {}),
+                    "created_at": job.updated_at or job.created_at,
                 }
                 response = self.client.table("engineering_compliance_checks").upsert(row, on_conflict="job_id,requirement_id").execute()
                 check_rows = getattr(response, "data", None) or []
@@ -167,6 +169,7 @@ class SupabaseJobStore(JobStore):
                             "document_reference": str(evidence.get("document_reference") or evidence.get("documentReference") or ""),
                             "calculation_reference": str(evidence.get("calculation_reference") or evidence.get("calculationReference") or ""),
                             "metadata": evidence,
+                            "created_at": job.updated_at or job.created_at,
                         }).execute()
         except Exception as exc:
             # Engineering evidence is part of the authoritative record. Never
