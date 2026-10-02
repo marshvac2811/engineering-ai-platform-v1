@@ -197,16 +197,25 @@ async function submitRequest(){
 async function provideInfo(jobId,fields){
  const msg=document.getElementById("msg-"+jobId);
  const updates={};
- for(const field of fields){
-  const input=document.getElementById("answer-"+jobId+"-"+field);
-  const value=input?.value.trim();
-  if(!value){showMsg(msg,false,"Please enter all required information.");return;}
-  updates[field]=value;
+ let message="";
+ if(!fields.length){
+  const input=document.getElementById("message-"+jobId);
+  message=input?.value.trim()||"";
+  if(!message){showMsg(msg,false,"Please provide the requested engineering information.");return;}
+ }else{
+  for(const field of fields){
+   const input=document.getElementById("answer-"+jobId+"-"+field);
+   const value=input?.value.trim();
+   if(!value){showMsg(msg,false,"Please enter all required information.");return;}
+   updates[field]=value;
+  }
  }
  const button=document.getElementById("btn-"+jobId);button.disabled=true;
  try{
+  const payload={inputs:updates};
+  if(message)payload.message=message;
   const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/information",{
-   method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({inputs:updates})
+   method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)
   });
   const d=await r.json();if(!r.ok)throw Error(d.error||"Information update failed");
   await loadJobs();
@@ -270,12 +279,17 @@ function jobHtml(j){
  const result=j.result?.engineering_result||j.result?.engineeringResult;
  let html='<div class="job '+(review?"review":"")+'"><div><strong>Engineering Request</strong></div>'+
   '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>';
- if(status==="awaiting_information"&&missing.length){
+ if(status==="awaiting_information"){
+  const questionText=questions.join(" ");
+  const genericQuestion=!missing.length;
   html+='<div class="need"><strong>Information needed</strong>'+
-   '<div style="margin-top:5px">'+esc(questions.join(" "))+'</div>'+
-   '<div style="margin-top:10px">'+missing.map(field=>'<div style="margin-top:10px"><label class="small" for="answer-'+id+'-'+esc(field)+'">'+esc(fieldLabel(field))+'</label>'+
-    '<input id="answer-'+id+'-'+esc(field)+'" type="text" inputmode="decimal" autocomplete="off" placeholder="Enter '+esc(fieldLabel(field))+'" style="margin-top:4px"></div>').join('')+
-   '</div><div class="actions"><button id="btn-'+id+'">Continue</button></div>'+
+   '<div style="margin-top:5px">'+esc(questionText||"Please provide the engineering objective and any project drawings, specifications, measurements, or other data available.")+'</div>'+
+   (genericQuestion
+    ? '<div style="margin-top:10px"><label class="small" for="message-'+id+'">Your response</label><textarea id="message-'+id+'" rows="4" placeholder="Describe the engineering objective and provide the project information you have." style="margin-top:4px"></textarea></div>'+
+      '<div class="actions"><button id="btn-'+id+'">Continue</button></div>'
+    : '<div style="margin-top:10px">'+missing.map(field=>'<div style="margin-top:10px"><label class="small" for="answer-'+id+'-'+esc(field)+'">'+esc(fieldLabel(field))+'</label>'+
+      '<input id="answer-'+id+'-'+esc(field)+'" type="text" inputmode="decimal" autocomplete="off" placeholder="Enter '+esc(fieldLabel(field))+'" style="margin-top:4px"></div>').join('')+
+      '</div><div class="actions"><button id="btn-'+id+'">Continue</button></div>')+
    '<div id="msg-'+id+'" class="msg"></div></div>';
  }
  const understanding=orch.request_understanding||{};
