@@ -398,6 +398,10 @@ def build_supabase_job_store_from_env() -> Optional[SupabaseJobStore]:
     timeout_seconds = float(os.getenv("SUPABASE_POSTGREST_TIMEOUT_SECONDS", "10"))
     if timeout_seconds <= 0:
         raise RuntimeError("SUPABASE_POSTGREST_TIMEOUT_SECONDS must be greater than zero")
+    # Keep startup diagnostics explicit. Render must bind its HTTP port before any
+    # network-backed health check; client construction itself must remain local and
+    # bounded to the SDK initialization path.
+    print("[startup] Supabase client initialization: begin", flush=True)
     client = create_client(
         url,
         key,
@@ -408,5 +412,6 @@ def build_supabase_job_store_from_env() -> Optional[SupabaseJobStore]:
             persist_session=False,
         ),
     )
+    print("[startup] Supabase client initialization: complete", flush=True)
     return SupabaseJobStore(client)
 
