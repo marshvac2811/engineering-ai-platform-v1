@@ -250,7 +250,27 @@ class APIApp:
             return [data]
 
         if path == "/health" and method == "GET":
-            return self._json(start_response, "200 OK", {"status": "ok"})
+            # Render health must validate the live production dependency, not
+            # merely prove that the Python process is running.
+            if os.getenv("ENGINEERING_ENV", "").strip().lower() == "production" and hasattr(self.store, "client"):
+                try:
+                    self.store.client.table("automation_jobs").select("job_id").limit(1).execute()
+                except Exception as exc:
+                    return self._json(start_response, "503 Service Unavailable", {
+                        "status": "degraded",
+                        "job_store": type(self.store).__name__,
+                        "database": "unreachable",
+                        "error": str(exc),
+                    })
+                return self._json(start_response, "200 OK", {
+                    "status": "ok",
+                    "job_store": type(self.store).__name__,
+                    "database": "reachable",
+                })
+            return self._json(start_response, "200 OK", {
+                "status": "ok",
+                "job_store": type(self.store).__name__,
+            })
         if path == "/v1/integrations/gmail/oauth/callback" and method == "GET":
             try:
                 return self._gmail_oauth_callback(environ, start_response)
