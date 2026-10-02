@@ -720,16 +720,16 @@ class APIApp:
                 ctx.require_scope("jobs:read")
                 job = service._get(job_id)
                 if hasattr(service.store, "get_compliance_checks"):
-                    checks = service.store.get_compliance_checks(job_id, tenant_id=service.tenant_id)
+                    checks = list(service.store.get_compliance_checks(job_id, tenant_id=service.tenant_id))
                 else:
                     engineering = (job.result or {}).get("engineering_result") or {}
-                checks = list(engineering.get("compliance") or [])
-                if not checks:
-                    for task_result in list(engineering.get("task_results") or engineering.get("results") or []):
-                        if isinstance(task_result, dict):
-                            task_engineering = task_result.get("engineering_result") or {}
-                            if isinstance(task_engineering, dict):
-                                checks.extend(task_engineering.get("compliance") or [])
+                    checks = list(engineering.get("compliance") or [])
+                    if not checks:
+                        for task_result in list(engineering.get("task_results") or engineering.get("results") or []):
+                            if isinstance(task_result, dict):
+                                task_engineering = task_result.get("engineering_result") or {}
+                                if isinstance(task_engineering, dict):
+                                    checks.extend(task_engineering.get("compliance") or [])
                 return self._json(start_response, "200 OK", {"job_id": job.job_id, "checks": checks, "count": len(checks)})
 
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "attachments" and method == "POST":
