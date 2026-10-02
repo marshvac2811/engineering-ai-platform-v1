@@ -713,6 +713,23 @@ class APIApp:
                     }
                 return self._json(start_response, "200 OK", artifact)
 
+            if len(parts) == 5 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "artifacts" and method == "GET":
+                job_id, kind = parts[2], parts[4]
+                ctx.require_scope("jobs:read")
+                if kind not in {"pdf", "xlsx"}:
+                    return self._json(start_response, "404 Not Found", {"error": "Unknown artifact type; use pdf or xlsx"})
+                try:
+                    service._get(job_id)
+                except KeyError:
+                    return self._json(start_response, "404 Not Found", {"error": "Job not found"})
+                getter = getattr(service.store, "get_artifact_download", None)
+                link = getter(job_id, kind, tenant_id=service.tenant_id) if getter else None
+                if link is None:
+                    return self._json(start_response, "404 Not Found", {
+                        "error": "The PDF and Excel evidence workbook are created when the job is dispatched. Approve and dispatch the job first.",
+                    })
+                return self._json(start_response, "200 OK", link)
+
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "evidence" and method == "GET":
                 job_id = parts[2]
                 ctx.require_scope("jobs:read")

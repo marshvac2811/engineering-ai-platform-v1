@@ -274,6 +274,40 @@ class SupabaseJobStore(JobStore):
         rows = getattr(response, "data", None) or []
         return rows[0] if rows else None
 
+    def get_artifact_download(self, job_id: str, kind: str, *, tenant_id: Optional[str] = None,
+                              expires_in: int = 600) -> Optional[Dict[str, Any]]:
+        """Return a fresh short-lived signed download link for the dispatched PDF or XLSX.
+
+        Returns None when the artifact has not been generated yet (files are
+        created at dispatch). Links are generated on demand instead of reusing the
+        24-hour link stored at dispatch time.
+        """
+        if kind not in {"pdf", "xlsx"}:
+            raise ValueError("kind must be 'pdf' or 'xlsx'")
+        artifact = self.get_report_artifact(job_id, tenant_id=tenant_id)
+        if not artifact:
+            return None
+        path = artifact.get(f"{kind}_storage_path")
+        if not path:
+            return None
+        filename = artifact.get(f"{kind}_filename") or path.rsplit("/", 1)[-1]
+        signed = self.client.storage.from_("engineering-artifacts").create_signed_url(
+            path, expires_in, {"download": filename}
+        )
+        data = signed.get("data") if isinstance(signed, dict) else getattr(signed, "data", None)
+        if data is None:
+            data = signed
+        url = (data or {}).get("signedURL") or (data or {}).get("signedUrl")
+        if not url:
+            return None
+        return {
+            "kind": kind,
+            "url": url,
+            "filename": filename,
+            "sha256": artifact.get(f"{kind}_sha256"),
+            "expires_in_seconds": expires_in,
+        }
+
     def get_compliance_checks(self, job_id: str, *, tenant_id: Optional[str] = None) -> list[Dict[str, Any]]:
         query = self.client.table("engineering_compliance_checks").select("*").eq("job_id", job_id).order("created_at", desc=False)
         if tenant_id:

@@ -222,6 +222,24 @@ async function provideInfo(jobId,fields){
  }catch(e){showMsg(msg,false,e.message);button.disabled=false;}
 }
 
+function kv(k,v){return '<div style="margin-top:4px"><strong>'+esc(k)+':</strong> '+esc(v==null||v===""?"-":String(v))+'</div>';}
+function summarizeArtifact(kind,d){
+ const b=d.evidence_bundle||{}, m=b.manifest||{}, art=(b.delivery||{}).artifacts||{};
+ const rep=d.report||{};
+ let h='<div class="result">';
+ if(kind==="evidence"){
+  h+='<h3>Evidence Summary</h3>'+kv("Job status",d.status)+kv("Report ID",d.report_id)+kv("Capabilities executed",(m.executed_capabilities||[]).join(", "))+
+   kv("Tasks",m.task_count)+kv("Evidence bundle SHA-256",m.bundle_sha256)+kv("Input SHA-256",m.input_hash)+kv("Review status",(b.review||{}).status)+
+   kv("Compliance claims allowed",((b.governance||{}).applicability||{}).compliance_claim_allowed?"Yes":"No - no verified standards evidence")+
+   kv("PDF SHA-256",(art.pdf||{}).sha256)+kv("Excel workbook SHA-256",(art.evidence_workbook||{}).sha256);
+  const tasks=b.tasks||[];
+  if(tasks.length){h+='<div style="margin-top:8px"><strong>Task results</strong></div>'+tasks.map(t=>'<div style="margin-top:4px">'+esc(t.task_id)+' - '+esc(t.capability_id)+' - '+esc(String(t.status||"").replaceAll("_"," "))+(t.warnings&&t.warnings.length?'<br>Warnings: '+esc(t.warnings.join(" | ")):"")+'</div>').join("");}
+ }else{
+  h+='<h3>Report Summary</h3>'+kv("Title",d.title)+kv("Report ID",d.report_id)+kv("Status",d.status)+kv("Version",d.version)+kv("Skill",d.skill_id)+kv("PDF file",d.pdf_filename)+kv("Excel file",d.xlsx_filename)+kv("PDF SHA-256",d.pdf_sha256)+kv("Evidence SHA-256",d.evidence_sha256);
+ }
+ h+='</div><details style="margin-top:8px"><summary>Full technical record (JSON)</summary><pre style="white-space:pre-wrap;max-height:320px;overflow:auto">'+esc(JSON.stringify(d,null,2))+'</pre></details>';
+ return h;
+}
 async function viewArtifact(jobId,kind){
  const box=document.getElementById("art-"+jobId);
  if(!box)return;
@@ -231,8 +249,19 @@ async function viewArtifact(jobId,kind){
   const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/"+kind);
   const d=await r.json();
   if(!r.ok)throw Error(d.error||(kind+" unavailable"));
-  box.textContent=JSON.stringify(d,null,2);
+  box.innerHTML=summarizeArtifact(kind,d);
  }catch(e){box.textContent="Could not load "+kind+": "+e.message;}
+}
+async function downloadArtifact(jobId,kind){
+ const msg=document.getElementById("dlmsg-"+jobId);
+ if(msg)msg.textContent="Preparing download...";
+ try{
+  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/artifacts/"+kind);
+  const d=await r.json();
+  if(!r.ok)throw Error(d.error||"Download unavailable");
+  if(msg)msg.textContent="";
+  window.open(d.url,"_blank","noopener");
+ }catch(e){if(msg)msg.textContent="Could not download: "+e.message;}
 }
 
 async function approve(jobId){
@@ -325,7 +354,13 @@ function jobHtml(j){
  if(j.errors?.length)html+='<div style="color:#a12626;margin-top:8px">'+esc(j.errors.join("; "))+'</div>';
  if(review)html+='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button></div>';
  if(status==="approved")html+='<div class="actions"><button onclick="dispatch(\''+id+'\')">Dispatch</button></div>';
- if(["human_review","approved","dispatching","dispatched","completed"].includes(status))html+='<div class="actions"><button onclick="viewArtifact(\''+id+'\',\'report\')">View Report</button><button onclick="viewArtifact(\''+id+'\',\'evidence\')">View Evidence</button></div><pre id="art-'+id+'" class="small" style="display:none;white-space:pre-wrap;max-height:360px;overflow:auto;margin-top:8px"></pre>';
+ if(["human_review","approved","dispatching","dispatched","completed"].includes(status)){
+  const done=["dispatched","completed"].includes(status);
+  html+='<div class="actions"><button onclick="viewArtifact(\''+id+'\',\'report\')">View Report</button><button onclick="viewArtifact(\''+id+'\',\'evidence\')">View Evidence</button>'+
+   (done?'<button onclick="downloadArtifact(\''+id+'\',\'pdf\')">Download PDF</button><button onclick="downloadArtifact(\''+id+'\',\'xlsx\')">Download Excel</button>':'')+'</div>'+
+   (done?'':'<div class="small" style="margin-top:6px">The PDF report and Excel evidence workbook are created when you Approve and then Dispatch this job.</div>')+
+   '<div id="art-'+id+'" class="small" style="display:none;margin-top:8px"></div><div id="dlmsg-'+id+'" class="small" style="margin-top:6px;color:#a12626"></div>';
+ }
  html+='</div>';return html;
 }
 
