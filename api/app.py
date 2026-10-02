@@ -59,7 +59,13 @@ class APIApp:
                  development_authenticator=None, api_keys=None, usage_store=None,
                  gmail_client=None, gmail_token_store=None, gmail_state_store=None,
                  store=None, ingestion=None, crm_store=None, integration_store=None, workflow_task_store=None, report_store=None) -> None:
-        self.store = store or build_supabase_job_store_from_env() or InMemoryJobStore()
+        configured_store = store or build_supabase_job_store_from_env()
+        if configured_store is None and os.getenv("ENGINEERING_ENV", "").strip().lower() == "production":
+            raise RuntimeError(
+                "Production requires a Supabase job store. Configure "
+                "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on Render."
+            )
+        self.store = configured_store or InMemoryJobStore()
         self.ingestion = ingestion or build_ingestion_service()
         self.api_keys = api_keys or InMemoryApiKeyStore()
         self.usage = usage_store or InMemoryUsageStore()
