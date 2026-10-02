@@ -340,6 +340,7 @@ class SupabaseJobStore(JobStore):
             standards_context=row.get("standards_context") or {},
             assumptions_context=row.get("assumptions_context") or {},
             orchestration=row.get("orchestration") or {},
+            report_id=row.get("report_id"),
             status=JobStatus(row.get("status", JobStatus.RECEIVED.value)),
             skill_id=row.get("skill_id"),
             result=row.get("result"),
