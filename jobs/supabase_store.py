@@ -385,7 +385,10 @@ def build_supabase_job_store_from_env() -> Optional[SupabaseJobStore]:
 
     try:
         from supabase import create_client
-        from supabase.lib.client_options import ClientOptions
+        try:
+            from supabase.lib.client_options import SyncClientOptions as ClientOptions
+        except ImportError:  # older supabase-py releases
+            from supabase.lib.client_options import ClientOptions
     except ImportError as exc:
         raise RuntimeError(
             "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set, "
