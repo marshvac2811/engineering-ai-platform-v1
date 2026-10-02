@@ -89,7 +89,7 @@ class SupabaseJobStore(JobStore):
 
         canonical = json.dumps(report, sort_keys=True, separators=(",", ":"), default=str)
         content_sha256 = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-        status = "approved" if job.status == JobStatus.APPROVED else "draft"
+        status = "approved" if job.status in {JobStatus.APPROVED, JobStatus.DISPATCHING, JobStatus.DISPATCHED, JobStatus.COMPLETED} else "draft"
         title = f"Engineering Report — {job.skill_id or job.requested_skill_id or 'analysis'}"
 
         try:
@@ -107,7 +107,7 @@ class SupabaseJobStore(JobStore):
                     "status": status,
                     "reviewer": next((e.metadata.get("reviewer") for e in reversed(job.events) if e.event_type == "status_change" and e.metadata.get("reviewer")), None),
                     "review_comment": next((e.metadata.get("comment", "") for e in reversed(job.events) if e.event_type == "status_change" and e.metadata.get("comment")), ""),
-                    "approved_at": job.updated_at if status == "approved" else None,
+                    "approved_at": next((ev.created_at for ev in reversed(job.events) if ev.event_type == "status_change" and ev.status == JobStatus.APPROVED.value), None) if status == "approved" else None,
                 }).eq("report_id", report_id).execute()
             else:
                 version = (int(latest_rows[0].get("version") or 0) + 1) if latest_rows else 1
