@@ -206,14 +206,17 @@ class JobService:
         job.inputs.update(updates)
         job.add_event("information_received", "Missing input information supplied.", fields=list(updates))
         from orchestrator.intake import build_plan
+        continuation_request = str(message or job.orchestration.get("normalized_request", "")).strip()
         plan = build_plan(
-            job.orchestration.get("normalized_request", ""),
+            continuation_request,
             requested_skill_id=job.requested_skill_id,
             provided_inputs=job.inputs,
             project_context=job.project_context,
             standards_context=job.standards_context,
             assumptions_context=job.assumptions_context,
         )
+        if continuation_request:
+            job.orchestration["normalized_request"] = continuation_request
         job.orchestration = plan.to_dict()
         if plan.status == "ready_for_execution":
             job.transition(JobStatus.QUEUED, "All required inputs supplied; job returned to queue.")
