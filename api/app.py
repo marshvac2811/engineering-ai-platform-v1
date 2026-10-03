@@ -350,11 +350,16 @@ class APIApp:
                 if not message:
                     raise ValueError("message is required")
                 provider = build_intent_provider()
+                project_context = dict(body.get("project_context") or {})
+                if body.get("project"):
+                    project_context["project"] = str(body.get("project")).strip()
+                if body.get("client"):
+                    project_context["client"] = str(body.get("client")).strip()
                 plan = build_plan(
                     message,
                     requested_skill_id=body.get("requested_skill_id"),
                     provided_inputs=body.get("inputs", {}),
-                    project_context=body.get("project_context", {}),
+                    project_context=project_context,
                     standards_context=body.get("standards_context", {}),
                     assumptions_context=body.get("assumptions_context", {}),
                     provider=provider,
@@ -655,11 +660,16 @@ class APIApp:
 
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "jobs" and method == "POST":
                 ctx.require_scope("jobs:write")
+                project_context = dict(body.get("project_context") or {})
+                if body.get("project"):
+                    project_context["project"] = str(body.get("project")).strip()
+                if body.get("client"):
+                    project_context["client"] = str(body.get("client")).strip()
                 job = service.create_job(
                     source=body.get("source", "api"),
                     requested_skill_id=body.get("requested_skill_id"),
                     inputs=body.get("inputs", {}),
-                    project_context=body.get("project_context", {}),
+                    project_context=project_context,
                     standards_context=body.get("standards_context", {}),
                     assumptions_context=body.get("assumptions_context", {}),
                 )
@@ -739,6 +749,23 @@ class APIApp:
                     "total": len(shown), "views": view_counts(rows),
                     "skills": sorted({r["skill_id"] for r in rows if r["skill_id"]}),
                 })
+
+            if len(parts) == 3 and parts[0] == "v1" and parts[1] == "reports" and parts[2] == "export" and method == "GET":
+                ctx.require_scope("jobs:read")
+                from reports.register import VIEWS, build_register_workbook, filter_rows, rows_from_jobs
+                lister = getattr(service.store, "list_report_register", None)
+                rows = lister(tenant_id=service.tenant_id) if lister else rows_from_jobs(service.list_jobs())
+                view = (query.get("view") or ["all"])[0]
+                if view not in VIEWS:
+                    return self._json(start_response, "400 Bad Request", {"error": "Unknown view", "views": sorted(VIEWS)})
+                shown = filter_rows(rows, view=view, q=(query.get("q") or [""])[0], skill=(query.get("skill") or [""])[0])
+                data = build_register_workbook(shown)
+                start_response("200 OK", [
+                    ("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                    ("Content-Length", str(len(data))),
+                    ("Content-Disposition", 'attachment; filename="engineering-report-register.xlsx"'),
+                ])
+                return [data]
 
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "audit" and method == "GET":
                 ctx.require_scope("jobs:read")

@@ -33,6 +33,8 @@ def register_row(artifact: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any
         "created_at": artifact.get("created_at") or job.get("created_at"),
         "title": artifact.get("title"),
         "request": job.get("request") or None,
+        "project": (job.get("project_context") or {}).get("project") or None,
+        "client": (job.get("project_context") or {}).get("client") or None,
         "skill_id": artifact.get("skill_id") or job.get("skill_id") or job.get("requested_skill_id"),
         "source": job.get("source"),
         "status": job_status,
@@ -88,7 +90,7 @@ def rows_from_jobs(jobs: Iterable[Any]) -> List[Dict[str, Any]]:
         request = ((getattr(job, "orchestration", None) or {}).get("normalized_request"))
         rows.append(register_row(artifact, {"job_id": job.job_id, "status": status, "source": job.source, "request": request,
                                             "skill_id": job.skill_id, "requested_skill_id": job.requested_skill_id,
-                                            "created_at": job.created_at}))
+                                            "created_at": job.created_at, "project_context": getattr(job, "project_context", {})}))
     rows.sort(key=lambda r: _s(r["created_at"]), reverse=True)
     return rows
 
@@ -112,3 +114,39 @@ def filter_rows(rows: List[Dict[str, Any]], *, view: str = "all", q: str = "", s
             continue
         out.append(r)
     return out
+
+
+def build_register_workbook(rows: List[Dict[str, Any]]) -> bytes:
+    """One spreadsheet of every report row, for the client's own reconciliation tracker."""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Report Register"
+    header = ["Date", "Job ID", "Report ID", "Revision", "Project", "Client", "Request", "Skill",
+              "Status", "Reviewed By", "Approval Date", "Dispatch Date", "PDF Available", "Evidence XLSX Available",
+              "PDF SHA-256", "Evidence SHA-256", "Superseded"]
+    ws.append(header)
+    fill, font = PatternFill("solid", fgColor="1F3A5F"), Font(bold=True, color="FFFFFF")
+    for c in ws[1]:
+        c.fill, c.font = fill, font
+    for r in rows:
+        ws.append([
+            _s(r.get("created_at")), _s(r.get("job_id")), _s(r.get("report_id")), r.get("revision") or 1,
+            _s(r.get("project")), _s(r.get("client")), _s(r.get("request")), _s(r.get("skill_id")),
+            _s(r.get("status")), _s(r.get("reviewed_by")), _s(r.get("approved_at")), _s(r.get("dispatched_at")),
+            "Yes" if r.get("pdf_available") else "No", "Yes" if r.get("xlsx_available") else "No",
+            _s(r.get("pdf_sha256")), _s(r.get("evidence_sha256")), "Yes" if r.get("superseded") else "No",
+        ])
+    widths = [20, 24, 24, 10, 22, 22, 46, 22, 16, 22, 20, 20, 12, 18, 40, 40, 12]
+    for i, w in enumerate(widths):
+        ws.column_dimensions[chr(65 + i)].width = w
+    for row in ws.iter_rows(min_row=2):
+        for c in row:
+            c.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.freeze_panes = "A2"
+    out = io.BytesIO()
+    wb.save(out)
+    return out.getvalue()

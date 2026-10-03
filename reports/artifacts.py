@@ -166,13 +166,20 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
 
     story = [Paragraph("Engineering Report", h1), Paragraph("Approved for controlled dispatch", sub)]
     capabilities = ", ".join(humanize(t.get("capability_id")) for t in tasks if t.get("capability_id")) or humanize(job.requested_skill_id or job.skill_id)
-    story.append(kv_table([
+    project_context = getattr(job, "project_context", None) or {}
+    header_rows = []
+    if project_context.get("project"):
+        header_rows.append(("Project", project_context.get("project")))
+    if project_context.get("client"):
+        header_rows.append(("Client", project_context.get("client")))
+    header_rows += [
         ("Report ID", job.report_id),
         ("Scope of work", capabilities),
         ("Request", orch.get("normalized_request") or (tasks[0].get("objective") if tasks else None)),
         ("Approved by", f"{approval['by']} on {approval['at']}"),
         ("Report date", _fmt_dt(datetime.now(timezone.utc).isoformat())),
-    ]))
+    ]
+    story.append(kv_table(header_rows))
 
     # 1. Inputs
     story.append(Paragraph("1. Inputs Used", section))
@@ -304,14 +311,21 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
     # Summary (also keeps the legacy "Cover" fields)
     ws = wb.active
     ws.title = "Summary"
-    styled(ws, ["Item", "Detail"], [
+    project_context = getattr(job, "project_context", None) or {}
+    summary_rows = []
+    if project_context.get("project"):
+        summary_rows.append(("Project", project_context.get("project")))
+    if project_context.get("client"):
+        summary_rows.append(("Client", project_context.get("client")))
+    summary_rows += [
         ("Job ID", job.job_id), ("Report ID", job.report_id), ("Status", humanize(job.status.value)),
         ("Scope of work", ", ".join(humanize(t.get("capability_id")) for t in tasks if t.get("capability_id")) or humanize(job.requested_skill_id or job.skill_id)),
         ("Request", (request.get("orchestration") or {}).get("normalized_request")),
         ("Approved by", approval["by"]), ("Approval date", approval["at"]),
         ("Evidence record SHA-256", manifest.get("bundle_sha256")), ("Evidence schema", manifest.get("schema_version")),
         ("Generated", _fmt_dt(datetime.now(timezone.utc).isoformat())),
-    ], [30, 100])
+    ]
+    styled(ws, ["Item", "Detail"], summary_rows, [30, 100])
 
     inputs_rows, results_rows, step_rows, note_rows, check_rows = [], [], [], [], []
     for index, t in enumerate(tasks, 1):

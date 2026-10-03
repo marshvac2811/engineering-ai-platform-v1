@@ -44,6 +44,10 @@ button:disabled{opacity:.55;cursor:wait}
 <section class="card">
 <h2>New Engineering Request</h2>
 <p class="muted">Describe the engineering outcome you need in normal language. AI interprets the request, determines the engineering work, identifies governing requirements, asks only for missing information, executes verified capabilities when available, and routes the result for human review.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+<div style="flex:1;min-width:200px"><label class="small" for="reqProject">Project (optional)</label><input id="reqProject" type="text" placeholder="e.g. Hotel ABC Retrofit" style="margin-top:4px"></div>
+<div style="flex:1;min-width:200px"><label class="small" for="reqClient">Client (optional)</label><input id="reqClient" type="text" placeholder="e.g. Hotel ABC Pvt Ltd" style="margin-top:4px"></div>
+</div>
 <textarea id="request" rows="5" placeholder="Example: Upload the plant data above, then ask: Audit this hospital for energy savings, assess HVAC optimization, rooftop solar and BESS options, and prepare a decarbonization roadmap using applicable standards and the available project data."></textarea>
 <button id="submit" style="margin-top:12px" onclick="submitRequest()">Submit Request</button>
 <div id="requestMsg" class="msg"></div>
@@ -74,7 +78,9 @@ button:disabled{opacity:.55;cursor:wait}
 <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
  <input id="regSearch" placeholder="Search report ID, job ID, skill, reviewer or request" oninput="regSearchChanged()" style="flex:1;min-width:220px">
  <select id="regSkill" onchange="loadRegister()" style="border:1px solid #ccd3df;border-radius:9px;padding:10px;font:inherit"><option value="">All skills</option></select>
+ <button onclick="exportRegister()">Export to Excel</button>
 </div>
+<div id="regExportMsg" class="small" style="margin-top:4px;color:#a12626"></div>
 <div id="register" class="empty" style="overflow-x:auto;margin-top:10px">Loading...</div>
 <div id="regMsg" class="small" style="color:#a12626;margin-top:6px"></div>
 <div id="regPanel" style="display:none;margin-top:10px"></div>
@@ -174,9 +180,12 @@ async function runTrial(skill,mode){
    energy_payback:"Assess the energy, financial and lifecycle payback of the proposed equipment retrofit using the supplied plant data.",
    vfd_energy_savings:"Calculate VFD energy savings and economic impact for the supplied motor/system data."
   }[skill]||"Perform an energy engineering assessment using the supplied plant data.";
-  const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-   message:request,requested_skill_id:skill,inputs:samples[skill],attachments
-  })});
+  const project=document.getElementById("reqProject")?.value.trim();
+  const client=document.getElementById("reqClient")?.value.trim();
+  const trialPayload={message:request,requested_skill_id:skill,inputs:samples[skill],attachments};
+  if(project)trialPayload.project=project;
+  if(client)trialPayload.client=client;
+  const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(trialPayload)});
   const d=await r.json();if(!r.ok)throw Error(d.error||"Trial failed");
   showMsg(msg,true,"Trial submitted: "+(d.job?.job_id||"job created")+". Results will appear under Jobs.");
   await loadJobs();
@@ -197,10 +206,17 @@ async function submitRequest(){
  if(!message){showMsg(msg,false,"Please enter an engineering request.");return;}
  btn.disabled=true;showMsg(msg,true,"Processing your request...");
  try{
-  const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message})});
+  const project=document.getElementById("reqProject")?.value.trim();
+ const client=document.getElementById("reqClient")?.value.trim();
+ const payload={message};
+ if(project)payload.project=project;
+ if(client)payload.client=client;
+ const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   const d=await r.json();
   if(!r.ok)throw Error(d.error||"Request failed");
   document.getElementById("request").value="";
+  if(document.getElementById("reqProject"))document.getElementById("reqProject").value="";
+  if(document.getElementById("reqClient"))document.getElementById("reqClient").value="";
   showMsg(msg,true, d.job?.status==="awaiting_information" ? "One input is needed to continue." : "Request submitted successfully.");
   await loadJobs();
  }catch(e){showMsg(msg,false,e.message);}
@@ -440,6 +456,23 @@ async function regOpen(jobId,kind){
   p.scrollIntoView({behavior:"smooth",block:"nearest"});
  }catch(e){p.innerHTML='<div class="msg err" style="display:block">Could not load '+esc(kind)+': '+esc(e.message)+'</div>';}
 }
+async function exportRegister(){
+ const msg=document.getElementById("regExportMsg");
+ const q=encodeURIComponent(document.getElementById("regSearch")?.value||"");
+ const skill=encodeURIComponent(document.getElementById("regSkill")?.value||"");
+ if(msg)msg.textContent="Preparing spreadsheet...";
+ try{
+  const r=await api("/v1/reports/export?view="+window.regView+"&q="+q+"&skill="+skill);
+  if(!r.ok){let err="Export failed";try{err=(await r.json()).error||err;}catch(e){}throw Error(err);}
+  const blob=await r.blob();
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="engineering-report-register.xlsx";document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+  if(msg)msg.textContent="";
+ }catch(e){if(msg)msg.textContent="Could not export: "+e.message;}
+}
+
 async function loadRegister(){
  const box=document.getElementById("register");if(!box)return;
  try{

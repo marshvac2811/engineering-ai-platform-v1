@@ -286,13 +286,16 @@ class SupabaseJobStore(JobStore):
             query = query.eq("tenant_id", tenant_id)
         artifacts = getattr(query.execute(), "data", None) or []
         jobs = {str(j.get("job_id")): dict(j) for j in self.list_summaries(tenant_id=tenant_id)}
-        try:  # optional: the request text lives inside the orchestration JSON
-            q2 = self.client.table(self.jobs_table).select("job_id,request:orchestration->>normalized_request")
+        try:  # optional: the request text and project/client labels live inside separate JSON columns
+            q2 = self.client.table(self.jobs_table).select(
+                "job_id,request:orchestration->>normalized_request,project_context"
+            )
             if tenant_id:
                 q2 = q2.eq("tenant_id", tenant_id)
             for row in getattr(q2.execute(), "data", None) or []:
                 if str(row.get("job_id")) in jobs:
                     jobs[str(row["job_id"])]["request"] = row.get("request")
+                    jobs[str(row["job_id"])]["project_context"] = row.get("project_context") or {}
         except Exception:
             pass
         return rows_from_artifacts(artifacts, jobs)
