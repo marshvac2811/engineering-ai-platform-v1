@@ -848,6 +848,19 @@ class APIApp:
                     # The reviewer must be the verified signed-in person, never a name typed by the client.
                     reviewer = body.get("reviewer", ctx.user_id) if ctx.auth_method == "development" else ctx.reviewer_label()
                     job = service.approve(job_id, reviewer, body.get("comment", ""))
+                elif action == "rework":
+                    ctx.require_scope("jobs:approve")
+                    ctx.require_scope_role("review")
+                    reviewer = body.get("reviewer", ctx.user_id) if ctx.auth_method == "development" else ctx.reviewer_label()
+                    job = service.request_rework(job_id, reviewer, body.get("comment", ""))
+                elif action == "resubmit":
+                    ctx.require_scope("jobs:write")
+                    updates = body.get("inputs") or {}
+                    if not isinstance(updates, dict):
+                        raise ValueError("inputs must be an object")
+                    actor = body.get("reviewer", ctx.user_id) if ctx.auth_method == "development" else ctx.reviewer_label()
+                    job = service.resubmit_after_rework(job_id, actor, updates, str(body.get("note") or ""))
+                    self._meter(ctx, "skill_execution", job_id=job.job_id, skill_id=job.skill_id)
                 elif action == "dispatch":
                     ctx.require_scope("jobs:dispatch")
                     ctx.require_scope_role("dispatch")

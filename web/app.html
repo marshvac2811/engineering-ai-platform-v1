@@ -285,6 +285,33 @@ async function approve(jobId){
  const d=await r.json();if(!r.ok){alert(d.error||"Approval failed");return;}await loadJobs();
 }
 
+async function requestRework(jobId){
+ const msg=document.getElementById("rwmsg-"+jobId), box=document.getElementById("rwc-"+jobId);
+ const comment=(box&&box.value||"").trim();
+ if(comment.length<5){if(msg)msg.textContent="Please explain what needs to change.";return;}
+ if(msg)msg.textContent="Sending...";
+ try{
+  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/rework",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({comment})});
+  const d=await r.json();if(!r.ok)throw Error(d.error||"Rework request failed");
+  await loadJobs();
+ }catch(e){if(msg)msg.textContent=e.message;}
+}
+async function resubmitRework(jobId,fieldList){
+ const msg=document.getElementById("rwmsg-"+jobId), note=(document.getElementById("rwn-"+jobId)?.value||"").trim();
+ const inputs={};
+ String(fieldList||"").split(",").filter(Boolean).forEach(f=>{
+  const el=document.getElementById("rwi-"+jobId+"-"+f);
+  if(el&&el.value.trim()!==el.dataset.orig)inputs[f]=el.value.trim();
+ });
+ if(!Object.keys(inputs).length&&!note){if(msg)msg.textContent="Change at least one value, or add a note.";return;}
+ if(msg)msg.textContent="Re-running the engineering workflow...";
+ try{
+  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/resubmit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({inputs,note})});
+  const d=await r.json();if(!r.ok)throw Error(d.error||"Resubmit failed");
+  await loadJobs();
+ }catch(e){if(msg)msg.textContent=e.message;}
+}
+
 async function dispatch(jobId){
  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/dispatch",{
   method:"POST",headers:{"Content-Type":"application/json"},body:"{}"
@@ -365,7 +392,20 @@ function jobHtml(j){
  if(governance.governing_bodies?.length||governance.standards?.length||governance.methodology&&Object.keys(governance.methodology).length){ html+="<div class=\"result\"><h3>Governance & Methodology</h3>"+(governance.governing_bodies?.length?"<div class=\"small\"><strong>Governing bodies:</strong> "+esc(governance.governing_bodies.join(", "))+"</div>":"")+(governance.standards?.length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Standards:</strong> "+esc(governance.standards.map(s=>typeof s==="string"?s:(s.title||s.standard_id||JSON.stringify(s))).join(", "))+"</div>":"")+(governance.methodology&&Object.keys(governance.methodology).length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Methodology:</strong> "+esc(JSON.stringify(governance.methodology))+"</div>":"")+"</div>"; }
  if(result)html+=formatResult(result);
  if(j.errors?.length)html+='<div style="color:#a12626;margin-top:8px">'+esc(j.errors.join("; "))+'</div>';
- if(review)html+='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button></div>';
+ if(review)html+='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button></div>'+
+  '<div style="margin-top:10px"><label class="small" for="rwc-'+id+'">Something not right? Tell the engineer what to change</label><textarea id="rwc-'+id+'" rows="2" placeholder="e.g. Motor rating should be 90 kW" style="margin-top:4px"></textarea></div>'+
+  '<div class="actions"><button onclick="requestRework(\''+id+'\')">Request Rework</button></div><div id="rwmsg-'+id+'" class="small" style="color:#a12626;margin-top:4px"></div>';
+ if(status==="rework"){
+  const ev=(j.events||[]).slice().reverse().find(e=>String(e.status)==="rework");
+  const why=(ev&&ev.metadata&&ev.metadata.comment)||"", by=(ev&&ev.metadata&&ev.metadata.reviewer)||"";
+  const inp=(j.inputs&&typeof j.inputs==="object")?j.inputs:{};
+  const fields=Object.keys(inp).filter(k=>["string","number"].includes(typeof inp[k]));
+  html+='<div class="need"><strong>Rework requested</strong>'+(why?'<div style="margin-top:5px">'+esc(why)+(by?' <span class="small">- '+esc(by)+'</span>':'')+'</div>':'')+
+   '<div class="small" style="margin-top:8px">Correct the values below, then resubmit. Unchanged values are kept.</div>'+
+   fields.map(f=>'<div style="margin-top:8px"><label class="small" for="rwi-'+id+'-'+esc(f)+'">'+esc(fieldLabel(f))+'</label><input id="rwi-'+id+'-'+esc(f)+'" data-orig="'+esc(String(inp[f]))+'" type="text" value="'+esc(String(inp[f]))+'" style="margin-top:4px"></div>').join("")+
+   '<div style="margin-top:8px"><label class="small" for="rwn-'+id+'">Note for the reviewer (what you changed and why)</label><textarea id="rwn-'+id+'" rows="2" style="margin-top:4px"></textarea></div>'+
+   '<div class="actions"><button onclick="resubmitRework(\''+id+'\',\''+fields.map(f=>esc(f)).join(",")+'\')">Resubmit for Review</button></div><div id="rwmsg-'+id+'" class="small" style="color:#a12626;margin-top:4px"></div></div>';
+ }
  if(status==="approved")html+='<div class="actions"><button onclick="dispatch(\''+id+'\')">Dispatch</button></div>';
  if(["human_review","approved","dispatching","dispatched","completed"].includes(status)){
   const done=["dispatched","completed"].includes(status);
@@ -419,7 +459,7 @@ async function loadRegister(){
     '<td style="padding:7px" title="Report '+esc(x.report_id)+' / Job '+esc(x.job_id)+'">'+esc(String(x.report_id||"").slice(0,8))+'<div class="small">job '+esc(String(x.job_id||"").slice(0,8))+'</div></td>'+
     '<td style="padding:7px;min-width:160px"><strong>'+esc(niceText(x.skill_id))+'</strong>'+(x.request?'<div class="small">'+esc(String(x.request).slice(0,110))+'</div>':"")+'</td>'+
     '<td style="padding:7px;font-weight:700">'+esc(niceText(x.status))+'</td>'+
-    '<td style="padding:7px">V'+esc(x.revision)+'</td>'+
+    '<td style="padding:7px">V'+esc(x.revision)+(x.superseded?' <span class="small">(superseded)</span>':'')+'</td>'+
     '<td style="padding:7px">'+esc(x.reviewed_by||"-")+'</td>'+
     '<td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.approved_at))+'</td>'+
     '<td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.dispatched_at))+'</td>'+

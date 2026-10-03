@@ -17,6 +17,7 @@ class JobStatus(str, Enum):
     ENGINEERING_VALIDATION = "engineering_validation"
     DRAFT_READY = "draft_ready"
     HUMAN_REVIEW = "human_review"
+    REWORK = "rework"
     APPROVED = "approved"
     DISPATCHING = "dispatching"
     DISPATCHED = "dispatched"
@@ -61,7 +62,12 @@ ALLOWED_TRANSITIONS = {
     },
     JobStatus.HUMAN_REVIEW: {
         JobStatus.APPROVED,
+        JobStatus.REWORK,
         JobStatus.FAILED,
+        JobStatus.CANCELLED,
+    },
+    JobStatus.REWORK: {
+        JobStatus.QUEUED,
         JobStatus.CANCELLED,
     },
     JobStatus.APPROVED: {

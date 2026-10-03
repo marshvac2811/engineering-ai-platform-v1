@@ -178,31 +178,7 @@ class JobService:
             updates = {**extracted, **updates}
         if not updates:
             raise ValueError("Provide information either as normal-language message or structured inputs.")
-        # Dashboard form values arrive as strings. Normalize them against the
-        # authoritative skill registry before re-planning/execution so numeric
-        # engineering inputs are passed to validators/calculators as numbers.
-        from skill_framework.registry import load_skill_registry
-        registry_path = __import__("pathlib").Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
-        try:
-            definition = load_skill_registry(registry_path).get(job.requested_skill_id or "")
-            numeric_types = {
-                d.name: d.data_type for d in (
-                    list(definition.required_inputs)
-                    + list(definition.optional_inputs)
-                    + list(definition.conditional_inputs)
-                ) if d.data_type in {"number", "integer"}
-            }
-            normalized_updates = dict(updates)
-            for name, data_type in numeric_types.items():
-                if name in normalized_updates and isinstance(normalized_updates[name], str):
-                    raw = normalized_updates[name].strip()
-                    if raw:
-                        normalized_updates[name] = int(float(raw)) if data_type == "integer" else float(raw)
-            updates = normalized_updates
-        except (KeyError, ValueError, TypeError):
-            # Keep the original values so the normal validation path reports
-            # the precise input error rather than hiding it here.
-            pass
+        updates = self._normalize_numeric_inputs(job, updates)
         job.inputs.update(updates)
         job.add_event("information_received", "Missing input information supplied.", fields=list(updates))
         from orchestrator.intake import build_plan
@@ -225,6 +201,72 @@ class JobService:
             job.add_event("orchestration_replanned", "Additional required inputs remain missing.", missing_inputs=plan.missing_inputs)
         self.store.save(job)
         return job
+
+    @staticmethod
+    def _normalize_numeric_inputs(job: Job, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """Dashboard form values arrive as strings; convert numeric skill inputs using the registry."""
+        from skill_framework.registry import load_skill_registry
+        registry_path = __import__("pathlib").Path(__file__).resolve().parents[1] / "skill_registry" / "registry.yaml"
+        try:
+            definition = load_skill_registry(registry_path).get(job.requested_skill_id or "")
+            numeric_types = {
+                d.name: d.data_type for d in (
+                    list(definition.required_inputs)
+                    + list(definition.optional_inputs)
+                    + list(definition.conditional_inputs)
+                ) if d.data_type in {"number", "integer"}
+            }
+            normalized = dict(updates)
+            for name, data_type in numeric_types.items():
+                if name in normalized and isinstance(normalized[name], str):
+                    raw = normalized[name].strip()
+                    if raw:
+                        normalized[name] = int(float(raw)) if data_type == "integer" else float(raw)
+            return normalized
+        except (KeyError, ValueError, TypeError):
+            # Keep the original values so normal validation reports the precise input error.
+            return dict(updates)
+
+    def request_rework(self, job_id: str, reviewer: str, comment: str) -> Job:
+        """A reviewer sends a draft back for correction instead of approving or failing it."""
+        job = self._get(job_id)
+        if job.status != JobStatus.HUMAN_REVIEW:
+            raise ValueError("Rework can only be requested while the job is in human review")
+        comment = str(comment or "").strip()
+        if len(comment) < 5:
+            raise ValueError("Please explain what needs to change; a rework comment is required")
+        job.transition(JobStatus.REWORK, "Reviewer requested rework.", reviewer=reviewer, comment=comment)
+        self.store.save(job)
+        return job
+
+    def resubmit_after_rework(self, job_id: str, actor: str, updates: Dict[str, Any] | None = None, note: str = "") -> Job:
+        """Apply corrected inputs and re-run the engineering workflow; a changed result becomes a new report revision."""
+        job = self._get(job_id)
+        if job.status != JobStatus.REWORK:
+            raise ValueError("Job is not waiting for rework")
+        updates = self._normalize_numeric_inputs(job, dict(updates or {}))
+        note = str(note or "").strip()
+        if not updates and not note:
+            raise ValueError("Change at least one input, or add a note explaining why no change is needed")
+        from orchestrator.intake import build_plan
+        revised_inputs = {**job.inputs, **updates}
+        plan = build_plan(
+            str(job.orchestration.get("normalized_request", "")).strip(),
+            requested_skill_id=job.requested_skill_id,
+            provided_inputs=revised_inputs,
+            project_context=job.project_context,
+            standards_context=job.standards_context,
+            assumptions_context=job.assumptions_context,
+        )
+        if plan.status != "ready_for_execution":
+            missing = ", ".join(plan.missing_inputs) or "required information"
+            raise ValueError("The revised inputs are incomplete: " + missing)
+        job.inputs = revised_inputs
+        job.orchestration = plan.to_dict()
+        job.add_event("rework_resubmitted", "Inputs revised after rework request.", actor=actor, fields=sorted(updates), note=note)
+        job.transition(JobStatus.QUEUED, "Revised inputs supplied; job returned to queue.")
+        self.store.save(job)
+        return self.process(job.job_id)
 
     def process(self, job_id: str) -> Job:
         job = self._get(job_id)

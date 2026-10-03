@@ -15,7 +15,7 @@ VIEWS: Dict[str, Optional[frozenset]] = {
     "approved": frozenset({"approved", "dispatching"}),
     "dispatched": frozenset({"dispatched"}),
     "completed": frozenset({"completed"}),
-    "failed": frozenset({"failed", "retry", "cancelled"}),
+    "failed": frozenset({"failed", "retry", "cancelled", "rework"}),
 }
 
 
@@ -52,6 +52,12 @@ def register_row(artifact: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any
 def rows_from_artifacts(artifacts: Iterable[Dict[str, Any]], jobs_by_id: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
     rows = [register_row(a, jobs_by_id.get(str(a.get("job_id")), {})) for a in artifacts]
     rows.sort(key=lambda r: _s(r["created_at"]), reverse=True)
+    latest: Dict[str, int] = {}
+    for r in rows:
+        key = _s(r["job_id"])
+        latest[key] = max(latest.get(key, 0), int(r["revision"] or 1))
+    for r in rows:  # an older revision of the same job is superseded by the newest one
+        r["superseded"] = int(r["revision"] or 1) < latest[_s(r["job_id"])]
     return rows
 
 
