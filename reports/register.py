@@ -16,6 +16,8 @@ VIEWS: Dict[str, Optional[frozenset]] = {
     "dispatched": frozenset({"dispatched"}),
     "completed": frozenset({"completed"}),
     "failed": frozenset({"failed", "retry", "cancelled", "rework"}),
+    "evidence": None,
+    "revision_history": None,
 }
 
 
@@ -48,6 +50,7 @@ def register_row(artifact: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any
         "pdf_sha256": artifact.get("pdf_sha256"),
         "xlsx_sha256": artifact.get("xlsx_sha256"),
         "evidence_sha256": artifact.get("evidence_sha256"),
+        "evidence_available": bool(artifact.get("evidence_sha256") or artifact.get("xlsx_storage_path")),
     }
 
 
@@ -106,7 +109,13 @@ def filter_rows(rows: List[Dict[str, Any]], *, view: str = "all", q: str = "", s
     needle = (q or "").strip().lower()
     out = []
     for r in rows:
-        if statuses is not None and r["status"] not in statuses:
+        if view == "revision_history":
+            if not r.get("superseded") and not r.get("supersedes_report_id") and int(r.get("revision") or 1) <= 1:
+                continue
+        elif view == "evidence":
+            if not r.get("evidence_available"):
+                continue
+        elif statuses is not None and r["status"] not in statuses:
             continue
         if skill and _s(r["skill_id"]) != skill:
             continue
@@ -147,6 +156,39 @@ def build_register_workbook(rows: List[Dict[str, Any]]) -> bytes:
         for c in row:
             c.alignment = Alignment(wrap_text=True, vertical="top")
     ws.freeze_panes = "A2"
+
+    ev = wb.create_sheet("Evidence Register")
+    ev.append(["Date", "Job ID", "Report ID", "Revision", "Status", "Evidence SHA-256", "PDF SHA-256", "Excel SHA-256", "PDF Available", "Evidence XLSX Available"])
+    for cell in ev[1]:
+        cell.fill, cell.font = fill, font
+    for r in rows:
+        ev.append([
+            _s(r.get("created_at")), _s(r.get("job_id")), _s(r.get("report_id")), r.get("revision") or 1,
+            _s(r.get("status")), _s(r.get("evidence_sha256")), _s(r.get("pdf_sha256")), _s(r.get("xlsx_sha256")),
+            "Yes" if r.get("pdf_available") else "No", "Yes" if r.get("xlsx_available") else "No",
+        ])
+    ev.freeze_panes = "A2"
+
+    rh = wb.create_sheet("Revision History")
+    rh.append(["Date", "Job ID", "Report ID", "Revision", "Status", "Superseded", "Supersedes Report ID", "Reviewed By", "Approval Date", "Dispatch Date"])
+    for cell in rh[1]:
+        cell.fill, cell.font = fill, font
+    for r in rows:
+        rh.append([
+            _s(r.get("created_at")), _s(r.get("job_id")), _s(r.get("report_id")), r.get("revision") or 1,
+            _s(r.get("status")), "Yes" if r.get("superseded") else "No", _s(r.get("supersedes_report_id")),
+            _s(r.get("reviewed_by")), _s(r.get("approved_at")), _s(r.get("dispatched_at")),
+        ])
+    rh.freeze_panes = "A2"
+
+    for sheet in (ev, rh):
+        for col in sheet.columns:
+            letter = col[0].column_letter
+            sheet.column_dimensions[letter].width = min(max(max(len(_s(cell.value)) for cell in col) + 2, 12), 42)
+        for row in sheet.iter_rows(min_row=2):
+            for cell in row:
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
+
     out = io.BytesIO()
     wb.save(out)
     return out.getvalue()
