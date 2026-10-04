@@ -60,6 +60,7 @@ UNIT_PATTERNS = {
     "area_sqft": r"sq\.?\s*ft|sqft|square\s*feet|m2|m²",
     "test_pressure_pa": r"pa|kpa|bar",
     "measured_leakage_ls": r"l/s|lps|ls",
+    "motor_kw": r"kw|w",
 }
 
 def _label_pattern(labels):
