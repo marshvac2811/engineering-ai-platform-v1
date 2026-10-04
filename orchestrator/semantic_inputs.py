@@ -113,6 +113,21 @@ def _extract_fittings(text: str) -> list[dict]:
             row = governed_fitting_interpretation(kind, qty)
             if row:
                 rows.append(row)
+
+    # Robust fallback for Unicode/formatting variants such as "12 x 90° elbows".
+    # Only activates when an elbow quantity is not already captured.
+    if not any(row.get("input_text") == "90_elbow" for row in rows):
+        fallback = re.search(
+            r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*90[^A-Za-z0-9]{0,8}elbows?",
+            text,
+            re.IGNORECASE,
+        )
+        if fallback:
+            row = governed_fitting_interpretation(
+                "90_elbow", float(fallback.group(1).replace(",", ""))
+            )
+            if row:
+                rows.append(row)
     return rows
 
 def normalize_engineering_inputs(text: str) -> Dict[str, Any]:
