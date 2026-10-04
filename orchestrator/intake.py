@@ -264,6 +264,8 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "refrigerant": [r"\b(r410a|r32|r22|r134a)\b"],
     }
     for key, patterns in mappings.items():
+        if key in out:
+            continue
         value = _extract_number(t, patterns)
         if value is not None:
             out[key] = int(value) if value.is_integer() else value
