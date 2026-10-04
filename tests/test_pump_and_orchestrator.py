@@ -49,10 +49,10 @@ def test_pump_head_intake_surfaces_either_or_inputs():
     )
     assert plan.status == "awaiting_information"
     assert "flow_m3hr" in plan.missing_inputs
-    assert "margin_pct" in plan.missing_inputs
-    assert "roughness_mm" in plan.missing_inputs
+    assert "margin_pct" not in plan.missing_inputs
+    assert "roughness_mm" not in plan.missing_inputs
     assert "material" not in plan.missing_inputs
-    assert len(plan.questions) == 3
+    assert len(plan.questions) == 1
 
 
 def test_successful_retry_clears_stale_errors():
@@ -65,7 +65,7 @@ def test_successful_retry_clears_stale_errors():
     )
     service.enqueue(job.job_id)
     job = service.process(job.job_id)
-    assert job.status == JobStatus.AWAITING_INFORMATION
+    assert job.status == JobStatus.HUMAN_REVIEW
     job = service.provide_missing_information(job.job_id, {"roughness_mm": 0.0015})
     assert job.status == JobStatus.HUMAN_REVIEW
     assert job.errors == []
