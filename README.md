@@ -96,9 +96,15 @@ The API now has an authentication abstraction, local development identity header
 - Tenant usage events support future billing/plan enforcement.
 - Supabase migration `005_saas_control_plane.sql` adds plan/status fields, API keys, usage events, and monthly usage aggregation.
 
-## Next production boundary
+## Production boundary
 
-The HTTP API still defaults to in-memory state for local portability. Before production launch, inject a verified Supabase Auth JWT context and wire the API to `SupabaseJobStore` plus the Supabase attachment repository. For the external-service trial, the connector layer can run first in local/staging mode with provider credentials or notification/import adapters.
+The production API requires the Supabase-backed job store when ENGINEERING_ENV=production, rejects development tenant headers unless explicitly enabled, and verifies Supabase bearer JWTs on Render. Local/test mode may use in-memory stores for portability. Report artifacts, evidence, revisions, approval metadata and dispatch hashes are persisted through the Supabase report-artifact layer.
+
+The remaining external-service boundary is provider authorization/configuration: Upwork and Gmail must use approved credentials before live operation; Fiverr currently uses notification/normalized-event intake rather than an assumed freelancer API. The platform does not mark an external integration live merely because its adapter exists.
+
+## Governed automatic assumptions
+
+Minor, explicitly registered inputs may be filled by controlled preliminary assumptions when they are not safety/regulatory-critical. Each applied assumption is recorded as ASSUMED_DUE_TO_CLIENT_DATA_UNAVAILABLE, disclosed for human review, and retained in the evidence chain. Inputs not registered for automatic assumption remain blocking requirements.
 
 
 ## CRM / Sales Pipeline
