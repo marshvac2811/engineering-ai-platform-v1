@@ -179,7 +179,6 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         ("Approved by", f"{approval['by']} on {approval['at']}"),
         ("Report date", _fmt_dt(datetime.now(timezone.utc).isoformat())),
         ("Report revision", str((job.result or {}).get("report_revision") or job.orchestration.get("report_revision") or 1)),
-        ("Report revision", str((job.result or {}).get("report_revision") or job.orchestration.get("report_revision") or 1)),
         ("Skill version", ", ".join(str(t.get("skill_version") or "-") for t in tasks) or "-"),
         ("Source revision", ", ".join(str(t.get("source_revision") or "-") for t in tasks) or "-"),
     ]
