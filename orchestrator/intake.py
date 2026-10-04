@@ -259,7 +259,7 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "altitude_m": [r"(?:altitude|elevation)\s*[:=]?\s*([\d,.]+)\s*m\b"],
         "total_vfd_kva": [r"(?:vfd\s*load|total\s*vfd)\s*[:=]?\s*([\d,.]+)\s*kva"],
         "transformer_kva": [r"(?:transformer|tx)\s*(?:capacity)?\s*[:=]?\s*([\d,.]+)\s*kva"],
-        "efficiency_kw_per_tr": [r"(?:efficiency|kw/tr|kW/TR)\s*[:=]?\s*([\d,.]+)"],
+        "efficiency_kw_per_tr": [r"(?:chiller\s+efficiency|kw/tr|kW/TR)\s*[:=]?\s*([\d,.]+)"],
         "combination_ratio": [r"(?:combination|comb)\s*ratio\s*[:=]?\s*([\d,.]+)\s*%?"],
         "refrigerant": [r"\b(r410a|r32|r22|r134a)\b"],
     }
