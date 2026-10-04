@@ -15,6 +15,7 @@ from orchestrator.engine import execute
 from skill_framework.registry import load_skill_registry
 from skill_framework.input_resolver import resolve_input_requirements
 from pathlib import Path
+from governance.assumption_policy import resolve_input_assumptions
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -128,6 +129,16 @@ def execute_engineering_plan(
                 continue
             task_inputs.update(dependency_inputs)
             definition = registry.get(capability_id)
+            assumption_resolved, input_assumptions, assumption_blockers = resolve_input_assumptions(
+                capability_id,
+                task_inputs,
+                assumptions_context,
+            )
+            task_inputs = assumption_resolved
+            task["input_assumptions"] = deepcopy(input_assumptions)
+            if assumption_blockers:
+                task["assumption_blockers"] = list(assumption_blockers)
+                blockers.extend(f"{task_id}: {e}" for e in assumption_blockers)
             resolution = resolve_input_requirements(definition, task_inputs)
             if resolution.missing_inputs:
                 task["status"] = "awaiting_information"
@@ -160,6 +171,7 @@ def execute_engineering_plan(
                 "capability_id": capability_id,
                 "status": result.get("status"),
                 "inputs": task_inputs,
+                "input_assumptions": deepcopy(input_assumptions),
                 "depends_on": list(task.get("depends_on") or []),
             })
             progress = True
@@ -213,7 +225,7 @@ def execute_engineering_plan(
             "status": result.get("status"),
             "engineering_result": result.get("engineering_result", {}),
             "calculation_trace": result.get("calculation_trace") or [],
-            "assumptions": result.get("assumptions") or [],
+            "assumptions": (result.get("assumptions") or []) + list((tasks.get(task_id) or {}).get("input_assumptions") or []),
             "warnings": result.get("warnings") or [],
             # Preserve the full evidence chain produced by the skill so the
             # evidence bundle and report are not thinner than the execution.
