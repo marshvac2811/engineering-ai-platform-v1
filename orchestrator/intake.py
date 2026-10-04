@@ -447,7 +447,31 @@ def build_plan(
         skill_id, candidates, confidence = provider.route(text, requested_skill_id)
 
     extracted = extract_facts(text)
-    merged = {**provider_extracted, **extracted, **provided_inputs}
+
+    # Attachment-first input resolution: extracted PDF/XLSX/CSV/DOCX text is
+    # parsed for engineering facts before the governed missing-input loop.
+    # Explicit user/API values remain authoritative.
+    attachment_extracted: Dict[str, Any] = {}
+    documents = project_context.get("documents", []) if isinstance(project_context, dict) else []
+    document_text_parts: List[str] = []
+    for document in documents:
+        if not isinstance(document, dict):
+            continue
+        text_part = str(document.get("text") or "").strip()
+        if text_part:
+            document_text_parts.append(text_part)
+        for chunk in document.get("chunks") or []:
+            if isinstance(chunk, dict) and str(chunk.get("text") or "").strip():
+                document_text_parts.append(str(chunk.get("text")).strip())
+    if document_text_parts:
+        attachment_extracted = extract_facts("\n\n".join(document_text_parts))
+
+    merged = {
+        **attachment_extracted,
+        **provider_extracted,
+        **extracted,
+        **provided_inputs,
+    }
     if skill_id == "cleanroom_ach" and not any(
         phrase in text.lower() for phrase in ("cleanroom", "air changes", "isolation room", "operating room") or bool(re.search(r"\bach\b", text, re.IGNORECASE))
     ):
@@ -501,6 +525,10 @@ def build_plan(
     rationale.append(
         f"Input requirements resolved using {rationale_source}."
     )
+    if attachment_extracted:
+        rationale.append(
+            "Attachment evidence was parsed for engineering inputs before missing-information review."
+        )
 
     if registry_resolution.invalid_inputs:
         rationale.append(
