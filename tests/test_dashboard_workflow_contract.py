@@ -27,3 +27,10 @@ def test_dashboard_renders_plan_questions_and_unsupported_scope_safely():
 def test_api_serves_external_dashboard_file():
     source = API.read_text(encoding="utf-8")
     assert 'Path(__file__).resolve().parents[1] / "web" / "app.html"' in source
+
+
+def test_dashboard_awaiting_information_message_uses_precise_questions():
+    html = APP.read_text(encoding="utf-8")
+    assert "const needs = d.job?.orchestration?.questions || d.job?.orchestration?.missing_inputs || [];" in html
+    assert "const needText = needs.length ? needs.join(\" \")" in html
+    assert "One input is needed to continue." not in html
