@@ -39,9 +39,11 @@ skills:
   integration_status: integrated
   human_review_required: true
   required_inputs:
-  - name: airflow
+  - name: flow_m3hr
     data_type: number
-    description: Required airflow.
+    description: Required design airflow.
+    unit: m3/hr
+    question: What is the design airflow in m3/hr?
   - name: method
     data_type: string
     allowed_values:
@@ -61,21 +63,14 @@ skills:
   conditional_inputs:
   - name: width_mm
     data_type: number
-    required: true
-    conditional_on:
-      duct_type: rectangular
-    description: Rectangular duct width in mm.
+    description: Existing rectangular duct width in mm; required only when checking an existing rectangular duct.
   - name: height_mm
     data_type: number
-    required: true
-    conditional_on:
-      duct_type: rectangular
-    description: Rectangular duct height in mm.
+    description: Existing rectangular duct height in mm; required only when checking an existing rectangular duct.
   - name: target_velocity_ms
     data_type: number
     required: true
     conditional_on:
-      duct_type: round
       method: velocity
     description: Target air velocity in m/s.
   - name: target_friction_pa_per_m
