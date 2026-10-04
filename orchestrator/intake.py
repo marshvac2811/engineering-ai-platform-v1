@@ -21,6 +21,7 @@ from governance.engine import build_governance_context
 from knowledge.retrieval import build_ai_project_context
 from knowledge.governed_retrieval import retrieve_governed_knowledge
 from knowledge.reasoning_context import build_reasoning_context
+from governance.assumption_policy import resolve_input_assumptions
 
 
 @dataclass
@@ -513,6 +514,12 @@ def build_plan(
     registry = load_skill_registry(registry_path)
     definition = registry.get(skill_id)
 
+    assumption_resolved, input_assumptions, assumption_blockers = resolve_input_assumptions(
+        skill_id,
+        merged,
+        assumptions_context,
+    )
+    merged = assumption_resolved
     registry_resolution = resolve_input_requirements(definition, merged)
 
     missing = registry_resolution.missing_inputs
@@ -529,6 +536,12 @@ def build_plan(
         rationale.append(
             "Attachment evidence was parsed for engineering inputs before missing-information review."
         )
+    if input_assumptions:
+        rationale.append(
+            "Minor unavailable inputs were filled from governed preliminary assumptions and are explicitly disclosed for human review."
+        )
+    if assumption_blockers:
+        rationale.extend("Automatic-assumption control: " + str(x) for x in assumption_blockers)
 
     if registry_resolution.invalid_inputs:
         rationale.append(
