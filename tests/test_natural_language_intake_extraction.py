@@ -132,7 +132,7 @@ def test_pump_head_execution_uses_governed_fittings_and_produces_expected_prelim
         "Static elevation: 12 m. Pump efficiency: 70%. Water supply temperature: 7 C "
         "and return temperature: 12 C."
     )
-    inputs = extract_facts(text).values
+    inputs = dict(extract_facts(text))
     inputs["material"] = "ms_cs"
     inputs["margin_pct"] = 10
 
