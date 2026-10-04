@@ -875,6 +875,17 @@ class APIApp:
                     # The reviewer must be the verified signed-in person, never a name typed by the client.
                     reviewer = body.get("reviewer", ctx.user_id) if ctx.auth_method == "development" else ctx.reviewer_label()
                     job = service.approve(job_id, reviewer, body.get("comment", ""))
+                    # Optional one-click approve-and-dispatch: lets a reviewer clear the whole
+                    # day's queue without a second click per job, as long as they also hold
+                    # dispatch rights. Approval itself always succeeds even if this part fails.
+                    if body.get("dispatch"):
+                        try:
+                            ctx.require_scope("jobs:dispatch")
+                            ctx.require_scope_role("dispatch")
+                        except PermissionError:
+                            pass  # Approval stands; the job simply waits for someone with dispatch rights.
+                        else:
+                            job = service.dispatch(job.job_id)
                 elif action == "rework":
                     ctx.require_scope("jobs:approve")
                     ctx.require_scope_role("review")

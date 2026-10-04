@@ -281,9 +281,9 @@ def extract_facts(text: str) -> Dict[str, Any]:
             out["material"] = material
             break
 
-    if "rectangular" in t:
+    if re.search(r"\brectangular\b", t):
         out["duct_type"] = "rectangular"
-    elif "round duct" in t:
+    elif re.search(r"\b(?:round|circular)\b", t):
         out["duct_type"] = "round"
     if "equal friction" in t:
         out["method"] = "equal_friction"

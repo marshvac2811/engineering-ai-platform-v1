@@ -86,3 +86,18 @@ def test_rework_jobs_appear_in_failed_rework_view_and_old_revisions_marked_super
     assert rows["r1"]["superseded"] is True
     assert rows["r2"]["superseded"] is False
     assert rows["r3"]["superseded"] is False
+
+
+def test_approve_and_dispatch_in_one_call_for_reviewer_with_dispatch_rights():
+    app = _app()
+    jid, _ = _job_in_review(app)
+    status, job = _call(app, "POST", f"/v1/jobs/{jid}/approve", {"comment": "ok", "dispatch": True})
+    assert status.startswith("200"), job
+    assert job["status"] in ("dispatched", "completed"), job["status"]
+
+
+def test_approve_without_dispatch_flag_still_just_approves():
+    app = _app()
+    jid, _ = _job_in_review(app)
+    status, job = _call(app, "POST", f"/v1/jobs/{jid}/approve", {"comment": "ok"})
+    assert status.startswith("200") and job["status"] == "approved"
