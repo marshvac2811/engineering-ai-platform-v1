@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 FITTING_INTERPRETATIONS: Dict[str, Dict[str, Any]] = {
-    "90° elbow": {
+    "90_elbow": {
         "name": "90° standard elbow",
         "ld_ratio": 30,
         "source": "source_calculator_fitting_default",
