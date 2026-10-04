@@ -2,11 +2,25 @@
   "version": 2,
   "routes": [
     {"handle": "filesystem"},
-    {"src": "/v1/(.*)", "dest": "/api/index.py?engineering_path=/v1/$1"},
-    {"src": "/health", "dest": "/api/index.py?engineering_path=/health"},
+    {
+      "src": "/v1/(.*)",
+      "dest": "/api/index.py?engineering_path=/v1/$1",
+      "transforms": [
+        {"type": "request.path", "op": "set", "args": "/v1/$1"}
+      ]
+    },
+    {
+      "src": "/health",
+      "dest": "/api/index.py?engineering_path=/health",
+      "transforms": [
+        {"type": "request.path", "op": "set", "args": "/health"}
+      ]
+    },
     {"src": "/login", "status": 307, "headers": {"Location": "/"}},
     {"src": "/app", "status": 307, "headers": {"Location": "/"}},
-    {"src": "/(.*)", "dest": "/api/index.py?engineering_path=/app"}
+    {"src": "/(.*)", "dest": "/api/index.py?engineering_path=/app", "transforms": [
+      {"type": "request.path", "op": "set", "args": "/app"}
+    ]}
   ],
   "headers": [
     {
