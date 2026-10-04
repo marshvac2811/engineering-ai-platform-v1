@@ -93,7 +93,7 @@ def normalize_engineering_inputs(text: str) -> Dict[str, Any]:
         if not units:
             continue
         labels = _label_pattern(aliases)
-        pattern = rf"(?<![a-z]){labels}(?:\s+(?:is|are|of|at|=|:))?\s*([\d,.]+)\s*({units})(?![a-z])"
+        pattern = rf"(?<![a-z]){labels}(?:\s*(?:is|are|of|at|=|:))?\s*([\d,.]+)\s*({units})(?![a-z])"
         m = re.search(pattern, text, re.IGNORECASE)
         if not m:
             continue
