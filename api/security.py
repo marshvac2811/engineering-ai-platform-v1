@@ -148,3 +148,107 @@ class InMemoryUsageStore:
             "by_event_type": by_type,
             "by_skill": by_skill,
         }
+
+
+class SupabaseApiKeyStore:
+    """Persistent API-key store backed by the server-side Supabase client."""
+
+    def __init__(self, client):
+        self.client = client
+
+    def issue(self, *, tenant_id: str, created_by: str, role: str, name: str, scopes: List[str], expires_at: Optional[str] = None) -> tuple[dict, str]:
+        if not name.strip():
+            raise ValueError("API key name is required")
+        key_id = secrets.token_hex(12)
+        secret = "eap_live_" + secrets.token_urlsafe(32)
+        record = ApiKeyRecord(
+            api_key_id=key_id, tenant_id=tenant_id, created_by=created_by, role=role,
+            name=name.strip(), key_prefix=secret[:16], key_hash=hash_api_key(secret),
+            scopes=set(scopes), expires_at=expires_at,
+        )
+        self.client.table("api_keys").insert({
+            "api_key_id": record.api_key_id, "tenant_id": record.tenant_id,
+            "created_by": record.created_by, "role": record.role, "name": record.name,
+            "key_prefix": record.key_prefix, "key_hash": record.key_hash,
+            "scopes": sorted(record.scopes), "expires_at": record.expires_at,
+        }).execute()
+        return record.to_public_dict(), secret
+
+    def lookup(self, secret: str) -> Optional[dict]:
+        digest = hash_api_key(secret)
+        response = self.client.table("api_keys").select("*").eq("key_hash", digest).limit(1).execute()
+        rows = getattr(response, "data", None) or []
+        if not rows:
+            return None
+        row = rows[0]
+        if row.get("revoked_at"):
+            return None
+        expires_at = row.get("expires_at")
+        if expires_at:
+            try:
+                if datetime.fromisoformat(str(expires_at).replace("Z", "+00:00")) <= datetime.now(timezone.utc):
+                    return None
+            except ValueError:
+                return None
+        return {
+            "tenant_id": row["tenant_id"], "created_by": row["created_by"],
+            "role": row["role"], "api_key_id": row["api_key_id"],
+            "scopes": list(row.get("scopes") or []),
+        }
+
+    def revoke(self, tenant_id: str, api_key_id: str) -> dict:
+        response = self.client.table("api_keys").update({"revoked_at": _now()}).eq("api_key_id", api_key_id).eq("tenant_id", tenant_id).execute()
+        rows = getattr(response, "data", None) or []
+        if not rows:
+            raise KeyError("Unknown API key")
+        return ApiKeyRecord(
+            api_key_id=rows[0]["api_key_id"], tenant_id=rows[0]["tenant_id"],
+            created_by=rows[0]["created_by"], role=rows[0]["role"], name=rows[0]["name"],
+            key_prefix=rows[0]["key_prefix"], key_hash=rows[0]["key_hash"],
+            scopes=set(rows[0].get("scopes") or []), created_at=rows[0].get("created_at") or _now(),
+            expires_at=rows[0].get("expires_at"), revoked_at=rows[0].get("revoked_at"),
+        ).to_public_dict()
+
+    def list(self, tenant_id: str) -> List[dict]:
+        response = self.client.table("api_keys").select("*").eq("tenant_id", tenant_id).order("created_at", desc=True).execute()
+        return [ApiKeyRecord(
+            api_key_id=r["api_key_id"], tenant_id=r["tenant_id"], created_by=r["created_by"],
+            role=r["role"], name=r["name"], key_prefix=r["key_prefix"], key_hash=r["key_hash"],
+            scopes=set(r.get("scopes") or []), created_at=r.get("created_at") or _now(),
+            expires_at=r.get("expires_at"), revoked_at=r.get("revoked_at"),
+        ).to_public_dict() for r in (getattr(response, "data", None) or [])]
+
+
+class SupabaseUsageStore:
+    """Persistent usage metering backed by the server-side Supabase client."""
+
+    def __init__(self, client):
+        self.client = client
+
+    def record(self, event: UsageEvent) -> UsageEvent:
+        self.client.table("usage_events").insert({
+            "tenant_id": event.tenant_id, "user_id": event.user_id,
+            "event_type": event.event_type, "units": event.units,
+            "job_id": event.job_id, "skill_id": event.skill_id,
+            "metadata": event.metadata, "created_at": event.created_at,
+        }).execute()
+        return event
+
+    def summarize(self, tenant_id: str) -> dict:
+        response = self.client.table("usage_events").select("*").eq("tenant_id", tenant_id).order("created_at", desc=True).limit(5000).execute()
+        events = getattr(response, "data", None) or []
+        by_type: Dict[str, float] = {}
+        by_skill: Dict[str, float] = {}
+        for event in events:
+            units = float(event.get("units") or 0)
+            by_type[event.get("event_type", "")] = by_type.get(event.get("event_type", ""), 0.0) + units
+            skill = event.get("skill_id")
+            if skill:
+                by_skill[skill] = by_skill.get(skill, 0.0) + units
+        return {
+            "tenant_id": tenant_id,
+            "total_units": sum(float(e.get("units") or 0) for e in events),
+            "event_count": len(events),
+            "by_event_type": by_type,
+            "by_skill": by_skill,
+        }
