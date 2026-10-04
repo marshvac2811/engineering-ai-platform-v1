@@ -340,3 +340,19 @@ def test_trial1_rectangular_velocity_sizing_contract():
     assert result.engineering_result["recommended_height_mm"] == 450
     assert result.engineering_result["actual_velocity_ms"] < 7
     assert result.human_review_required is True
+
+
+def test_trial1_traceability_metadata_and_function_name():
+    result = execute(req("duct_sizing", {
+        "flow_m3hr": 5000,
+        "airflow_unit": "m3/hr",
+        "method": "velocity",
+        "duct_type": "rectangular",
+        "target_velocity_ms": 7,
+    }))
+    assert result.status == "draft_ready"
+    assert result.skill_id == "duct_sizing"
+    assert result.skill_version == "1.2.0"
+    assert result.source_revision == "1410b71e16a4fe4b1c6b04f023291d7b0f458d68"
+    trace = result.calculation_trace or []
+    assert trace[-1]["function"] == "preliminary_rectangular_velocity_sizing"
