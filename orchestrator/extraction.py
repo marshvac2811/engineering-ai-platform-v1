@@ -77,7 +77,7 @@ def _legacy_extract_facts(text: str) -> Dict[str, Any]:
         "target_velocity_ms": [r"(?:target\s*)?velocity\s*[:=]?\s*([\d,.]+)\s*m/s", r"(?:at\s+)?([\d,.]+)\s*m/s(?:\s+velocity)?\b"],
         "target_friction_pa_per_m": [r"(?:friction|friction\s*rate)\s*[:=]?\s*([\d,.]+)\s*pa\s*/?\s*m"],
         "straight_length_m": [r"(?:straight\s*(?:length|pipe)|pipe\s*length)\s*[:=]?\s*([\d,.]+)\s*m", r"([\d,.]+)\s*m\s*(?:straight\s*length|pipe\s*length)\b"],
-        "static_head_m": [\n            r"(?:static\s+(?:head|elevation|lift)|static(?:\s+head)?|elevation\s+head|elevation)\s*[:=]?\s*([\d,.]+)\s*m",\n            r"([\d,.]+)\s*m\s*(?:static\s+(?:head|elevation|lift)|elevation\s+head|elevation)\b",\n        ],
+        "static_head_m": [\n            r"(?:static\s+(?:head|elevation|lift)|elevation\s+head)\s*[:=]?\s*([\d,.]+)\s*m",\n            r"([\d,.]+)\s*m\s*(?:static\s+(?:head|elevation|lift)|elevation\s+head)\b",\n        ],
         "margin_pct": [r"(?:margin|allowance)\s*[:=]?\s*([\d,.]+)\s*%", r"([\d,.]+)\s*%\s*(?:margin|allowance)\b"],
         "wet_bulb_c": [r"wet\s*bulb\s*[:=]?\s*([\d,.]+)\s*(?:°?c|deg c)"],
         "approach_c": [r"approach\s*[:=]?\s*([\d,.]+)\s*(?:°?c|deg c)"],
