@@ -37,6 +37,9 @@ def build_evidence_bundle(*, job, workflow: Dict[str, Any], consolidated: Dict[s
             "assumptions": item.get("assumptions") or engineering.get("assumptions") or [],
             "warnings": item.get("warnings") or engineering.get("warnings") or [],
             "compliance": item.get("compliance") or engineering.get("compliance") or [],
+            "skill_version": item.get("skill_version"),
+            "source_revision": item.get("source_revision"),
+            "limitations": item.get("limitations") or engineering.get("limitations") or [],
         })
 
     evidence_sources = []
@@ -65,6 +68,8 @@ def build_evidence_bundle(*, job, workflow: Dict[str, Any], consolidated: Dict[s
         "standards_context_hash": sha256(job.standards_context or {}),
         "assumptions_context_hash": sha256(job.assumptions_context or {}),
         "task_count": len(task_outputs),
+        "report_revision": int((getattr(job, "result", {}) or {}).get("report_revision") or (getattr(job, "orchestration", {}) or {}).get("report_revision") or 1),
+        "supersedes_report_id": (getattr(job, "result", {}) or {}).get("rework_parent_report_id"),
     }
 
     bundle = {

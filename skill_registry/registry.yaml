@@ -31,6 +31,7 @@ skills:
   - sq ft per ton
   - air conditioning load
 - skill_id: duct_sizing
+  version: 1.2.0
   domain: HVAC
   source_repository: duct-sizing-calculator
   source_path: .
@@ -61,16 +62,10 @@ skills:
   conditional_inputs:
   - name: width_mm
     data_type: number
-    required: true
-    conditional_on:
-      duct_type: rectangular
-    description: Rectangular duct width in mm.
+    description: Existing rectangular duct width in mm; required only when checking an existing rectangular duct.
   - name: height_mm
     data_type: number
-    required: true
-    conditional_on:
-      duct_type: rectangular
-    description: Rectangular duct height in mm.
+    description: Existing rectangular duct height in mm; required only when checking an existing rectangular duct.
   - name: target_velocity_ms
     data_type: number
     required: true
@@ -85,6 +80,7 @@ skills:
       duct_type: round
       method: equal_friction
     description: Target friction rate in Pa/m.
+  source_revision: 1410b71e16a4fe4b1c6b04f023291d7b0f458d68
   implementation_binding: skills.hvac.duct_sizing.adapter:DuctSizingSkill
   routing_terms:
   - duct

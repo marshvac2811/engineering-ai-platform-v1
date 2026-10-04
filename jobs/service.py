@@ -228,14 +228,33 @@ class JobService:
             return dict(updates)
 
     def request_rework(self, job_id: str, reviewer: str, comment: str) -> Job:
-        """A reviewer sends a draft back for correction instead of approving or failing it."""
+        """Return a review-stage or approved-but-undispatched job to controlled rework.
+
+        Once dispatch starts, the approved controlled document is immutable and this
+        endpoint deliberately refuses to reopen the job.
+        """
         job = self._get(job_id)
-        if job.status != JobStatus.HUMAN_REVIEW:
-            raise ValueError("Rework can only be requested while the job is in human review")
+        if job.status not in {JobStatus.HUMAN_REVIEW, JobStatus.APPROVED}:
+            raise ValueError("Rework can only be requested during human review or before dispatch of an approved job")
         comment = str(comment or "").strip()
         if len(comment) < 5:
             raise ValueError("Please explain what needs to change; a rework comment is required")
-        job.transition(JobStatus.REWORK, "Reviewer requested rework.", reviewer=reviewer, comment=comment)
+        previous_report_id = job.report_id
+        previous_revision = int((job.result or {}).get("report_revision") or 1)
+        job.add_event(
+            "rework_requested",
+            "Reviewer requested controlled rework; prior approval is invalidated and the prior report remains immutable.",
+            reviewer=reviewer,
+            comment=comment,
+            prior_status=job.status.value,
+            prior_report_id=previous_report_id,
+            prior_report_revision=previous_revision,
+        )
+        if job.result is not None:
+            job.result["approval_invalidated"] = True
+            job.result["rework_parent_report_id"] = previous_report_id
+            job.result["rework_parent_revision"] = previous_revision
+        job.transition(JobStatus.REWORK, "Reviewer requested rework; approval invalidated.", reviewer=reviewer, comment=comment)
         self.store.save(job)
         return job
 
@@ -261,9 +280,14 @@ class JobService:
         if plan.status != "ready_for_execution":
             missing = ", ".join(plan.missing_inputs) or "required information"
             raise ValueError("The revised inputs are incomplete: " + missing)
+        prior_revision = int((job.result or {}).get("report_revision") or 1)
+        prior_report_id = job.report_id
         job.inputs = revised_inputs
         job.orchestration = plan.to_dict()
-        job.add_event("rework_resubmitted", "Inputs revised after rework request.", actor=actor, fields=sorted(updates), note=note)
+        job.add_event("rework_resubmitted", "Inputs revised after rework request.", actor=actor, fields=sorted(updates), note=note,
+                      prior_report_id=prior_report_id, prior_report_revision=prior_revision,
+                      new_report_revision=prior_revision + 1)
+        job.orchestration["report_revision"] = prior_revision + 1
         job.transition(JobStatus.QUEUED, "Revised inputs supplied; job returned to queue.")
         self.store.save(job)
         return self.process(job.job_id)
@@ -332,8 +356,10 @@ class JobService:
             inputs=job.inputs,
             assumptions=job.assumptions_context,
         )
+        report_revision = int((job.orchestration or {}).get("report_revision") or (job.result or {}).get("report_revision") or 1)
         job.result = {
             **consolidated,
+            "report_revision": report_revision,
             "engineering_result": {
                 "task_results": workflow["engineering_results"],
                 "results": workflow["engineering_results"],
@@ -363,6 +389,8 @@ class JobService:
                         "warnings": item.get("warnings") or [],
                         "validation_errors": item.get("validation_errors") or [],
                         "source_revision": item.get("source_revision"),
+                        "skill_version": item.get("skill_version"),
+                        "limitations": item.get("limitations") or (item.get("engineering_result") or {}).get("limitations") or [],
                     },
                 }
                 for item in workflow["engineering_results"]
@@ -370,6 +398,7 @@ class JobService:
             ]
             report = self.report_service.build(job, report_items)
             job.result["report_id"] = report.report_id
+            job.result["report_revision"] = report_revision
             job.report_id = report.report_id
 
         if workflow["status"] == "completed" and workflow["engineering_results"]:

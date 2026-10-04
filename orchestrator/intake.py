@@ -643,6 +643,12 @@ def build_plan(
         **extracted,
         **provided_inputs,
     }
+    # Canonicalize the natural-language extractor's metric airflow field to the
+    # legacy duct-sizing capability contract. This keeps existing API callers
+    # using airflow compatible while accepting the explicit flow_m3hr extraction.
+    if skill_id == "duct_sizing" and "airflow" not in merged and "flow_m3hr" in merged:
+        merged["airflow"] = merged["flow_m3hr"]
+        merged.setdefault("airflow_unit", "m3/hr")
     if skill_id == "cleanroom_ach" and not any(
         phrase in text.lower() for phrase in ("cleanroom", "air changes", "isolation room", "operating room") or bool(re.search(r"\bach\b", text, re.IGNORECASE))
     ):

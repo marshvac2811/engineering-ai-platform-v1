@@ -50,7 +50,9 @@ def build_report_envelope(*, skill_id: str, result: Dict[str, Any], inputs: Dict
             "status": "required" if result.get("human_review_required", True) else "not_required",
         },
         "limitations": {
+            "skill_version": result.get("skill_version"),
             "source_revision": result.get("source_revision"),
+            "items": list(result.get("limitations") or []),
             "note": "This envelope reports the registered skill result. It does not imply certification, code compliance, or unsupported deliverables.",
         },
     }

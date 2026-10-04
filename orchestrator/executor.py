@@ -241,7 +241,9 @@ def execute_engineering_plan(
             ),
             "evidence": result.get("evidence") or [],
             "validation_errors": result.get("validation_errors") or [],
-            "source_revision": result.get("source_revision"),
+            "skill_version": str(getattr(registry.get(result.get("capability_id")), "version", "") or ""),
+            "source_revision": result.get("source_revision") or getattr(registry.get(result.get("capability_id")), "source_revision", "") or "",
+            "limitations": result.get("limitations") or (result.get("engineering_result") or {}).get("limitations") or [],
             "human_review_required": result.get("human_review_required", True),
         }
         for task_id, result in outputs.items()

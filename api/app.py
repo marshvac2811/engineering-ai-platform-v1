@@ -245,9 +245,18 @@ class APIApp:
         method = environ.get("REQUEST_METHOD", "GET")
         path = environ.get("PATH_INFO", "")
 
-        # Vercel can invoke the Python function with its internal function
-        # pathname even when /v1/* was the public request. Normalize that
-        # internal prefix here as a final, deployment-safe routing guard.
+        # Preserve the original public API path even when Vercel rewrites the
+        # request to a Python function pathname.
+        public_path = (
+            environ.get("HTTP_X_ENGINEERING_REQUEST_PATH")
+            or environ.get("HTTP_X_NOW_ROUTE_MATCHES")
+            or environ.get("HTTP_X_MATCHED_PATH")
+            or ""
+        )
+        if public_path.startswith("/v1/") or public_path == "/v1":
+            path = public_path
+
+        # Final deployment-safe normalization for internal function paths.
         if not path.startswith("/v1/") and "/v1/" in path:
             path = path[path.index("/v1/"):]
         elif path.endswith("/v1"):

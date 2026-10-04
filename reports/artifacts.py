@@ -178,6 +178,9 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         ("Request", orch.get("normalized_request") or (tasks[0].get("objective") if tasks else None)),
         ("Approved by", f"{approval['by']} on {approval['at']}"),
         ("Report date", _fmt_dt(datetime.now(timezone.utc).isoformat())),
+        ("Report revision", str((getattr(job, "result", {}) or {}).get("report_revision") or (getattr(job, "orchestration", {}) or {}).get("report_revision") or 1)),
+        ("Skill version", ", ".join(str(t.get("skill_version") or "-") for t in tasks) or "-"),
+        ("Source revision", ", ".join(str(t.get("source_revision") or "-") for t in tasks) or "-"),
     ]
     story.append(kv_table(header_rows))
 
@@ -237,6 +240,17 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
 
     # 3. Standards and compliance
     story.append(Paragraph("3. Standards and Compliance", section))
+    limitations = []
+    for t in tasks:
+        for item in t.get("limitations") or []:
+            text = str(item)
+            if text and text not in limitations:
+                limitations.append(text)
+    if limitations:
+        story.append(Paragraph("Limitations", task_h))
+        story.extend(Paragraph(str(x).replace("&", "&amp;").replace("<", "&lt;"), bullet, bulletText="•") for x in limitations)
+
+
     checks = _compliance_rows(tasks)
     if checks:
         story.append(table(["Authority", "Code / edition", "Clause", "Requirement", "Project value", "Status"],
@@ -323,6 +337,9 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         ("Request", (request.get("orchestration") or {}).get("normalized_request")),
         ("Approved by", approval["by"]), ("Approval date", approval["at"]),
         ("Evidence record SHA-256", manifest.get("bundle_sha256")), ("Evidence schema", manifest.get("schema_version")),
+        ("Skill version", ", ".join(str(t.get("skill_version") or "-") for t in tasks) or "-"),
+        ("Source revision", ", ".join(str(t.get("source_revision") or "-") for t in tasks) or "-"),
+        ("Limitations", "; ".join(str(x) for t in tasks for x in (t.get("limitations") or [])) or "-"),
         ("Generated", _fmt_dt(datetime.now(timezone.utc).isoformat())),
     ]
     styled(ws, ["Item", "Detail"], summary_rows, [30, 100])

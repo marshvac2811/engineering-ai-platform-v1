@@ -67,6 +67,8 @@ class ReportService:
                 "requested_skill_id": job.requested_skill_id,
                 "normalized_request": job.orchestration.get("normalized_request"),
                 "work_item_count": len(valid),
+                "revision": int((job.result or {}).get("report_revision") or job.orchestration.get("report_revision") or 1),
+                "supersedes_report_id": (job.result or {}).get("rework_parent_report_id"),
             },
             "work_items": report_work_items,
             "standards_assessment": standards,
@@ -85,6 +87,11 @@ class ReportService:
                 "assumptions_and_warnings_included": True,
             },
             "unsupported_scope": job.orchestration.get("unsupported_scope", []),
+            "revision_history": {
+                "revision": int((job.result or {}).get("report_revision") or job.orchestration.get("report_revision") or 1),
+                "supersedes_report_id": (job.result or {}).get("rework_parent_report_id"),
+                "status": "current",
+            },
             "human_review": {
                 "required": True,
                 "status": "pending",
