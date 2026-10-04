@@ -116,6 +116,17 @@ def _validate_definition_input(
     return errors
 
 
+def _build_missing_question(item: InputDefinition) -> str:
+    """Return one precise, unit-aware question with an engineering reason."""
+    label = item.name.replace("_", " ").strip()
+    question = item.question or item.description or f"Please provide {label}."
+    if item.unit and item.unit.lower() not in question.lower():
+        question = f"{question.rstrip('.')} in {item.unit}."
+    reason = item.description.strip() if item.description else (
+        f"this value is required by the {item.name.replace('_', ' ')} input contract"
+    )
+    return f"{question} Why: {reason.rstrip('.')}."
+
 def resolve_input_requirements(
     definition: SkillDefinition,
     inputs: Dict[str, Any],
@@ -197,11 +208,7 @@ def resolve_input_requirements(
 
         if item.required and not _is_present(inputs, item.name):
             missing.append(item.name)
-            questions.append(
-                item.question
-                or item.description
-                or f"Please provide the engineering input: {item.name}."
-            )
+            questions.append(_build_missing_question(item))
             continue
 
         invalid.extend(_validate_definition_input(item, inputs))
