@@ -61,16 +61,10 @@ skills:
   conditional_inputs:
   - name: width_mm
     data_type: number
-    required: true
-    conditional_on:
-      duct_type: rectangular
-    description: Rectangular duct width in mm.
+    description: Existing rectangular duct width in mm; required only when checking an existing rectangular duct.
   - name: height_mm
     data_type: number
-    required: true
-    conditional_on:
-      duct_type: rectangular
-    description: Rectangular duct height in mm.
+    description: Existing rectangular duct height in mm; required only when checking an existing rectangular duct.
   - name: target_velocity_ms
     data_type: number
     required: true

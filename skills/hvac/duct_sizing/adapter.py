@@ -14,12 +14,16 @@ SOURCE_REVISION = "1410b71e16a4fe4b1c6b04f023291d7b0f458d68"
 
 class DuctSizingSkill:
     skill_id = "duct_sizing"
-    version = "1.1.0"
+    version = "1.2.0"
 
     def validate(self, request: SkillRequest) -> list[str]:
         errors: list[str] = []
         errors += validate_governance_context(request)
-        errors += require_positive(request.inputs, ["airflow"])
+        airflow = request.inputs.get("flow_m3hr", request.inputs.get("airflow"))
+        if airflow is None:
+            errors.append("Required design airflow: provide flow_m3hr in m3/hr")
+        elif not isinstance(airflow, (int, float)) or isinstance(airflow, bool) or airflow <= 0:
+            errors.append("Input flow_m3hr must be greater than zero")
         if "airflow_unit" in request.inputs:
             errors += require_enum(request.inputs, "airflow_unit", ["m3/hr", "m3/h", "m³/hr", "m³/h", "cfm"])
         errors += require_enum(request.inputs, "method", ["velocity", "equal_friction"])
@@ -29,7 +33,16 @@ class DuctSizingSkill:
         duct_type = request.inputs.get("duct_type")
 
         if duct_type == "rectangular":
-            errors += require_positive(request.inputs, ["width_mm", "height_mm"])
+            has_width = request.inputs.get("width_mm") is not None
+            has_height = request.inputs.get("height_mm") is not None
+            if has_width != has_height:
+                errors.append("Rectangular existing-duct check requires both width_mm and height_mm")
+            elif has_width and has_height:
+                errors += require_positive(request.inputs, ["width_mm", "height_mm"])
+            elif method == "velocity":
+                errors += require_positive(request.inputs, ["target_velocity_ms"])
+            elif method == "equal_friction":
+                errors += require_positive(request.inputs, ["target_friction_pa_per_m"])
         elif method == "velocity":
             errors += require_positive(request.inputs, ["target_velocity_ms"])
         elif method == "equal_friction":
@@ -53,7 +66,7 @@ class DuctSizingSkill:
             )
 
         inputs = request.inputs
-        airflow = float(inputs["airflow"])
+        airflow = float(inputs.get("flow_m3hr", inputs.get("airflow")))
         airflow_unit = str(inputs.get("airflow_unit", "cfm")).strip().lower()
         airflow_unit_aliases = {
             "m3/hr": "m3/hr",
@@ -101,11 +114,44 @@ class DuctSizingSkill:
                         effective_air_density, effective_air_viscosity
                     )
             else:
-                result = engine.calculate_rectangular_equivalent(
-                    float(inputs["width_mm"]),
-                    float(inputs["height_mm"]),
-                    flow_m3hr,
-                )
+                if inputs.get("width_mm") is not None and inputs.get("height_mm") is not None:
+                    result = engine.calculate_rectangular_equivalent(
+                        float(inputs["width_mm"]),
+                        float(inputs["height_mm"]),
+                        flow_m3hr,
+                    )
+                elif method == "velocity":
+                    # Preliminary rectangular sizing when dimensions are not supplied:
+                    # use a governed 1:1 aspect-ratio starting point and round up to
+                    # a practical 50 mm fabrication increment. This is sizing, not
+                    # an existing-duct check; final dimensions remain subject to review.
+                    q_m3s = flow_m3hr / 3600.0
+                    area_m2 = q_m3s / float(inputs["target_velocity_ms"])
+                    side_mm = (area_m2 ** 0.5) * 1000.0
+                    recommended_side_mm = int(((side_mm + 49.999) // 50) * 50)
+                    actual_area_m2 = (recommended_side_mm / 1000.0) ** 2
+                    actual_velocity = q_m3s / actual_area_m2
+                    d_eq_mm = 1.30 * ((recommended_side_mm * recommended_side_mm) ** 0.625) / ((2 * recommended_side_mm) ** 0.25)
+                    actual_friction = engine.pressure_loss_per_m(
+                        actual_velocity, d_eq_mm / 1000.0, roughness_mm,
+                        effective_air_density, effective_air_viscosity
+                    )
+                    result = {
+                        "method": "Velocity Method — Rectangular Sizing",
+                        "flow_m3hr": flow_m3hr,
+                        "target_velocity_ms": float(inputs["target_velocity_ms"]),
+                        "required_area_m2": round(area_m2, 6),
+                        "required_side_mm": round(side_mm, 1),
+                        "recommended_width_mm": recommended_side_mm,
+                        "recommended_height_mm": recommended_side_mm,
+                        "actual_area_m2": round(actual_area_m2, 6),
+                        "actual_velocity_ms": round(actual_velocity, 2),
+                        "equivalent_diameter_mm": round(d_eq_mm, 1),
+                        "actual_friction_pa_per_m": round(actual_friction, 3),
+                        "sizing_assumption": "1:1 rectangular aspect ratio; dimensions rounded up to 50 mm increment because no aspect ratio was supplied.",
+                    }
+                else:
+                    raise ValueError("For rectangular equal-friction sizing, existing width_mm and height_mm are currently required")
         except (ValueError, KeyError, ZeroDivisionError) as exc:
             return SkillResult(
                 skill_id=self.skill_id,
@@ -117,6 +163,7 @@ class DuctSizingSkill:
         warnings = [
             "Source defaults are air density 1.2 kg/m³ and viscosity 1.81e-5 Pa·s; explicit governed overrides are supported.",
             "Material roughness values are typical reference values and are not manufacturer-specific.",
+            "Rectangular sizing without supplied dimensions uses a preliminary 1:1 aspect-ratio assumption and 50 mm upward rounding; verify the final aspect ratio, standard size, fittings and system pressure before design release.",
             "Fitting equivalent-length ratios are typical reference values.",
             "Output is preliminary and requires engineering review before design release.",
         ]

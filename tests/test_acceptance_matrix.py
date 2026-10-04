@@ -284,3 +284,59 @@ def test_at_27_conditional_input_is_enforced():
     assert "chiller_tr" in resolution.missing_inputs
     assert "chiller_cop" in resolution.missing_inputs
 
+
+
+def test_trial1_rectangular_velocity_sizing_contract():
+    from skill_framework.registry import load_skill_registry
+    from skill_framework.input_resolver import resolve_input_requirements
+
+    registry = load_skill_registry(ROOT / "skill_registry" / "registry.yaml")
+    inputs = {
+        "flow_m3hr": 5000,
+        "airflow_unit": "m3/hr",
+        "method": "velocity",
+        "duct_type": "rectangular",
+        "target_velocity_ms": 7,
+    }
+    resolution = resolve_input_requirements(registry.get("duct_sizing"), inputs)
+    assert resolution.missing_inputs == []
+    result = execute(req("duct_sizing", inputs))
+    assert result.status == "draft_ready"
+    assert result.engineering_result["recommended_width_mm"] == 450
+    assert result.engineering_result["recommended_height_mm"] == 450
+    assert result.engineering_result["actual_velocity_ms"] < 7
+    assert result.human_review_required is True
+
+
+def test_rectangular_existing_duct_check_requires_dimensions():
+    result = execute(req("duct_sizing", {
+        "flow_m3hr": 5000,
+        "airflow_unit": "m3/hr",
+        "method": "velocity",
+        "duct_type": "rectangular",
+    }))
+    assert result.status == "input_validation_failed"
+    assert any("target_velocity_ms" in e for e in result.validation_errors)
+
+
+def test_trial1_rectangular_velocity_sizing_contract():
+    from skill_framework.registry import load_skill_registry
+    from skill_framework.input_resolver import resolve_input_requirements
+
+    registry = load_skill_registry(ROOT / "skill_registry" / "registry.yaml")
+    inputs = {
+        "flow_m3hr": 5000,
+        "airflow_unit": "m3/hr",
+        "method": "velocity",
+        "duct_type": "rectangular",
+        "target_velocity_ms": 7,
+    }
+    normalized = {**inputs, "airflow": inputs["flow_m3hr"]}
+    resolution = resolve_input_requirements(registry.get("duct_sizing"), normalized)
+    assert resolution.missing_inputs == []
+    result = execute(req("duct_sizing", normalized))
+    assert result.status == "draft_ready"
+    assert result.engineering_result["recommended_width_mm"] == 450
+    assert result.engineering_result["recommended_height_mm"] == 450
+    assert result.engineering_result["actual_velocity_ms"] < 7
+    assert result.human_review_required is True
