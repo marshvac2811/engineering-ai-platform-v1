@@ -114,8 +114,9 @@ def _extract_fittings(text: str) -> list[dict]:
             if row:
                 rows.append(row)
 
-    # Robust fallback for Unicode/formatting variants such as "12 x 90° elbows".
-    # Only activates when an elbow quantity is not already captured.
+    # Robust fallback for Unicode/formatting variants. Keep this local and
+    # explicit so the canonical source-default mapping cannot be lost because
+    # of a formatting/Unicode variant in client text.
     if not any(row.get("input_text") == "90_elbow" for row in rows):
         fallback = re.search(
             r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*90",
@@ -123,11 +124,17 @@ def _extract_fittings(text: str) -> list[dict]:
             re.IGNORECASE,
         )
         if fallback:
-            row = governed_fitting_interpretation(
-                "90_elbow", float(fallback.group(1).replace(",", ""))
-            )
-            if row:
-                rows.append(row)
+            qty = float(fallback.group(1).replace(",", ""))
+            rows.append({
+                "name": "90° standard elbow",
+                "ld_ratio": 30,
+                "quantity": qty,
+                "status": "GOVERNED_PRELIMINARY_INTERPRETATION",
+                "source": "source_calculator_fitting_default",
+                "client_confirmation": "recommended",
+                "input_text": "90_elbow",
+                "note": "Generic 90° elbow interpreted as standard elbow; long-radius elbow would differ.",
+            })
     return rows
 
 def normalize_engineering_inputs(text: str) -> Dict[str, Any]:
