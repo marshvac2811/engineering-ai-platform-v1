@@ -256,7 +256,7 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "speed_reduction_pct": [r"(?:speed\s*reduction)\s*[:=]?\s*([\d,.]+)\s*%"],
         "static_head_fraction": [r"(?:static\s*head\s*fraction|static\s*head)\s*[:=]?\s*([\d,.]+)\s*%"],
         "ambient_temp_c": [r"ambient\s*(?:temperature|temp)?\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
-        "altitude_m": [r"(?:altitude|elevation)\s*[:=]?\s*([\d,.]+)\s*m\b"],
+        "altitude_m": [r"(?:site\s+)?altitude\s*[:=]?\s*([\d,.]+)\s*m\b", r"elevation\s+above\s+sea\s+level\s*[:=]?\s*([\d,.]+)\s*m\b"],
         "total_vfd_kva": [r"(?:vfd\s*load|total\s*vfd)\s*[:=]?\s*([\d,.]+)\s*kva"],
         "transformer_kva": [r"(?:transformer|tx)\s*(?:capacity)?\s*[:=]?\s*([\d,.]+)\s*kva"],
         "efficiency_kw_per_tr": [r"(?:chiller\s+efficiency|kw/tr|kW/TR)\s*[:=]?\s*([\d,.]+)"],
