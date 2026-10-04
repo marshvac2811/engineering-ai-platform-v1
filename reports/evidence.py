@@ -68,6 +68,8 @@ def build_evidence_bundle(*, job, workflow: Dict[str, Any], consolidated: Dict[s
         "standards_context_hash": sha256(job.standards_context or {}),
         "assumptions_context_hash": sha256(job.assumptions_context or {}),
         "task_count": len(task_outputs),
+        "report_revision": int((job.result or {}).get("report_revision") or job.orchestration.get("report_revision") or 1),
+        "supersedes_report_id": (job.result or {}).get("rework_parent_report_id"),
     }
 
     bundle = {
