@@ -26,6 +26,9 @@ ALIASES = {
     "load_factor_pct": ["load factor", "loading factor"],
     "speed_reduction_pct": ["speed reduction", "speed reduction percentage"],
     "motor_kw": ["motor power", "motor rating", "motor capacity"],
+    "pump_efficiency_pct": ["pump efficiency", "pump hydraulic efficiency"],
+    "supply_temp_c": ["supply temperature", "supply water temperature"],
+    "return_temp_c": ["return temperature", "return water temperature"],
     "capacity_kw": ["cooling capacity", "capacity in kw"],
     "total_load_tr": ["total cooling load", "cooling load"],
     "chiller_tr": ["chiller capacity", "chiller load"],
@@ -61,6 +64,9 @@ UNIT_PATTERNS = {
     "test_pressure_pa": r"pa|kpa|bar",
     "measured_leakage_ls": r"l/s|lps|ls",
     "motor_kw": r"kw|w",
+    "pump_efficiency_pct": r"%|percent",
+    "supply_temp_c": r"°?c|deg c|°?f|deg f",
+    "return_temp_c": r"°?c|deg c|°?f|deg f",
 }
 
 def _label_pattern(labels):
