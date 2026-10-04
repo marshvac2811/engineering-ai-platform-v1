@@ -37,6 +37,9 @@ def build_evidence_bundle(*, job, workflow: Dict[str, Any], consolidated: Dict[s
             "assumptions": item.get("assumptions") or engineering.get("assumptions") or [],
             "warnings": item.get("warnings") or engineering.get("warnings") or [],
             "compliance": item.get("compliance") or engineering.get("compliance") or [],
+            "skill_version": item.get("skill_version"),
+            "source_revision": item.get("source_revision"),
+            "limitations": item.get("limitations") or engineering.get("limitations") or [],
         })
 
     evidence_sources = []
