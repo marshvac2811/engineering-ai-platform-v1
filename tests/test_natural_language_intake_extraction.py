@@ -34,3 +34,32 @@ def test_pump_head_natural_language_request_is_ready():
     assert plan.extracted_inputs["static_head_m"] == 12
     assert plan.extracted_inputs["margin_pct"] == 10
     assert plan.extracted_inputs["material"] == "gi"
+
+
+def test_universal_semantic_normalizer_accepts_common_engineering_synonyms_and_units():
+    text = (
+        "Water circulation flow is 5 L/s; pipe dia is 80 mm; "
+        "pipeline length is 590.55 ft; static elevation is 39.37 ft; "
+        "design allowance is 10 percent."
+    )
+    facts = extract_facts(text)
+    assert facts["flow_m3hr"] == 18
+    assert facts["diameter_mm"] == 80
+    assert round(facts["straight_length_m"], 2) == 180
+    assert round(facts["static_head_m"], 2) == 12
+    assert facts["margin_pct"] == 10
+
+
+def test_universal_semantic_normalizer_supports_other_registered_domains():
+    facts = extract_facts(
+        "Motor rating is 15 kW, ambient temp is 45 C and site altitude is 1200 m."
+    )
+    assert facts["motor_kw"] == 15
+    assert facts["ambient_temp_c"] == 45
+    assert facts["altitude_m"] == 1200
+
+
+def test_universal_semantic_normalizer_does_not_treat_plain_elevation_as_pump_head():
+    facts = extract_facts("Site elevation above sea level is 1200 m.")
+    assert "altitude_m" in facts
+    assert "static_head_m" not in facts
