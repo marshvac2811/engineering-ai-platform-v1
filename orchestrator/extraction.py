@@ -125,6 +125,12 @@ def extract_facts(text: str, skill_id: Optional[str] = None) -> ExtractionResult
     """Extract only values explicitly present in the request."""
     normalized = " ".join(str(text or "").split())
     values = _legacy_extract_facts(normalized)
+    # Universal semantic normalization fills equivalent engineering wording
+    # without changing the governed requirement/assumption decisions.
+    from orchestrator.semantic_inputs import normalize_engineering_inputs
+    semantic_values = normalize_engineering_inputs(normalized)
+    for field_id, value in semantic_values.items():
+        values.setdefault(field_id, value)
     facts: List[ExtractedFact] = []
     for field_id, value in values.items():
         match = re.search(re.escape(str(value)), normalized, re.IGNORECASE)
