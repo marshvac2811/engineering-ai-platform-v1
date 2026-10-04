@@ -208,7 +208,9 @@ class DuctSizingSkill:
     @staticmethod
     def _source_function_name(duct_type: str, method: str) -> str:
         if duct_type == "rectangular":
-            return "calculate_rectangular_equivalent"
+            if method == "velocity":
+                return "preliminary_rectangular_velocity_sizing"
+            return "calculate_rectangular_equal_friction"
         if method == "velocity":
             return "size_duct_velocity_method"
         return "size_duct_equal_friction_method"
