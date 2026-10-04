@@ -70,12 +70,12 @@ class APIApp:
             )
         self.store = configured_store or InMemoryJobStore()
         self.ingestion = ingestion or build_ingestion_service()
-        self.api_keys = api_keys or (SupabaseApiKeyStore(supabase_client) if supabase_client is not None else InMemoryApiKeyStore())
-        self.usage = usage_store or (SupabaseUsageStore(supabase_client) if supabase_client is not None else InMemoryUsageStore())
         # Reuse the already-created production Supabase client across all persistent
         # stores. Creating several independent clients during Render startup can
         # stall initialization before Uvicorn binds its port.
         supabase_client = getattr(self.store, "client", None)
+        self.api_keys = api_keys or (SupabaseApiKeyStore(supabase_client) if supabase_client is not None else InMemoryApiKeyStore())
+        self.usage = usage_store or (SupabaseUsageStore(supabase_client) if supabase_client is not None else InMemoryUsageStore())
         if supabase_client is not None:
             self.crm_store = crm_store or SupabaseCRMStore(supabase_client)
             self.integration_store = integration_store or SupabaseIntegrationStore(supabase_client)
