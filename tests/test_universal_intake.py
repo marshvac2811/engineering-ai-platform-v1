@@ -15,3 +15,12 @@ def test_build_plan_identifies_new_vertical_without_fabricating_calculation():
     assert plan.status == "awaiting_information"
     assert plan.engineering_plan["status"] == "capability_required"
     assert plan.scope_analysis["status"] == "ai_interpretation_pending"
+
+
+
+def test_extractor_maps_static_elevation_to_static_head():
+    from orchestrator.extraction import extract_facts
+
+    result = extract_facts("Calculate pump head. Static elevation: 12 m.")
+
+    assert result.values["static_head_m"] == 12
