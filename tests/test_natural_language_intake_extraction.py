@@ -77,3 +77,6 @@ def test_pump_language_does_not_misclassify_efficiency_temperature_or_static_ele
     assert "altitude_m" not in result
     assert "efficiency_kw_per_tr" not in result
     assert "ambient_temp_c" not in result
+    assert result.get("pump_efficiency_pct") == 70
+    assert result.get("supply_temp_c") == 7
+    assert result.get("return_temp_c") == 12
