@@ -84,28 +84,34 @@ class IntentProvider(Protocol):
 # implementation can be audited. An LLM provider can replace this without
 # changing the job or skill interfaces.
 ROUTING_RULES: Dict[str, Sequence[str]] = {
-    "facade_u_factor": ("facade u value", "facade u-factor", "facade u factor", "u value of facade", "u-factor of facade", "glass u value", "glass u-factor", "glass u factor", "u value of this facade", "curtain wall u value", "fenestration u factor", "thermal transmittance of facade"),
+    "facade_u_factor": ("facade u value", "facade u-factor", "facade u factor", "u value of facade", "u-factor of facade", "glass u value", "glass u-factor", "glass u factor", "u value of this facade", "curtain wall u value", "fenestration u factor", "thermal transmittance of facade",
+                          "area-weighted u-factor", "area weighted u-factor", "u-factor calculation", "u-factor compliance", "u-factor for a facade", "u-factor for the facade"),
     "duct_sizing": ("duct", "duct size", "duct sizing", "cfm duct", "air velocity", "equal friction"),
-    "pump_head": ("pump head", "tdh", "total dynamic head", "pump sizing", "pump duty", "pipe head"),
+    "pump_head": ("pump head", "tdh", "total dynamic head", "pump sizing", "pump duty", "pipe head",
+                   "chilled water pump", "condenser water pump", "primary pump", "secondary pump", "booster pump", "pump for"),
     "preliminary_load_estimation": ("cooling load", "hvac load", "tonnage", "tons of ac", "sq ft per ton", "air conditioning load"),
-    "hvac_fault_diagnosis": ("troubleshoot", "fault", "trip", "diagnose", "cavitation", "refrigerant shortage", "high pressure trip"),
+    "hvac_fault_diagnosis": ("troubleshoot", "fault", "trip", "diagnose", "cavitation", "refrigerant shortage",
+                              "high pressure trip", "dirty filter", "low airflow", "water leak", "drain block",
+                              "not starting", "won't start", "wont start", "bypass valve", "low differential pressure"),
     "cooling_tower": ("cooling tower", "wet bulb", "approach", "blowdown", "makeup water"),
     "refrigerant_pipe_sizing": ("refrigerant pipe", "suction line", "liquid line", "r410a", "r32", "r22", "r134a"),
     "vrf_sizing": ("vrf", "vrv", "indoor unit", "outdoor unit", "combination ratio"),
     "cleanroom_ach": ("cleanroom", "ach", "air changes", "isolation room", "operating room", "icu"),
     "duct_leakage": ("duct leakage", "leakage class", "leakage test", "smacna leakage"),
-    "chiller_selection_advisor": ("chiller selection", "select chiller", "chiller type", "air cooled chiller", "water cooled chiller", "chiller efficiency"),
-    "bms_points_generation": ("bms points", "points list", "ai ao di do", "ddc points", "controller sizing"),
-    "bms_controller_sizing": ("bms controller", "ddc controller", "controller panel"),
-    "bms_cost_estimation": ("bms cost", "bms estimate", "bms budget", "bms pricing"),
-    "bms_alarm_evaluation": ("bms alarm", "alarm threshold", "point alarm", "sensor alarm"),
+    "chiller_selection_advisor": ("chiller selection", "select chiller", "chiller type", "air cooled chiller", "water cooled chiller", "chiller efficiency",
+                                    "chiller configuration", "duty module", "duty modules", "resilient chiller plant", "redundant chiller"),
+    "bms_points_generation": ("bms points", "points list", "ai ao di do", "ddc points", "points generation"),
+    "bms_controller_sizing": ("bms controller", "ddc controller", "controller panel", "controller sizing", "size bms controllers", "size controllers"),
+    "bms_cost_estimation": ("bms cost", "bms estimate", "bms budget", "bms pricing", "bms budgetary"),
+    "bms_alarm_evaluation": ("bms alarm", "alarm threshold", "point alarm", "sensor alarm", "alarm evaluation", "alarm configuration", "against its configured", "against the alarm"),
     "vfd_energy_savings": ("vfd energy", "vfd savings", "speed reduction", "affinity law", "vfd saving"),
-    "vfd_derating": ("vfd derating", "vfd altitude", "vfd temperature", "drive sizing"),
-    "harmonic_screening": ("harmonics", "harmonic screening", "ieee 519", "vfd harmonic"),
-    "hvac_decarbonisation": ("decarbon", "decarbonisation", "carbon saving", "hvac retrofit", "asset life extension"),
-    "energy_payback": ("payback", "energy savings", "energy cost saving", "roi", "retrofit payback"),
-    "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate"),
-    "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance"),
+    "vfd_derating": ("vfd derating", "vfd altitude", "vfd temperature", "drive sizing", "derating for"),
+    "harmonic_screening": ("harmonics", "harmonic screening", "ieee 519", "vfd harmonic", "harmonic distortion", "harmonic risk"),
+    "hvac_decarbonisation": ("decarbon", "decarbonisation", "carbon saving", "hvac retrofit", "asset life extension",
+                               "do-nothing vs", "do nothing vs", "decarbonisation scenarios", "decarbonisation impact"),
+    "energy_payback": ("payback", "energy savings", "energy cost saving", "roi", "retrofit payback", "retrofit payback"),
+    "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate", "hvac boq", "boq for", "boq covering", "boq outline"),
+    "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance", "deviates on", "technical deviation"),
 }
 
 FIELD_QUESTIONS = {
@@ -213,6 +219,152 @@ def _normalize_intake_text(text: str) -> str:
     return normalized.strip()
 
 
+# Symptom-to-rule translator for hvac_fault_diagnosis. This skill's registered contract
+# is a rule engine (rule_id + structured sensor values), not free text, so a plain-English
+# symptom description needs to be mapped to one of the known rules before the standard
+# missing-input flow can ask for only the specific readings that rule needs.
+FAULT_EQUIPMENT_GATE: Dict[str, str] = {
+    "chl_hp_trip": r"\bchiller\b|\bchl\b",
+    "chl_lp_trip": r"\bchiller\b|\bchl\b",
+    "ahu_dirty_filter": r"\bahu\b|\bair\s*handl",
+    "ahu_water_leak": r"\bahu\b|\bair\s*handl",
+    "pump_motor_fault": r"\bpump\b",
+    "pump_bypass_open": r"\bpump\b",
+    "pump_cavitation": r"\bpump\b",
+}
+
+FAULT_RULES: Dict[str, Dict[str, Any]] = {
+    "chl_hp_trip": {
+        "label": "Chiller - High Pressure Trip",
+        "cues": (r"high[\s-]*pressure\s*trip", r"trip(?:ped|s|ping)?\b[^.]{0,30}high\s*pressure",
+                  r"\bhp\s*trip\b", r"high\s*discharge\s*pressure", r"discharge\s*pressure.*trip",
+                  r"discharge\s*pressure.{0,60}(?:high\s*pressure\s*limit|hp\s*limit)"),
+        "numeric": {
+            "discharge_pressure": [r"discharge\s*pressure(?:\s*(?:is|of|at|reading))*\s*[:=]?\s*([\d,.]+)\s*bar"],
+            "hp_limit": [r"(?:hp\s*limit|high\s*pressure\s*limit|trip\s*limit|setpoint)\s*(?:is|of|at)?\s*[:=]?\s*([\d,.]+)\s*bar"],
+            "cw_entering_temp": [r"(?:cw|condenser\s*water)\s*enter(?:ing)?\s*temp(?:erature)?\s*(?:is|of|at)?\s*[:=]?\s*([\d,.]+)\s*(?:°c|deg c|c\b)"],
+        },
+        "boolean": {},
+    },
+    "chl_lp_trip": {
+        "label": "Chiller - Low Pressure Trip / Refrigerant Shortage",
+        "cues": (r"low[\s-]*pressure\s*trip", r"trip(?:ped|s|ping)?\b[^.]{0,30}low\s*pressure",
+                  r"\blp\s*trip\b", r"refrigerant\s*shortage", r"low\s*suction\s*pressure"),
+        "numeric": {},
+        "boolean": {
+            "suction_pressure_low": [r"(?:low\s*)?suction\s*pressure\s*(?:is\s*)?low"],
+            "evap_pressure_low": [r"(?:low\s*)?evaporator\s*pressure\s*(?:is\s*)?low"],
+            "superheat_high": [r"high\s*superheat"],
+        },
+    },
+    "ahu_dirty_filter": {
+        "label": "AHU - Low Airflow / Dirty Filter",
+        "cues": (r"dirty\s*filter", r"low\s*airflow", r"filter\s*(?:dp|differential\s*pressure)"),
+        "numeric": {
+            "filter_dp": [r"filter\s*(?:dp|differential\s*pressure)(?:\s*(?:is|of|at|reading))*\s*[:=]?\s*([\d,.]+)\s*pa"],
+            "filter_dp_threshold": [r"(?:threshold|limit|setpoint)\s*(?:is|of|at)?\s*[:=]?\s*([\d,.]+)\s*pa"],
+        },
+        "boolean": {"fan_speed_normal": [r"fan\s*speed\s*(?:is\s*)?normal"]},
+    },
+    "ahu_water_leak": {
+        "label": "AHU - Water Leakage / Drain Blockage",
+        "cues": (r"water\s*leak", r"drain\s*block"),
+        "numeric": {},
+        "boolean": {
+            "leak_sensor_on": [r"(?:water\s*)?leak\s*sensor\s*(?:is\s*)?(?:on|active|triggered)"],
+            "drain_dp_high": [r"drain\s*(?:dp|differential\s*pressure)\s*(?:is\s*)?high"],
+        },
+    },
+    "pump_motor_fault": {
+        "label": "Pump - Not Starting / Motor Fault",
+        "cues": (r"pump\s*(?:is\s*)?not\s*start", r"pump\s*(?:will\s*not|won'?t)\s*start",
+                  r"motor\s*fault", r"fails?\s*to\s*start"),
+        "numeric": {},
+        "boolean": {
+            "start_command": [r"start\s*command\s*(?:is\s*)?(?:given|present|on)"],
+            "breaker_on": [r"breaker\s*(?:is\s*)?on"],
+            "no_current": [r"no\s*current"],
+        },
+    },
+    "pump_bypass_open": {
+        "label": "Pump - Low Differential Pressure / Bypass Valve Open",
+        "cues": (r"bypass\s*valve", r"low\s*differential\s*pressure",
+                  r"differential\s*pressure.{0,20}(?:is\s*)?low", r"\bdp\s*low\b"),
+        "numeric": {},
+        "boolean": {
+            "flow_normal": [r"flow\s*(?:is\s*)?normal"],
+            "dp_low": [r"(?:dp|differential\s*pressure)(?:\s+\w+){0,4}?\s*(?:is\s*)?low"],
+        },
+    },
+    "pump_cavitation": {
+        "label": "Pump - Cavitation",
+        "cues": (r"cavitation", r"pump.*(?:vibrat|noise)", r"(?:vibrat|noise).*pump"),
+        "numeric": {},
+        "boolean": {
+            "high_vibration": [r"(?:high\s*)?vibrat\w*"],
+            "noise": [r"\bnois(?:e|y)\b"],
+            "low_suction_pressure": [r"(?:low\s*)?suction\s*pressure\s*(?:is\s*)?low"],
+        },
+    },
+}
+
+
+def _extract_number(t: str, patterns: List[str]) -> Optional[float]:
+    for pattern in patterns:
+        match = re.search(pattern, t, re.IGNORECASE)
+        if match:
+            try:
+                return float(match.group(1).replace(",", ""))
+            except (ValueError, IndexError):
+                continue
+    return None
+
+
+def _extract_boolean(t: str, patterns: List[str]) -> Optional[str]:
+    for pattern in patterns:
+        match = re.search(pattern, t, re.IGNORECASE)
+        if match:
+            start = max(0, match.start() - 12)
+            preceding = t[start:match.start()]
+            return "no" if re.search(r"\bnot\b|\bno\b|\bisn'?t\b", preceding, re.IGNORECASE) else "yes"
+    return None
+
+
+def extract_fault_diagnosis(text: str) -> Tuple[Dict[str, Any], Optional[str], List[str]]:
+    """Return (extracted fields, matched rule label or None, still-needed field names).
+
+    extracted may contain "rule_id" and a partial/complete "values" dict. still-needed
+    lists the specific sensor readings the matched rule is missing, so the missing-input
+    question can name them directly instead of asking generically for "values".
+    """
+    t = text.lower()
+    for rule_id, rule in FAULT_RULES.items():
+        gate = FAULT_EQUIPMENT_GATE.get(rule_id)
+        if gate and not re.search(gate, t, re.IGNORECASE):
+            continue
+        if not any(re.search(cue, t, re.IGNORECASE) for cue in rule["cues"]):
+            continue
+        values: Dict[str, Any] = {}
+        still_needed: List[str] = []
+        for field_name, patterns in rule["numeric"].items():
+            found = _extract_number(t, patterns)
+            if found is not None:
+                values[field_name] = found
+            else:
+                still_needed.append(field_name)
+        for field_name, patterns in rule["boolean"].items():
+            found = _extract_boolean(t, patterns)
+            if found is not None:
+                values[field_name] = found
+            else:
+                still_needed.append(field_name)
+        extracted: Dict[str, Any] = {"rule_id": rule_id}
+        if not still_needed:
+            extracted["values"] = values
+        return extracted, rule["label"], still_needed
+    return {}, None, []
+
+
 def extract_facts(text: str) -> Dict[str, Any]:
     """Extract unambiguous engineering facts from natural-language prose."""
     t = _normalize_intake_text(text)
@@ -221,6 +373,10 @@ def extract_facts(text: str) -> Dict[str, Any]:
     # The legacy mappings below remain as a deterministic compatibility layer.
     from orchestrator.semantic_inputs import normalize_engineering_inputs
     out.update(normalize_engineering_inputs(t))
+
+    fault_extracted, _fault_label, _fault_missing = extract_fault_diagnosis(text)
+    if fault_extracted:
+        out.update(fault_extracted)
 
     if re.search(r"\bcfm\b", t, re.IGNORECASE):
         out["airflow_unit"] = "cfm"
@@ -325,6 +481,14 @@ class RuleBasedIntentProvider:
             if matched:
                 score = sum(2 if " " in term else 1 for term in matched)
                 candidates.append(IntentCandidate(skill_id, score, [f"Matched phrase: {m}" for m in matched]))
+        # A matched fault-diagnosis symptom rule is a stronger, more specific signal than
+        # the generic keyword list above, and must route here even when none of those
+        # broader phrases ("fault", "trip", "diagnose"...) happen to appear in the text.
+        fault_extracted, fault_rule_label, _fault_missing = extract_fault_diagnosis(text)
+        if fault_extracted.get("rule_id") and not any(c.skill_id == "hvac_fault_diagnosis" for c in candidates):
+            candidates.append(IntentCandidate(
+                "hvac_fault_diagnosis", 3, [f"Matched fault-diagnosis rule: {fault_rule_label}"]
+            ))
         candidates.sort(key=lambda c: (-c.score, c.skill_id))
         if not candidates:
             return None, [], 0.0
@@ -531,6 +695,15 @@ def build_plan(
     missing = registry_resolution.missing_inputs
     questions = registry_resolution.questions
     rationale_source = "registry-defined input contract"
+
+    if skill_id == "hvac_fault_diagnosis" and merged.get("rule_id") and "values" in missing:
+        _, fault_label, fault_missing = extract_fault_diagnosis(text)
+        if fault_label and fault_missing:
+            readable = ", ".join(f.replace("_", " ") for f in fault_missing)
+            questions = [
+                f"To check for \"{fault_label}\", please also provide: {readable} "
+                "(numeric readings in the unit shown on the BMS/SCADA point, or yes/no for status points)."
+            ]
 
     status = "awaiting_information" if missing else "ready_for_execution"
     rationale = [f"Selected {skill_id} using {provider.name} intent routing."]
