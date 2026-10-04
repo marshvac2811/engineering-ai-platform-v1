@@ -217,7 +217,9 @@ async function submitRequest(){
   document.getElementById("request").value="";
   if(document.getElementById("reqProject"))document.getElementById("reqProject").value="";
   if(document.getElementById("reqClient"))document.getElementById("reqClient").value="";
-  const needs = d.job?.orchestration?.questions || d.job?.orchestration?.missing_inputs || [];\n  const needText = needs.length ? needs.join(" ") : "Additional engineering information is required. Open the job for the exact request.";\n  showMsg(msg,true, d.job?.status==="awaiting_information" ? needText : "Request submitted successfully.");
+  const needs = d.job?.orchestration?.questions || d.job?.orchestration?.missing_inputs || [];
+  const needText = needs.length ? needs.join(" ") : "Additional engineering information is required. Open the job for the exact request.";
+  showMsg(msg,true, d.job?.status==="awaiting_information" ? needText : "Request submitted successfully.");
   await loadJobs();
  }catch(e){showMsg(msg,false,e.message);}
  finally{btn.disabled=false;}
