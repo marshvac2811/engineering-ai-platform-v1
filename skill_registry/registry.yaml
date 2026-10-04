@@ -39,11 +39,9 @@ skills:
   integration_status: integrated
   human_review_required: true
   required_inputs:
-  - name: flow_m3hr
+  - name: airflow
     data_type: number
-    description: Required design airflow.
-    unit: m3/hr
-    question: What is the design airflow in m3/hr?
+    description: Required airflow.
   - name: method
     data_type: string
     allowed_values:
@@ -71,6 +69,7 @@ skills:
     data_type: number
     required: true
     conditional_on:
+      duct_type: round
       method: velocity
     description: Target air velocity in m/s.
   - name: target_friction_pa_per_m
