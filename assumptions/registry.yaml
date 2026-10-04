@@ -35,6 +35,26 @@ assumptions:
     status: controlled_source_default
     override_allowed: true
 
+  - assumption_id: pump.pipe_material.preliminary_default
+    parameter: pipe_material
+    value: ms_cs
+    unit: material
+    domain: HVAC
+    source_skill: pump_head
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: pump.design_margin.preliminary_default
+    parameter: design_margin
+    value: 10
+    unit: '%'
+    domain: HVAC
+    source_skill: pump_head
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
   - assumption_id: pump.gravity.source_default
     parameter: gravity
     value: 9.81
