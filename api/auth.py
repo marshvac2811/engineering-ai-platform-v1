@@ -226,20 +226,19 @@ class SupabaseJWTAuthenticator(Authenticator):
             raise AuthenticationError("Supabase Auth rejected the access token")
         return payload
 
-    def _resolve_tenant_membership(self, user_id: str) -> tuple[str, str]:
-        service_key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
-        if not service_key:
-            raise AuthenticationError(
-                "SUPABASE_SERVICE_ROLE_KEY is required to resolve tenant membership"
-            )
+    def _resolve_tenant_membership(self, user_id: str, access_token: str) -> tuple[str, str]:
+        """Resolve membership through a SECURITY DEFINER RPC using the caller's JWT.
 
-        query = urllib.parse.urlencode({
-            "user_id": "eq." + user_id,
-            "select": "tenant_id,role,is_default",
-            "order": "is_default.desc",
-            "limit": "1",
-        })
-        url = self.supabase_url + "/rest/v1/tenant_memberships?" + query
+        This deliberately avoids requiring a Supabase service-role secret in Vercel.
+        The RPC uses auth.uid() from the verified bearer token and returns only the
+        caller's own default membership.
+        """
+        publishable_key = (
+            os.getenv("SUPABASE_PUBLISHABLE_KEY")
+            or os.getenv("SUPABASE_ANON_KEY")
+            or "sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s"
+        ).strip()
+        url = self.supabase_url + "/rest/v1/rpc/resolve_current_tenant_membership"
         try:
             client = getattr(self, "_http_client", None)
             if client is None:
@@ -250,13 +249,15 @@ class SupabaseJWTAuthenticator(Authenticator):
                     limits=httpx.Limits(max_connections=4, max_keepalive_connections=2),
                 )
                 self._http_client = client
-            response = client.get(
+            response = client.post(
                 url,
                 headers={
-                    "apikey": service_key,
-                    "Authorization": "Bearer " + service_key,
+                    "apikey": publishable_key,
+                    "Authorization": "Bearer " + access_token,
                     "Accept": "application/json",
+                    "Content-Type": "application/json",
                 },
+                json={},
             )
             response.raise_for_status()
             rows = response.json()
@@ -323,7 +324,7 @@ class SupabaseJWTAuthenticator(Authenticator):
         # Resolve it from the authenticated user's tenant membership instead of
         # requiring the browser to send a trusted X-Tenant-ID header.
         if not tenant_id:
-            tenant_id, membership_role = self._resolve_tenant_membership(user_id)
+            tenant_id, membership_role = self._resolve_tenant_membership(user_id, token)
             if membership_role:
                 role = membership_role
         if not tenant_id:
