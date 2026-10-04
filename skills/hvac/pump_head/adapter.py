@@ -64,6 +64,7 @@ class PumpHeadSkill:
 
         v = result["velocity_ms"]
         standards = resolve_standards_context(request.standards_context)
+        fitting_interpretations = [row for row in i.get("fittings", []) if row.get("status") == "GOVERNED_PRELIMINARY_INTERPRETATION"]
         warnings = [
             "Source default water kinematic viscosity is 1.0e-6 m2/s; explicit governed overrides are supported.",
             "Pipe roughness is based on the source calculator's default/reference values unless explicitly supplied.",
@@ -71,6 +72,14 @@ class PumpHeadSkill:
             "The source recommends using resulting TDH and design flow together on the pump manufacturer's performance curve.",
             "Output is preliminary and requires engineering review before design release.",
         ]
+        if fitting_interpretations:
+            warnings.append("Generic fitting descriptions were mapped to registered source defaults and should be confirmed before design release.")
+            warnings.extend(
+                f"Fitting interpretation: {row['input_text']} -> {row['name']} (L/D {row['ld_ratio']}); {row['note']}"
+                for row in fitting_interpretations
+            )
+        if all(field in i for field in ("pump_efficiency_pct", "supply_temp_c", "return_temp_c")):
+            warnings.append("Pump efficiency and supply/return temperatures are captured as supplied inputs but are not used in the current TDH calculation.")
         if v < 0.6:
             warnings.append("Source flag: velocity low — oversized pipe, sediment risk.")
         elif v > 3.0:
@@ -88,6 +97,20 @@ class PumpHeadSkill:
                 {**viscosity, "parameter": "water_kinematic_viscosity", "unit": "m2/s"},
                 {**gravity, "parameter": "gravity", "unit": "m/s2"},
                 {"parameter": "roughness", "value": roughness, "unit": "mm", "source": "source_material_default" if material else "user_input"},
+                *[
+                    {
+                        "parameter": "fitting_interpretation",
+                        "input_text": row["input_text"],
+                        "value": row["name"],
+                        "ld_ratio": row["ld_ratio"],
+                        "unit": "L/D",
+                        "status": row["status"],
+                        "source": row["source"],
+                        "client_confirmation": row["client_confirmation"],
+                        "note": row["note"],
+                    }
+                    for row in fitting_interpretations
+                ],
             ],
             standards=standards,
             warnings=warnings,
@@ -98,6 +121,7 @@ class PumpHeadSkill:
                 {"step": 4, "operation": "calculate_friction_static_equipment_subtotal"},
                 {"step": 5, "operation": "resolve_governance", "standards_count": len(standards)},
                 {"step": 6, "operation": "apply_design_margin_and_unit_conversions"},
+                {"step": 7, "operation": "capture_unused_supplied_inputs", "fields": [field for field in ("pump_efficiency_pct", "supply_temp_c", "return_temp_c") if field in i]},
             ],
             human_review_required=True,
             source_revision=SOURCE_REVISION,
