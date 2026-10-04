@@ -118,7 +118,7 @@ def _extract_fittings(text: str) -> list[dict]:
     # Only activates when an elbow quantity is not already captured.
     if not any(row.get("input_text") == "90_elbow" for row in rows):
         fallback = re.search(
-            r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*90[^A-Za-z0-9]{0,8}elbows?",
+            r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*90",
             text,
             re.IGNORECASE,
         )
