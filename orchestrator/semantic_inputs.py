@@ -91,6 +91,30 @@ def _convert(field: str, value: float, unit: str) -> float:
     if field == "area_sqft" and u in ("m2", "m²"): return value * 10.7639
     return value
 
+def _extract_fittings(text: str) -> list[dict]:
+    """Convert generic fitting quantities to registered source defaults.
+
+    This is a governed preliminary interpretation, not silent invention. The
+    returned records carry disclosure metadata so evidence/report layers can
+    show exactly how generic client wording was interpreted.
+    """
+    from governance.fitting_policy import governed_fitting_interpretation
+
+    patterns = [
+        ("90° elbow", r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*(?:90\s*(?:°|degree|degrees)?\s*)?elbows?"),
+        ("tee", r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*tees?"),
+        ("isolation valve", r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*isolation\s+valves?"),
+        ("check valve", r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*check\s+valves?"),
+    ]
+    rows: list[dict] = []
+    for kind, pattern in patterns:
+        for m in re.finditer(pattern, text, re.IGNORECASE):
+            qty = float(m.group(1).replace(",", ""))
+            row = governed_fitting_interpretation(kind, qty)
+            if row:
+                rows.append(row)
+    return rows
+
 def normalize_engineering_inputs(text: str) -> Dict[str, Any]:
     text = " ".join(str(text or "").split())
     out: Dict[str, Any] = {}
@@ -112,4 +136,8 @@ def normalize_engineering_inputs(text: str) -> Dict[str, Any]:
         if m:
             value = float(m.group(1).replace(",", ""))
             out[field] = int(value) if value.is_integer() else value
+
+    fittings = _extract_fittings(text)
+    if fittings:
+        out["fittings"] = fittings
     return out
