@@ -44,7 +44,8 @@ def app(environ, start_response):
     # query string before invoking Python. Prefer original request-path
     # headers when available, then the explicit routing parameter.
     forwarded_path = (
-        environ.get("HTTP_X_INVOKE_PATH")
+        environ.get("HTTP_X_ENGINEERING_REQUEST_PATH")
+        or environ.get("HTTP_X_INVOKE_PATH")
         or environ.get("HTTP_X_MATCHED_PATH")
         or environ.get("HTTP_X_NOW_ROUTE_MATCHES")
         or ""
