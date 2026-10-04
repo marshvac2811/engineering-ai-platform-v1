@@ -63,3 +63,17 @@ def test_universal_semantic_normalizer_does_not_treat_plain_elevation_as_pump_he
     facts = extract_facts("Site elevation above sea level is 1200 m.")
     assert "altitude_m" in facts
     assert "static_head_m" not in facts
+
+
+def test_pump_language_does_not_misclassify_efficiency_temperature_or_static_elevation():
+    from orchestrator.intake import extract_facts
+
+    text = (
+        "Pump head: static elevation 12 m. Pump efficiency 70%. "
+        "Water supply temperature 7 C and return temperature 12 C."
+    )
+    result = extract_facts(text)
+    assert result["static_head_m"] == 12
+    assert "altitude_m" not in result
+    assert "efficiency_kw_per_tr" not in result
+    assert "ambient_temp_c" not in result
