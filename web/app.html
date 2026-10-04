@@ -295,10 +295,10 @@ async function downloadArtifact(jobId,kind){
  }catch(e){if(msg)msg.textContent="Could not download: "+e.message;}
 }
 
-async function approve(jobId){
+async function approve(jobId,dispatchAfter){
  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/approve",{
   method:"POST",headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({comment:"Approved from Engineering Operations dashboard"})
+  body:JSON.stringify({comment:"Approved from Engineering Operations dashboard",dispatch:!!dispatchAfter})
  });
  const d=await r.json();if(!r.ok){alert(d.error||"Approval failed");return;}await loadJobs();
 }
