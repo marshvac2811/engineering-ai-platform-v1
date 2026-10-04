@@ -27,7 +27,7 @@ from orchestrator.intake import build_plan
 from orchestrator.provider_factory import build_intent_provider
 from orchestrator.provider import ProviderUnavailableError
 from api.auth import DevelopmentHeaderAuthenticator, ApiKeyAuthenticator, SupabaseJWTAuthenticator, EdgeVerifiedAuthenticator, AuthContext, AuthenticationError
-from api.security import InMemoryApiKeyStore, InMemoryUsageStore, UsageEvent
+from api.security import InMemoryApiKeyStore, InMemoryUsageStore, SupabaseApiKeyStore, SupabaseUsageStore, UsageEvent
 from crm.service import CRMService
 from crm.store import InMemoryCRMStore
 from crm.supabase_store import build_supabase_crm_store_from_env, SupabaseCRMStore
@@ -70,8 +70,8 @@ class APIApp:
             )
         self.store = configured_store or InMemoryJobStore()
         self.ingestion = ingestion or build_ingestion_service()
-        self.api_keys = api_keys or InMemoryApiKeyStore()
-        self.usage = usage_store or InMemoryUsageStore()
+        self.api_keys = api_keys or (SupabaseApiKeyStore(supabase_client) if supabase_client is not None else InMemoryApiKeyStore())
+        self.usage = usage_store or (SupabaseUsageStore(supabase_client) if supabase_client is not None else InMemoryUsageStore())
         # Reuse the already-created production Supabase client across all persistent
         # stores. Creating several independent clients during Render startup can
         # stall initialization before Uvicorn binds its port.
