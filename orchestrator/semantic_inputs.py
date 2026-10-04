@@ -135,6 +135,8 @@ def _extract_fittings(text: str) -> list[dict]:
                 "input_text": "90_elbow",
                 "note": "Generic 90° elbow interpreted as standard elbow; long-radius elbow would differ.",
             })
+    order = {"90_elbow": 0, "tee": 1, "isolation valve": 2, "check valve": 3}
+    rows.sort(key=lambda row: order.get(row.get("input_text"), 99))
     return rows
 
 def normalize_engineering_inputs(text: str) -> Dict[str, Any]:
