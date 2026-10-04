@@ -67,4 +67,4 @@ def test_successful_retry_clears_stale_errors():
     job = service.process(job.job_id)
     assert job.status == JobStatus.HUMAN_REVIEW
     assert job.errors == []
-    assert job.orchestration.get("status") == "ready_for_execution"
+    assert job.orchestration["engineering_plan"]["status"] == "completed"
