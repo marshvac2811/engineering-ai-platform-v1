@@ -217,6 +217,10 @@ def extract_facts(text: str) -> Dict[str, Any]:
     """Extract unambiguous engineering facts from natural-language prose."""
     t = _normalize_intake_text(text)
     out: Dict[str, Any] = {}
+    # Universal semantic normalization is the first-class cross-skill path.
+    # The legacy mappings below remain as a deterministic compatibility layer.
+    from orchestrator.semantic_inputs import normalize_engineering_inputs
+    out.update(normalize_engineering_inputs(t))
 
     if re.search(r"\bcfm\b", t, re.IGNORECASE):
         out["airflow_unit"] = "cfm"
