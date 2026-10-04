@@ -106,7 +106,7 @@ def normalize_engineering_inputs(text: str) -> Dict[str, Any]:
         value = _convert(field, float(m.group(1).replace(",", "")), m.group(2))
         out[field] = int(value) if value.is_integer() else value
 
-    for field in ("margin_pct", "speed_reduction_pct", "load_factor_pct", "engineering_pct", "combination_ratio", "static_head_fraction"):
+    for field in ("margin_pct", "speed_reduction_pct", "load_factor_pct", "engineering_pct", "combination_ratio", "static_head_fraction", "pump_efficiency_pct"):
         labels = _label_pattern(ALIASES.get(field, [field]))
         m = re.search(rf"(?<![a-z]){labels}(?:\s+(?:is|are|of|at|=|:))?\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:%|percent)?\b", text, re.IGNORECASE)
         if m:
