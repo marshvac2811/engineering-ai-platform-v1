@@ -29,6 +29,7 @@ class SkillResult:
     calculation_trace: List[Dict[str, Any]] = field(default_factory=list)
     human_review_required: bool = True
     source_revision: Optional[str] = None
+    skill_version: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -38,6 +39,7 @@ class SkillResult:
             "engineering_result": self.engineering_result,
             "assumptions": self.assumptions,
             "standards": self.standards,
+            "skill_version": self.skill_version,
             "warnings": self.warnings,
             "validation_errors": self.validation_errors,
             "calculation_trace": self.calculation_trace,

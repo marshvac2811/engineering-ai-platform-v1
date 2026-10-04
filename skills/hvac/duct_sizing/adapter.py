@@ -63,6 +63,7 @@ class DuctSizingSkill:
                 status="input_validation_failed",
                 validation_errors=errors,
                 source_revision=SOURCE_REVISION,
+                skill_version=self.version,
             )
 
         inputs = request.inputs
@@ -84,6 +85,7 @@ class DuctSizingSkill:
                     "Invalid airflow_unit. Allowed values: m3/hr, m3/h, m³/hr, m³/h, cfm"
                 ],
                 source_revision=SOURCE_REVISION,
+                skill_version=self.version,
             )
         if normalized_airflow_unit == "m3/hr":
             flow_m3hr = airflow
@@ -158,6 +160,7 @@ class DuctSizingSkill:
                 status="calculation_failed",
                 validation_errors=[str(exc)],
                 source_revision=SOURCE_REVISION,
+                skill_version=self.version,
             )
 
         warnings = [
@@ -203,6 +206,7 @@ class DuctSizingSkill:
             calculation_trace=trace,
             human_review_required=True,
             source_revision=SOURCE_REVISION,
+            skill_version=self.version,
         )
 
     @staticmethod
