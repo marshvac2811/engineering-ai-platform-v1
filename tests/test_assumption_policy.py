@@ -27,3 +27,27 @@ def test_auto_assumption_is_explicitly_marked_for_client_disclosure():
     assert not blockers
     assert all(a["status"] == "ASSUMED_DUE_TO_CLIENT_DATA_UNAVAILABLE" for a in assumptions)
     assert all(a["client_confirmation"] == "recommended" for a in assumptions)
+
+
+def test_only_registered_minor_inputs_are_auto_assumed():
+    # A genuinely required engineering input such as design flow must remain a blocker.
+    inputs = {
+        "diameter_mm": 100,
+        "straight_length_m": 50,
+        "static_head_m": 20,
+    }
+    resolved, assumptions, blockers = resolve_input_assumptions("pump_head", inputs)
+    assert not blockers
+    assert resolved["material"] == "ms_cs"
+    assert resolved["margin_pct"] == 10
+    assert "flow_m3hr" not in resolved
+    assert len(assumptions) == 2
+
+
+def test_unknown_skill_has_no_automatic_assumptions():
+    resolved, assumptions, blockers = resolve_input_assumptions(
+        "unknown_skill", {"flow_m3hr": 20}
+    )
+    assert resolved == {"flow_m3hr": 20}
+    assert assumptions == []
+    assert blockers == []
