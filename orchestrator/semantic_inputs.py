@@ -101,7 +101,7 @@ def _extract_fittings(text: str) -> list[dict]:
     from governance.fitting_policy import governed_fitting_interpretation
 
     patterns = [
-        ("90° elbow", r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*(?:90\s*(?:°|degree|degrees)?\s*)?elbows?"),
+        ("90° elbow", r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*90\s*(?:°|degrees?)\s*elbows?"),
         ("tee", r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*tees?"),
         ("isolation valve", r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*isolation\s+valves?"),
         ("check valve", r"(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*check\s+valves?"),
