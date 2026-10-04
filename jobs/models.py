@@ -72,6 +72,7 @@ ALLOWED_TRANSITIONS = {
     },
     JobStatus.APPROVED: {
         JobStatus.DISPATCHING,
+        JobStatus.REWORK,
         JobStatus.CANCELLED,
     },
     JobStatus.DISPATCHING: {
