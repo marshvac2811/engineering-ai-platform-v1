@@ -108,24 +108,26 @@ async function resolveTenant(userId, claims) {
   const cached = membershipCache.get(userId);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
 
-  const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
-  if (!serviceKey) throw new Error("Tenant membership is unavailable");
+  // Resolve membership through the caller's JWT via the SECURITY DEFINER RPC.
+  // This deliberately avoids requiring a Supabase service-role secret in Vercel.
+  const publishableKey = String(
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    "sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s"
+  ).trim();
 
-  const url =
-    SUPABASE_URL +
-    "/rest/v1/tenant_memberships?user_id=eq." +
-    encodeURIComponent(userId) +
-    "&select=tenant_id,role,is_default&order=is_default.desc&limit=1";
-
-  const response = await fetch(url, {
+  const response = await fetch(SUPABASE_URL + "/rest/v1/rpc/resolve_current_tenant_membership", {
+    method: "POST",
     headers: {
-      apikey: serviceKey,
-      Authorization: "Bearer " + serviceKey,
+      apikey: publishableKey,
+      Authorization: "Bearer " + String(claims.access_token || ""),
       accept: "application/json",
+      "content-type": "application/json",
     },
+    body: "{}",
     cache: "no-store",
   });
-  if (!response.ok) throw new Error("Tenant membership lookup returned HTTP " + response.status);
+  if (!response.ok) throw new Error("Tenant membership RPC returned HTTP " + response.status);
 
   const rows = await response.json();
   if (!Array.isArray(rows) || !rows.length || !rows[0].tenant_id) {
@@ -161,6 +163,9 @@ export default async function middleware(request) {
   try {
     const token = authorization.slice(7).trim();
     const claims = await verifySupabaseJwt(token);
+    // Preserve the browser's original pathname across the Vercel rewrite.
+    headers.set("x-engineering-request-path", new URL(request.url).pathname);
+    claims.access_token = token;
     const membership = await resolveTenant(String(claims.sub), claims);
 
     const context = {
