@@ -436,7 +436,7 @@ function jobHtml(j){
 }
 
 window.regView="all";window.regShown=50;
-const REG_TABS=[["all","All Reports"],["pending_review","Pending Review"],["approved","Approved"],["dispatched","Dispatched"],["completed","Completed"],["failed","Failed / Rework"]];
+const REG_TABS=[["all","All Reports"],["pending_review","Pending Review"],["approved","Approved"],["dispatched","Dispatched"],["completed","Completed"],["evidence","Evidence"],["revision_history","Revision History"],["failed","Failed / Rework"]];
 let regTimer;
 const ACRONYMS={vfd:"VFD",hvac:"HVAC",bms:"BMS",vrf:"VRF",boq:"BOQ",cop:"COP",ach:"ACH"};
 function niceText(v){const t=String(v==null?"":v).replace(/_/g," ").trim().split(" ").map(w=>ACRONYMS[w.toLowerCase()]||w).join(" ");return t?t.charAt(0).toUpperCase()+t.slice(1):"-";}
@@ -488,16 +488,13 @@ async function loadRegister(){
   if(!d.reports.length){box.innerHTML='<div class="empty">No reports match this view yet.</div>';return;}
   const btn=(label,fn)=>'<button class="secondary" style="padding:5px 9px;font-size:12px" onclick="'+fn+'">'+label+'</button>';
   box.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'+
-   ["Date","Report","Skill / request","Status","Rev","Reviewed by","Approved","Dispatched","Open"].map(h=>'<th style="text-align:left;border-bottom:2px solid #e1e5eb;padding:7px;white-space:nowrap">'+h+'</th>').join("")+'</tr></thead><tbody>'+
+   (window.regView==="evidence"?["Date","Report","Revision","Status","Evidence SHA-256","PDF SHA-256","Excel SHA-256","Open"]:window.regView==="revision_history"?["Date","Report","Revision","Status","Superseded","Parent Report","Reviewed by","Approved","Dispatched","Open"]:["Date","Report","Skill / request","Status","Rev","Reviewed by","Approved","Dispatched","Open"]).map(h=>'<th style="text-align:left;border-bottom:2px solid #e1e5eb;padding:7px;white-space:nowrap">'+h+'</th>').join("")+'</tr></thead><tbody>'+
    d.reports.map(x=>{const act=(fn,kind)=>fn+"('"+x.job_id+"','"+kind+"')";return '<tr style="border-bottom:1px solid #edf0f4;vertical-align:top">'+
     '<td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.created_at))+'</td>'+
     '<td style="padding:7px" title="Report '+esc(x.report_id)+' / Job '+esc(x.job_id)+'">'+esc(String(x.report_id||"").slice(0,8))+'<div class="small">job '+esc(String(x.job_id||"").slice(0,8))+'</div></td>'+
-    '<td style="padding:7px;min-width:160px"><strong>'+esc(niceText(x.skill_id))+'</strong>'+(x.request?'<div class="small">'+esc(String(x.request).slice(0,110))+'</div>':"")+'</td>'+
-    '<td style="padding:7px;font-weight:700">'+esc(niceText(x.status))+'</td>'+
-    '<td style="padding:7px">V'+esc(x.revision)+(x.superseded?' <span class="small">(superseded)</span>':'')+'</td>'+
-    '<td style="padding:7px">'+esc(x.reviewed_by||"-")+'</td>'+
-    '<td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.approved_at))+'</td>'+
-    '<td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.dispatched_at))+'</td>'+
+    (window.regView==="evidence"?'<td style="padding:7px">V'+esc(x.revision)+'</td><td style="padding:7px;font-weight:700">'+esc(niceText(x.status))+'</td><td style="padding:7px;max-width:180px;word-break:break-all">'+esc(x.evidence_sha256||"-")+'</td><td style="padding:7px;max-width:180px;word-break:break-all">'+esc(x.pdf_sha256||"-")+'</td><td style="padding:7px;max-width:180px;word-break:break-all">'+esc(x.xlsx_sha256||"-")+'</td>':
+     window.regView==="revision_history"?'<td style="padding:7px">V'+esc(x.revision)+'</td><td style="padding:7px;font-weight:700">'+esc(niceText(x.status))+'</td><td style="padding:7px">'+(x.superseded?"Yes":"No")+'</td><td style="padding:7px">'+esc(x.supersedes_report_id||"-")+'</td><td style="padding:7px">'+esc(x.reviewed_by||"-")+'</td><td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.approved_at))+'</td><td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.dispatched_at))+'</td>':
+     '<td style="padding:7px;min-width:160px"><strong>'+esc(niceText(x.skill_id))+'</strong>'+(x.request?'<div class="small">'+esc(String(x.request).slice(0,110))+'</div>':"")+'</td><td style="padding:7px;font-weight:700">'+esc(niceText(x.status))+'</td><td style="padding:7px">V'+esc(x.revision)+(x.superseded?' <span class="small">(superseded)</span>':'')+'</td><td style="padding:7px">'+esc(x.reviewed_by||"-")+'</td><td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.approved_at))+'</td><td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.dispatched_at))+'</td>')+
     '<td style="padding:7px"><div style="display:flex;gap:5px;flex-wrap:wrap">'+btn("Report",act("regOpen","report"))+btn("Evidence",act("regOpen","evidence"))+btn("Audit",act("regOpen","audit"))+
      (x.pdf_available?btn("PDF",act("downloadArtifact","pdf")):"")+(x.xlsx_available?btn("Excel",act("downloadArtifact","xlsx")):"")+'</div></td></tr>';}).join("")+
    '</tbody></table>'+(d.total>d.reports.length?'<div class="actions"><button onclick="window.regShown+=50;loadRegister()">Show more ('+(d.total-d.reports.length)+' more)</button></div>':"");
