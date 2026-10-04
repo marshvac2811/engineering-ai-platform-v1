@@ -80,3 +80,43 @@ def test_pump_language_does_not_misclassify_efficiency_temperature_or_static_ele
     assert result.get("pump_efficiency_pct") == 70
     assert result.get("supply_temp_c") == 7
     assert result.get("return_temp_c") == 12
+
+
+def test_pump_head_natural_language_fittings_are_normalized_and_disclosed():
+    text = (
+        "Calculate total dynamic head for a water circulation pump. "
+        "Design flow: 18 m3/h. Total pipe length: 180 m. Pipe diameter: 80 mm. "
+        "Fittings: 12 x 90° elbows, 4 x tees, 6 x isolation valves, and 2 x check valves. "
+        "Static elevation: 12 m. Pump efficiency: 70%. Water supply temperature: 7 C "
+        "and return temperature: 12 C. Pipe material is not available."
+    )
+    facts = extract_facts(text)
+    assert facts["flow_m3hr"] == 18
+    assert facts["straight_length_m"] == 180
+    assert facts["diameter_mm"] == 80
+    assert facts["static_head_m"] == 12
+    assert facts["pump_efficiency_pct"] == 70
+    assert facts["supply_temp_c"] == 7
+    assert facts["return_temp_c"] == 12
+    assert len(facts["fittings"]) == 4
+    assert [row["quantity"] for row in facts["fittings"]] == [12, 4, 6, 2]
+    assert all(row["status"] == "GOVERNED_PRELIMINARY_INTERPRETATION" for row in facts["fittings"])
+    assert all("client_confirmation" in row for row in facts["fittings"])
+
+
+def test_pump_head_original_trial_is_ready_after_governed_assumptions_and_fitting_normalization():
+    text = (
+        "Calculate the total dynamic head required for a water circulation pump. "
+        "Design flow: 18 m3/h. Total pipe length: 180 m. Pipe diameter: 80 mm. "
+        "Fittings: 12 x 90° elbows, 4 x tees, 6 x isolation valves, and 2 x check valves. "
+        "Static elevation: 12 m. Pump efficiency: 70%. Water supply temperature: 7 C "
+        "and return temperature: 12 C. Pipe material is not available. "
+        "Use governed preliminary assumptions for permissible minor missing inputs."
+    )
+    plan = build_plan(text)
+    assert plan.selected_skill_id == "pump_head"
+    assert plan.status == "ready_for_execution"
+    assert plan.missing_inputs == []
+    assert plan.extracted_inputs["material"] == "ms_cs"
+    assert plan.extracted_inputs["margin_pct"] == 10
+    assert len(plan.extracted_inputs["fittings"]) == 4
