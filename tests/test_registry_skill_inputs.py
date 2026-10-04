@@ -55,7 +55,7 @@ def test_allowed_value_is_reported():
     assert any("invalid value: method" in error for error in errors)
 
 
-def test_conditional_rectangular_inputs_are_required():
+def test_rectangular_sizing_does_not_require_dimensions():
     registry = load_skill_registry(REGISTRY_PATH)
     definition = registry.get("duct_sizing")
 
@@ -64,12 +64,12 @@ def test_conditional_rectangular_inputs_are_required():
             "airflow": 5000,
             "method": "velocity",
             "duct_type": "rectangular",
+            "target_velocity_ms": 7,
         },
         definition,
     )
 
-    assert "Missing required input: width_mm" in errors
-    assert "Missing required input: height_mm" in errors
+    assert errors == []
 
 
 def test_conditional_round_inputs_are_not_required_for_rectangular():
