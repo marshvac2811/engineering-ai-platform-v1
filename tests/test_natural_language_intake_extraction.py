@@ -120,3 +120,26 @@ def test_pump_head_original_trial_is_ready_after_governed_assumptions_and_fittin
     assert plan.extracted_inputs["material"] == "ms_cs"
     assert plan.extracted_inputs["margin_pct"] == 10
     assert len(plan.extracted_inputs["fittings"]) == 4
+
+
+def test_pump_head_execution_uses_governed_fittings_and_produces_expected_preliminary_tdh():
+    from skills.common import SkillRequest
+    from skills.hvac.pump_head.adapter import PumpHeadSkill
+
+    text = (
+        "Design flow: 18 m3/h. Total pipe length: 180 m. Pipe diameter: 80 mm. "
+        "Fittings: 12 x 90° elbows, 4 x tees, 6 x isolation valves, and 2 x check valves. "
+        "Static elevation: 12 m. Pump efficiency: 70%. Water supply temperature: 7 C "
+        "and return temperature: 12 C."
+    )
+    inputs = extract_facts(text).values
+    inputs["material"] = "ms_cs"
+    inputs["margin_pct"] = 10
+
+    result = PumpHeadSkill().run(SkillRequest(skill_id="pump_head", inputs=inputs))
+
+    assert result.status == "draft_ready"
+    assert round(result.engineering_result["fittings_equivalent_length_m"], 3) == 60.64
+    assert round(result.engineering_result["total_dynamic_head_m"], 3) == 16.794
+    assert len([a for a in result.assumptions if a.get("parameter") == "fitting_interpretation"]) == 4
+    assert any("not used in the current TDH calculation" in warning for warning in result.warnings)
