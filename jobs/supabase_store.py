@@ -80,7 +80,11 @@ class SupabaseJobStore(JobStore):
         result = job.result or {}
         engineering = result.get("engineering_result") or {}
         checks = list(engineering.get("compliance") or [])
-        report = result.get("compliance_report")
+        # ReportService produces the complete governed report envelope, including
+        # work_items, calculation traces and traceability metadata. Persist that
+        # envelope verbatim. The compliance-only report is retained only as a
+        # legacy fallback for jobs created before the full report was persisted.
+        report = result.get("report") or result.get("compliance_report")
         if not report and engineering:
             from reports.compliance_report import build_compliance_report
             report = build_compliance_report(skill_id=job.skill_id or job.requested_skill_id or "", engineering_result=engineering)
