@@ -79,6 +79,16 @@ For the rectangular duct velocity trial (5000 m³/h, 7 m/s, galvanized steel), t
 - Push access: user grants a short-lived GitHub classic token (repo scope) when needed;
   delete it from GitHub afterwards.
 
+## Current implementation checkpoint — 2026-10-05
+- PR #31 merged: governed building and multidisciplinary drawing foundation.
+- PR #32 merged: authenticated drawing planning and coordination API contracts.
+- Main drawing foundation now includes source-traceable BuildingModel, structured floors/rooms, confidence/review handling, preliminary HVAC/FIRE/PLUMBING drawing objects, deterministic JSON/SVG export, explicit-input discipline planning, and cross-discipline clearance conflict detection.
+- Existing attachment ingestion already hashes and registers uploaded source files; the new building layer consumes normalized layout facts without fabricating geometry.
+- API contracts added: POST /v1/drawings/plan and POST /v1/drawings/coordinate, protected by the existing jobs-write scope. Drawing outputs are explicitly preliminary and human-review-required.
+- Latest drawing API branch CI: 281 tests passed, 1 warning.
+- The drawing system is still not a full PDF/CAD/BIM interpreter or construction drawing generator. The next implementation work is source-document geometry extraction, persistent project/drawing records, governed HVAC drawing generation from actual calculation outputs, then fire/plumbing design modules and coordination package integration.
+- Canonical live deployment remains Render and still requires post-merge deployment verification.
+
 ## Current verified checkpoint — 2026-10-05
 - `main` commit: `2d778454506d0936a5f0472041191569ddd18247`.
 - PR #30 fixed a stale facade report-type assertion exposed by the legacy-report recovery change; PR #30 is merged.
