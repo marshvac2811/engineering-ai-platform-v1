@@ -3,6 +3,7 @@ from crm.store import InMemoryCRMStore
 from jobs.store import InMemoryJobStore
 import io, json
 from api.app import APIApp
+from ingestion.service import IngestionService
 
 
 def call(app, method, path, body=None, tenant='tenant-a'):
@@ -82,3 +83,24 @@ def test_api_exposes_engineering_report_and_compliance():
     assert status.startswith('200')
     assert compliance['count'] == 1
     assert compliance['checks'][0]['clause_reference']
+
+
+def test_drawing_plan_api_requires_explicit_engineering_inputs():
+    import json, io
+    from api.app import APIApp
+    from jobs.store import InMemoryJobStore
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore(), ingestion=IngestionService())
+    body={"building":{"building_id":"B1","name":"Demo","floors":[{"floor_id":"L1","name":"Ground","rooms":[{"room_id":"R1","name":"Office","area_m2":20,"x_mm":100,"y_mm":100}]}]},"discipline":"HVAC","floor_id":"L1","room_inputs":{"R1":{"airflow_m3h":500}}}
+    raw=json.dumps(body).encode(); env={"REQUEST_METHOD":"POST","PATH_INFO":"/v1/drawings/plan","CONTENT_LENGTH":str(len(raw)),"wsgi.input":io.BytesIO(raw),"HTTP_X_TENANT_ID":"tenant-a"}
+    result={}; out=b"".join(app(env,lambda s,h: result.setdefault("status",s))); payload=json.loads(out.decode())
+    assert result["status"].startswith("200") and payload["drawing"]["objects"][0]["kind"]=="air_terminal" and "preliminary" in payload["drawing"]["metadata"]["design_boundary"]
+
+def test_drawing_coordinate_api_reports_cross_discipline_conflict():
+    import json, io
+    from api.app import APIApp
+    from jobs.store import InMemoryJobStore
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore(), ingestion=IngestionService())
+    body={"clearance_mm":100,"objects":[{"object_id":"A","discipline":"HVAC","kind":"duct","x_mm":10,"y_mm":10,"floor_id":"L1"},{"object_id":"B","discipline":"PLUMBING","kind":"pipe","x_mm":20,"y_mm":20,"floor_id":"L1"}]}
+    raw=json.dumps(body).encode(); env={"REQUEST_METHOD":"POST","PATH_INFO":"/v1/drawings/coordinate","CONTENT_LENGTH":str(len(raw)),"wsgi.input":io.BytesIO(raw),"HTTP_X_TENANT_ID":"tenant-a"}
+    result={}; out=b"".join(app(env,lambda s,h: result.setdefault("status",s))); payload=json.loads(out.decode())
+    assert result["status"].startswith("200") and payload["count"]==1 and payload["human_review_required"]
