@@ -3,6 +3,7 @@ from crm.store import InMemoryCRMStore
 from jobs.store import InMemoryJobStore
 import io, json
 from api.app import APIApp
+from ingestion.service import IngestionService
 
 
 def call(app, method, path, body=None, tenant='tenant-a'):
