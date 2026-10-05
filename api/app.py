@@ -40,6 +40,7 @@ from engineering.building.ingest import ingest_structured_layout
 from engineering.building.serialization import to_dict as building_to_dict
 from engineering.design.planner import plan_discipline_layout
 from engineering.drawing.export import drawing_to_dict, drawing_to_svg
+from engineering.drawing.service import build_job_drawing_package, authorize_drawing_package_issue
 from engineering.coordination.model import find_coordinate_conflicts
 from integrations.providers.upwork import (
     UpworkOAuthStateStore, TrialUpworkTokenStore, authorization_url as upwork_authorization_url,
@@ -417,6 +418,67 @@ class APIApp:
                 objects = [EngineeringObject(str(o["object_id"]),str(o["discipline"]),str(o["kind"]),float(o["x_mm"]),float(o["y_mm"]),str(o["floor_id"]),o.get("size"),o.get("source_calculation"),o.get("confidence"),dict(o.get("attributes") or {})) for o in raw_objects]
                 conflicts = find_coordinate_conflicts(objects, float(body.get("clearance_mm", 100)))
                 return self._json(start_response, "200 OK", {"conflicts": [x.__dict__ for x in conflicts], "count": len(conflicts), "human_review_required": bool(conflicts)})
+
+            if len(parts) == 3 and parts[0] == "v1" and parts[1] == "drawings" and parts[2] == "package" and method == "POST":
+                ctx.require_scope("jobs:write")
+                job_id = str(body.get("job_id") or "").strip()
+                if not job_id:
+                    raise ValueError("job_id is required")
+                job = service._get(job_id)
+                drawing_specs = body.get("drawings")
+                if not isinstance(drawing_specs, list) or not drawing_specs:
+                    raise ValueError("drawings must be a non-empty array")
+                building_payload = body.get("building")
+                if not isinstance(building_payload, dict):
+                    raise ValueError("building must be an object")
+                building = ingest_structured_layout(building_payload)
+                drawings = []
+                for spec in drawing_specs:
+                    if not isinstance(spec, dict):
+                        raise ValueError("each drawing specification must be an object")
+                    drawing = plan_discipline_layout(
+                        building,
+                        str(spec.get("discipline", "")).strip().upper(),
+                        str(spec.get("floor_id", "")).strip(),
+                        spec.get("room_inputs") if isinstance(spec.get("room_inputs"), dict) else {},
+                        revision=str(spec.get("revision", "A")),
+                    )
+                    drawings.append(drawing)
+                from engineering.drawing.objects import EngineeringObject
+                all_objects = [o for d in drawings for o in d.objects]
+                conflicts = find_coordinate_conflicts(all_objects, float(body.get("clearance_mm", 100)))
+                manifest = build_job_drawing_package(
+                    job,
+                    drawings,
+                    source_hashes=dict(body.get("source_hashes") or {}),
+                    conflicts=conflicts,
+                )
+                if job.status.value == "approved":
+                    manifest = authorize_drawing_package_issue(manifest, job)
+                result = job.result if isinstance(job.result, dict) else {}
+                packages = list(result.get("drawing_packages") or [])
+                packages.append(manifest)
+                result["drawing_packages"] = packages
+                job.result = result
+                job.add_event(
+                    "drawing_package_created",
+                    "Controlled drawing package linked to engineering job.",
+                    package_hash=manifest.get("manifest_sha256"),
+                    drawing_count=len(drawings),
+                    issue_status=manifest.get("issue_status"),
+                )
+                self.store.save(job)
+                return self._json(start_response, "201 Created", {
+                    "job_id": job.job_id,
+                    "package": manifest,
+                    "drawings": [drawing_to_dict(d) for d in drawings],
+                    "svgs": [drawing_to_svg(d) for d in drawings],
+                    "governance": {
+                        "preliminary": True,
+                        "human_review_required": True,
+                        "dispatch_allowed": bool(manifest.get("dispatch_allowed")),
+                    },
+                })
 
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "api-keys" and method == "POST":
                 ctx.require_scope_role("admin")

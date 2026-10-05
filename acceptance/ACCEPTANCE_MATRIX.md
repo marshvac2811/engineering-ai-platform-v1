@@ -122,24 +122,24 @@ These trials extend the governed lifecycle without claiming final construction-d
 
 | ID | Trial | Minimum evidence | Status |
 |---|---|---|---|
-| AT-43 | Drawing source registration | Source ID, immutable reference and source metadata | PLANNED |
-| AT-44 | Source traceability | Source page/location and SHA-256 linkage | PLANNED |
-| AT-45 | Building model extraction | Floors/rooms represented without fabricated geometry | PLANNED |
-| AT-46 | Confidence handling | Low-confidence extraction requires confirmation | PLANNED |
-| AT-47 | HVAC layout planning | Explicit airflow mapped to traceable HVAC drawing objects | PLANNED |
-| AT-48 | HVAC drawing export | Valid deterministic JSON/SVG output and revision metadata | PLANNED |
-| AT-49 | Fire layout planning | Explicit protection type mapped to traceable fire objects | PLANNED |
-| AT-50 | Plumbing layout planning | Explicit fixture type mapped to traceable plumbing objects | PLANNED |
-| AT-51 | Missing geometry guard | Design blocks when placement geometry is unavailable | PLANNED |
-| AT-52 | Discipline boundary | Unsupported discipline rejected | PLANNED |
-| AT-53 | Cross-discipline coordination | Conflicting objects produce review-required conflict records | PLANNED |
-| AT-54 | Coordination clearance | Configurable clearance is deterministic | PLANNED |
-| AT-55 | Drawing revision metadata | Revision/status preserved in drawing representation | PLANNED |
-| AT-56 | Drawing evidence linkage | Objects retain source-calculation references | PLANNED |
-| AT-57 | Preliminary boundary | Output explicitly remains preliminary and review-required | PLANNED |
-| AT-58 | No invented engineering input | Missing airflow/protection/fixture input is rejected | PLANNED |
-| AT-59 | End-to-end drawing package | Source → building model → design objects → drawing → evidence | PLANNED |
-| AT-60 | Controlled drawing dispatch | Approval gate and artifact hashes prevent unauthorized issue | PLANNED |
+| AT-43 | Drawing source registration | Source ID, immutable reference and source metadata | IMPLEMENTED — unit covered |
+| AT-44 | Source traceability | Source page/location and SHA-256 linkage | IMPLEMENTED — unit covered |
+| AT-45 | Building model extraction | Floors/rooms represented without fabricated geometry | IMPLEMENTED — unit covered |
+| AT-46 | Confidence handling | Low-confidence extraction requires confirmation | IMPLEMENTED — unit covered |
+| AT-47 | HVAC layout planning | Explicit airflow mapped to traceable HVAC drawing objects | IMPLEMENTED — unit covered |
+| AT-48 | HVAC drawing export | Valid deterministic JSON/SVG output and revision metadata | IMPLEMENTED — unit covered |
+| AT-49 | Fire layout planning | Explicit protection type mapped to traceable fire objects | IMPLEMENTED — unit covered |
+| AT-50 | Plumbing layout planning | Explicit fixture type mapped to traceable plumbing objects | IMPLEMENTED — unit covered |
+| AT-51 | Missing geometry guard | Design blocks when placement geometry is unavailable | IMPLEMENTED — unit covered |
+| AT-52 | Discipline boundary | Unsupported discipline rejected | IMPLEMENTED — unit covered |
+| AT-53 | Cross-discipline coordination | Conflicting objects produce review-required conflict records | IMPLEMENTED — unit covered |
+| AT-54 | Coordination clearance | Configurable clearance is deterministic | IMPLEMENTED — unit covered |
+| AT-55 | Drawing revision metadata | Revision/status preserved in drawing representation | IMPLEMENTED — unit covered |
+| AT-56 | Drawing evidence linkage | Objects retain source-calculation references | IMPLEMENTED — unit covered |
+| AT-57 | Preliminary boundary | Output explicitly remains preliminary and review-required | IMPLEMENTED — unit covered |
+| AT-58 | No invented engineering input | Missing airflow/protection/fixture input is rejected | IMPLEMENTED — unit covered |
+| AT-59 | End-to-end drawing package | Source → building model → design objects → drawing → evidence | IMPLEMENTED — package linkage/API covered; persistent production artifact storage remains |
+| AT-60 | Controlled drawing dispatch | Approval gate and artifact hashes prevent unauthorized issue | PARTIAL — approval gate and manifest hash implemented; actual dispatch artifact integration remains |
 
 ### Drawing implementation boundary
 

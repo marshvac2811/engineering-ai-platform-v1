@@ -104,3 +104,34 @@ def test_drawing_coordinate_api_reports_cross_discipline_conflict():
     raw=json.dumps(body).encode(); env={"REQUEST_METHOD":"POST","PATH_INFO":"/v1/drawings/coordinate","CONTENT_LENGTH":str(len(raw)),"wsgi.input":io.BytesIO(raw),"HTTP_X_TENANT_ID":"tenant-a"}
     result={}; out=b"".join(app(env,lambda s,h: result.setdefault("status",s))); payload=json.loads(out.decode())
     assert result["status"].startswith("200") and payload["count"]==1 and payload["human_review_required"]
+
+
+def test_drawing_package_api_links_job_and_enforces_approval():
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore(), ingestion=IngestionService())
+    status, job=call(app,'POST','/v1/jobs',{
+        'source':'drawing-api-test',
+        'requested_skill_id':'duct_sizing',
+        'inputs':{'airflow':3600,'method':'velocity','duct_type':'round','target_velocity_ms':8,'material':'gss'}
+    })
+    assert status.startswith('201')
+    jid=job['job_id']
+    body={
+        'job_id':jid,
+        'building':{'building_id':'B1','name':'Demo','sources':[{'source_id':'plan.pdf','page':1}],
+                    'floors':[{'floor_id':'L1','name':'Ground','rooms':[{'room_id':'R1','name':'Office','area_m2':20,'x_mm':100,'y_mm':100}]}]},
+        'drawings':[{'discipline':'HVAC','floor_id':'L1','room_inputs':{'R1':{'airflow_m3h':500,'source_calculation':'task-1'}},'revision':'A'}],
+        'source_hashes':{'plan.pdf':'abc'}
+    }
+    status, package=call(app,'POST','/v1/drawings/package',body)
+    assert status.startswith('201')
+    assert package['package']['issue_status']=='not_approved'
+    assert package['package']['dispatch_allowed'] is False
+    status, job=call(app,'POST',f'/v1/jobs/{jid}/enqueue')
+    status, job=call(app,'POST',f'/v1/jobs/{jid}/process')
+    assert job['status']=='human_review'
+    status, job=call(app,'POST',f'/v1/jobs/{jid}/approve',{'reviewer':'eng-1','comment':'approved'})
+    assert job['status']=='approved'
+    status, package=call(app,'POST',f'/v1/drawings/package',body)
+    assert status.startswith('201')
+    assert package['package']['issue_status']=='approved_for_controlled_dispatch'
+    assert package['package']['dispatch_allowed'] is True
