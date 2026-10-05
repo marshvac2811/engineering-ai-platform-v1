@@ -36,6 +36,11 @@ from integrations.supabase_store import build_supabase_integration_store_from_en
 from workflow.service import WorkflowTaskService
 from workflow.store import InMemoryWorkflowTaskStore
 from workflow.supabase_store import build_supabase_workflow_task_store_from_env, SupabaseWorkflowTaskStore
+from engineering.building.ingest import ingest_structured_layout
+from engineering.building.serialization import to_dict as building_to_dict
+from engineering.design.planner import plan_discipline_layout
+from engineering.drawing.export import drawing_to_dict, drawing_to_svg
+from engineering.coordination.model import find_coordinate_conflicts
 from integrations.providers.upwork import (
     UpworkOAuthStateStore, TrialUpworkTokenStore, authorization_url as upwork_authorization_url,
     exchange_code as upwork_exchange_code, UpworkProviderError,
@@ -388,6 +393,30 @@ class APIApp:
                     raise ValueError("attachments must be an array")
                 job = service.create_from_plan(plan, attachments=attachments, provider=provider)
                 return self._json(start_response, "201 Created", {"plan": job.orchestration or plan.to_dict(), "job": job.to_dict()})
+
+            if len(parts) == 3 and parts[0] == "v1" and parts[1] == "drawings" and parts[2] == "plan" and method == "POST":
+                ctx.require_scope("jobs:write")
+                payload = body.get("building")
+                if not isinstance(payload, dict):
+                    raise ValueError("building must be an object")
+                building = ingest_structured_layout(payload)
+                discipline = str(body.get("discipline", "")).strip().upper()
+                floor_id = str(body.get("floor_id", "")).strip()
+                room_inputs = body.get("room_inputs")
+                if not isinstance(room_inputs, dict):
+                    raise ValueError("room_inputs must be an object")
+                drawing = plan_discipline_layout(building, discipline, floor_id, room_inputs, revision=str(body.get("revision", "A")))
+                return self._json(start_response, "200 OK", {"building": building_to_dict(building), "drawing": drawing_to_dict(drawing), "svg": drawing_to_svg(drawing), "governance": {"status": "preliminary", "human_review_required": True}})
+
+            if len(parts) == 3 and parts[0] == "v1" and parts[1] == "drawings" and parts[2] == "coordinate" and method == "POST":
+                ctx.require_scope("jobs:write")
+                raw_objects = body.get("objects")
+                if not isinstance(raw_objects, list):
+                    raise ValueError("objects must be an array")
+                from engineering.drawing.objects import EngineeringObject
+                objects = [EngineeringObject(str(o["object_id"]),str(o["discipline"]),str(o["kind"]),float(o["x_mm"]),float(o["y_mm"]),str(o["floor_id"]),o.get("size"),o.get("source_calculation"),o.get("confidence"),dict(o.get("attributes") or {})) for o in raw_objects]
+                conflicts = find_coordinate_conflicts(objects, float(body.get("clearance_mm", 100)))
+                return self._json(start_response, "200 OK", {"conflicts": [x.__dict__ for x in conflicts], "count": len(conflicts), "human_review_required": bool(conflicts)})
 
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "api-keys" and method == "POST":
                 ctx.require_scope_role("admin")
