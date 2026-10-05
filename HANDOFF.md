@@ -15,10 +15,9 @@ web/app.html served directly by the Render app.
 
 Live site: https://engineering-ai-platform-v1.onrender.com
 
-## Status: working end-to-end for 22 skills
-Request -> AI interpretation -> deterministic skill calculation -> evidence capture ->
-human review -> approve/rework -> dispatch -> PDF + Excel with hashes. All 22 executable
-skills (chiller_efficiency is the only one pending source audit) go through this chain.
+## Status: V1 workflow functional; report/artifact rendering fix merged
+
+The core workflow is operational for 22 executable skills (23 registered; `chiller_efficiency` remains source-audit pending). Trial 1 reached human review with deterministic duct sizing, correct missing-input behavior, and traceability metadata. A production defect was then found: the dashboard Report view rendered only report metadata instead of the persisted engineering work items, and legacy evidence records could produce an apparently blank artifact workbook. The consolidated rendering/recovery fix has been merged; a fresh production deployment and one post-deploy Trial 1 dispatch verification remain required before declaring the artifact path closed.
 
 ## Done
 - 22 engineering skills executable (HVAC, BMS, Energy, Commercial) - see
@@ -44,21 +43,32 @@ skills (chiller_efficiency is the only one pending source audit) go through this
 - Trial prompt bank: 110 realistic prompts (5 per skill x Simple/Mild/Heavy) kept outside
   the repo as an Excel tracker, given to the user directly in chat (not in this repo).
 
-## Not done yet (in priority order discussed with user)
-1. skill_version and source_revision surfaced into the PDF/Excel (currently only in raw
-   evidence JSON, not the readable report).
-2. "Limitations" field carried from skill result -> evidence -> report.
-3. Rework-after-approval (currently rework only works before approval).
-4. Register "Evidence" and "Revision History" as dedicated tabs (currently just a skill
-   filter + superseded flag on rows).
-5. 42-skill scope decision still open: Option A (42 real engineering skills) vs Option B
-   (42 test scenarios using the existing 22). User has not chosen yet.
-6. 22-skill acceptance matrix: one full end-to-end test per skill (request -> PDF -> XLSX
-   -> dispatch) is not built; current tests are unit-level per skill.
-7. Gmail/Upwork/Gumroad: need the user's real API credentials in Render env vars to go
-   live. Code is ready, untested against real accounts.
-8. CRM workflow requested by user: Upwork -> Gmail -> CRM -> this platform -> reply back
-   through the same chain. Architecture discussed, not yet built - see chat for design.
+## Not done yet / next priorities
+1. **Post-deploy artifact verification:** rerun Trial 1 on the canonical Render application, approve, dispatch, then verify the readable Report view, Evidence view, PDF, XLSX Results sheet, Calculation Steps, hashes, Evidence Register and Revision History.
+2. **Full end-to-end acceptance:** one request -> calculation -> review -> approval -> PDF/XLSX -> register -> dispatch trial for each executable skill, beginning with the HVAC/energy niche rather than all 22 at once.
+3. **Product vertical A — HVAC Design Engineering:** client natural-language request + floor/layout evidence -> governed load estimate -> preliminary system selection -> equipment schedule -> duct/pipe/airside planning -> installation/execution plan -> human review.
+4. **Product vertical B — HVAC Energy Optimization:** plant/BMS/utility data -> baseline -> inefficiency diagnosis -> savings opportunities -> peak-demand/load-profile analysis -> tariff/cost impact -> prioritized measures -> payback.
+5. **Product vertical C — HVAC Decarbonization:** baseline energy/carbon -> retrofit scenarios -> energy/cost/carbon/capex comparison -> implementation roadmap -> measurement/evidence plan. This should reuse the optimization data rather than become a separate calculator.
+6. **Commercial/CRM layer:** leads, opportunities, quotations/orders and client follow-up should feed engineering requests and receive controlled engineering deliverables; CRM is a supporting workflow, not a fourth engineering vertical.
+7. **Drawing/layout intelligence:** add document/layout ingestion and geometry/equipment extraction only after the above three verticals are stable; outputs must remain preliminary unless source evidence and human review support a stronger claim.
+8. Gmail/Upwork/Gumroad live credentials and CRM integrations remain pending.
+9. `chiller_efficiency` remains blocked until its source audit is completed.
+
+## Product acceptance sequence
+- **Stage 1:** Fix/verify the report + evidence delivery chain.
+- **Stage 2:** Prove HVAC Design with a bungalow/floor-plan scenario.
+- **Stage 3:** Prove Energy Optimization with real plant/BMS/utility data.
+- **Stage 4:** Prove Decarbonization using the same baseline and optimization findings.
+- **Stage 5:** Connect the three into one client journey: request -> evidence -> engineering analysis -> options -> commercial recommendation -> human approval -> controlled deliverables.
+
+## Current Trial 1 traceability contract
+For the rectangular duct velocity trial (5000 m³/h, 7 m/s, galvanized steel), the governed result must preserve:
+- `skill_version: 1.2.0`
+- `source_revision: 1410b71e16a4fe4b1c6b04f023291d7b0f458d68`
+- calculation trace function: `preliminary_rectangular_velocity_sizing`
+- no missing inputs after natural-language extraction
+- human review required = true
+- expected preliminary result: 450 x 450 mm, actual velocity about 6.86 m/s, friction about 0.962 Pa/m
 
 ## How to resume cheaply
 - Don't paste old conversation. Just point Claude at this file plus whatever specific
