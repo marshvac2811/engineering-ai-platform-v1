@@ -7,7 +7,20 @@ from engineering.drawing import drawing_to_svg
 from engineering.coordination import find_coordinate_conflicts
 
 def building():
-    return ingest_structured_layout({"building_id":"B1","name":"Demo","sources":[{"source_id":"A-101","page":1}],"floors":[{"floor_id":"L1","name":"Ground","rooms":[{"room_id":"R1","name":"Office","area_m2":20,"x_mm":100,"y_mm":100,"confidence":{"score":0.98,"method":"explicit"}},{"room_id":"R2","name":"Toilet","area_m2":6,"x_mm":150,"y_mm":120,"confidence":{"score":0.95,"method":"explicit"}}]})
+    payload = {
+        "building_id": "B1",
+        "name": "Demo",
+        "sources": [{"source_id": "A-101", "page": 1}],
+        "floors": [{
+            "floor_id": "L1",
+            "name": "Ground",
+            "rooms": [
+                {"room_id": "R1", "name": "Office", "area_m2": 20, "x_mm": 100, "y_mm": 100, "confidence": {"score": 0.98, "method": "explicit"}},
+                {"room_id": "R2", "name": "Toilet", "area_m2": 6, "x_mm": 150, "y_mm": 120, "confidence": {"score": 0.95, "method": "explicit"}}
+            ]
+        }]
+    }
+    return ingest_structured_layout(payload)
 
 def test_building_model_is_source_traceable_and_deterministic():
     b=building(); data=json.loads(to_json(b)); assert data["sources"][0]["source_id"]=="A-101"; assert data["floors"][0]["rooms"][0]["room_id"]=="R1"
