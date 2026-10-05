@@ -397,6 +397,11 @@ class JobService:
                 if item.get("capability_id")
             ]
             report = self.report_service.build(job, report_items)
+            # Persist the complete governed report envelope with the job so the
+            # persistent store can save the same work items, traces and metadata
+            # that were produced by ReportService. The report artifact remains
+            # the authoritative versioned record for client/report views.
+            job.result["report"] = report.report
             job.result["report_id"] = report.report_id
             job.result["report_revision"] = report_revision
             job.report_id = report.report_id
