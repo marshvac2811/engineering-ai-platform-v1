@@ -15,7 +15,7 @@ web/app.html served directly by the Render app.
 
 Live site: https://engineering-ai-platform-v1.onrender.com
 
-## Status: V1 workflow functional; report/artifact rendering fix merged
+## Status: V1 workflow functional; CI green; live Render artifact verification remains open
 
 The core workflow is operational for 22 executable skills (23 registered; `chiller_efficiency` remains source-audit pending). Trial 1 reached human review with deterministic duct sizing, correct missing-input behavior, and traceability metadata. A production defect was then found: the dashboard Report view rendered only report metadata instead of the persisted engineering work items, and legacy evidence records could produce an apparently blank artifact workbook. The consolidated rendering/recovery fix has been merged; a fresh production deployment and one post-deploy Trial 1 dispatch verification remain required before declaring the artifact path closed.
 
@@ -39,7 +39,7 @@ The core workflow is operational for 22 executable skills (23 registered; `chill
   is notification/import-only by design (no public freelancer API exists); Gumroad
   partially wired. None connected to live credentials yet. CRM module (crm/) built with
   HubSpot payload support, not connected to a real HubSpot account yet.
-- 220+ automated tests passing (run: python -m pytest -q from repo root).
+- 272 automated tests passing in GitHub Actions on main commit `2d778454506d0936a5f0472041191569ddd18247` (run 37346834387).
 - Trial prompt bank: 110 realistic prompts (5 per skill x Simple/Mild/Heavy) kept outside
   the repo as an Excel tracker, given to the user directly in chat (not in this repo).
 
@@ -50,7 +50,7 @@ The core workflow is operational for 22 executable skills (23 registered; `chill
 4. **Product vertical B — HVAC Energy Optimization:** plant/BMS/utility data -> baseline -> inefficiency diagnosis -> savings opportunities -> peak-demand/load-profile analysis -> tariff/cost impact -> prioritized measures -> payback.
 5. **Product vertical C — HVAC Decarbonization:** baseline energy/carbon -> retrofit scenarios -> energy/cost/carbon/capex comparison -> implementation roadmap -> measurement/evidence plan. This should reuse the optimization data rather than become a separate calculator.
 6. **Commercial/CRM layer:** leads, opportunities, quotations/orders and client follow-up should feed engineering requests and receive controlled engineering deliverables; CRM is a supporting workflow, not a fourth engineering vertical.
-7. **Drawing/layout intelligence:** add document/layout ingestion and geometry/equipment extraction only after the above three verticals are stable; outputs must remain preliminary unless source evidence and human review support a stronger claim.
+7. **Drawing/layout intelligence:** the repository already contains a small CAD-neutral Phase 16 drawing model (`engineering/drawing/`) and plumbing construction scope references. The next drawing work is to expand this into governed drawing intake/building understanding, then HVAC drawing MVP, followed by fire-fighting/plumbing drawing modules and coordination. Outputs must remain preliminary unless source evidence and human review support a stronger claim.
 8. Gmail/Upwork/Gumroad live credentials and CRM integrations remain pending.
 9. `chiller_efficiency` remains blocked until its source audit is completed.
 
@@ -79,4 +79,12 @@ For the rectangular duct velocity trial (5000 m³/h, 7 m/s, galvanized steel), t
 - Push access: user grants a short-lived GitHub classic token (repo scope) when needed;
   delete it from GitHub afterwards.
 
-Last updated: 2026-10-03, after Report Register export button + rework/resubmit flow.
+## Current verified checkpoint — 2026-10-05
+- `main` commit: `2d778454506d0936a5f0472041191569ddd18247`.
+- PR #30 fixed a stale facade report-type assertion exposed by the legacy-report recovery change; PR #30 is merged.
+- GitHub Actions run `37346834387`: **272 passed**, 1 warning.
+- The previous `d07515e...` main run failed only because `tests/test_api.py` expected the obsolete `engineering_compliance_report`; production behavior was not changed by the fix.
+- Canonical deployment remains Render. Live `/health`/Trial 1/report/evidence/PDF/XLSX verification is still not confirmed from this chat because Render is not connected here.
+- The existing Phase 16 drawing foundation is minimal: a CAD-neutral `DrawingModel` with points/lines/dimensions plus deterministic JSON serialization and a parametric facade-elevation example. It is **not** yet the building-layout/HVAC/fire/plumbing drawing engine described in the expanded roadmap.
+
+Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
