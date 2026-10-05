@@ -745,6 +745,45 @@ class APIApp:
                         "skill_id": job.skill_id or job.requested_skill_id,
                         "report": report,
                     }
+
+                # Backward compatibility for report artifacts created before the
+                # complete ReportService envelope was persisted. If the stored
+                # report has no work_items, recover the authoritative engineering
+                # task results from the job record instead of returning a blank
+                # report view.
+                stored_report = artifact.get("report") or {}
+                if not stored_report.get("work_items"):
+                    result = job.result or {}
+                    full_report = result.get("report") or {}
+                    if full_report.get("work_items"):
+                        artifact["report"] = full_report
+                    else:
+                        engineering = result.get("engineering_result") or {}
+                        task_results = list(engineering.get("task_results") or engineering.get("results") or [])
+                        if task_results:
+                            artifact["report"] = {
+                                **stored_report,
+                                "report_type": stored_report.get("report_type") or "engineering_workflow_report",
+                                "work_items": [
+                                    {
+                                        "skill_id": item.get("capability_id") or item.get("skill_id"),
+                                        "result": {
+                                            "status": item.get("status"),
+                                            "engineering_result": item.get("engineering_result") or {},
+                                            "calculation_trace": item.get("calculation_trace") or [],
+                                            "standards": item.get("standards") or [],
+                                            "compliance": item.get("compliance") or [],
+                                            "assumptions": item.get("assumptions") or [],
+                                            "warnings": item.get("warnings") or [],
+                                            "skill_version": item.get("skill_version"),
+                                            "source_revision": item.get("source_revision"),
+                                            "limitations": item.get("limitations") or [],
+                                        },
+                                    }
+                                    for item in task_results
+                                    if isinstance(item, dict)
+                                ],
+                            }
                 return self._json(start_response, "200 OK", artifact)
 
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "reports" and method == "GET":
