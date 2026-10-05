@@ -264,9 +264,29 @@ function summarizeArtifact(kind,d){
    kv("Compliance claims allowed",((b.governance||{}).applicability||{}).compliance_claim_allowed?"Yes":"No - no verified standards evidence")+
    kv("PDF SHA-256",(art.pdf||{}).sha256)+kv("Excel workbook SHA-256",(art.evidence_workbook||{}).sha256);
   const tasks=b.tasks||[];
-  if(tasks.length){h+='<div style="margin-top:8px"><strong>Task results</strong></div>'+tasks.map(t=>'<div style="margin-top:4px">'+esc(t.task_id)+' - '+esc(t.capability_id)+' - '+esc(String(t.status||"").replaceAll("_"," "))+(t.warnings&&t.warnings.length?'<br>Warnings: '+esc(t.warnings.join(" | ")):"")+'</div>').join("");}
+  if(tasks.length){
+   h+='<h3 style="margin-top:14px">Engineering Results</h3>'+tasks.map(t=>{
+    const rows=Object.entries(t.engineering_result||{}).filter(([k,v])=>v===null||["string","number","boolean"].includes(typeof v));
+    return '<div style="margin-top:10px"><strong>'+esc(t.task_id||"task")+' — '+esc(t.capability_id||"")+'</strong>'+
+      (t.objective?'<div class="small">'+esc(t.objective)+'</div>':"")+
+      (rows.length?'<div class="json-result"><table><thead><tr><th>Result</th><th>Value</th></tr></thead><tbody>'+rows.map(([k,v])=>'<tr><td>'+esc(niceText(k))+'</td><td>'+esc(typeof v==="boolean"?(v?"Yes":"No"):String(v??""))+'</td></tr>').join("")+'</tbody></table></div>':"")+
+      (t.warnings&&t.warnings.length?'<div class="small">Points to note: '+esc(t.warnings.join(" | "))+'</div>':"")+
+      '</div>';
+   }).join("");
+  } else h+='<div class="empty">No task outputs are present in the persisted evidence bundle.</div>';
  }else{
-  h+='<h3>Report Summary</h3>'+kv("Title",d.title)+kv("Report ID",d.report_id)+kv("Status",d.status)+kv("Version",d.version)+kv("Skill",d.skill_id)+kv("PDF file",d.pdf_filename)+kv("Excel file",d.xlsx_filename)+kv("PDF SHA-256",d.pdf_sha256)+kv("Evidence SHA-256",d.evidence_sha256);
+  h+='<h3>Engineering Report</h3>'+kv("Title",d.title)+kv("Report ID",d.report_id)+kv("Status",d.status)+kv("Version",d.version)+kv("Skill",d.skill_id)+
+   kv("PDF file",d.pdf_filename)+kv("Excel file",d.xlsx_filename)+kv("PDF SHA-256",d.pdf_sha256)+kv("Evidence SHA-256",d.evidence_sha256);
+  const items=rep.work_items||[];
+  if(items.length){
+   h+='<h3 style="margin-top:14px">Engineering Results</h3>'+items.map(item=>{
+    const er=(item.result||{}).engineering_result||{};
+    const rows=Object.entries(er).filter(([k,v])=>v===null||["string","number","boolean"].includes(typeof v));
+    return '<div style="margin-top:10px"><strong>'+esc(item.skill_id||"Engineering task")+'</strong>'+
+      (rows.length?'<div class="json-result"><table><thead><tr><th>Result</th><th>Value</th></tr></thead><tbody>'+rows.map(([k,v])=>'<tr><td>'+esc(niceText(k))+'</td><td>'+esc(typeof v==="boolean"?(v?"Yes":"No"):String(v??""))+'</td></tr>').join("")+'</tbody></table></div>':"")+
+      '</div>';
+   }).join("");
+  } else h+='<div class="empty">The report metadata exists, but no engineering result rows were stored in this report version.</div>';
  }
  h+='</div><details style="margin-top:8px"><summary>Full technical record (JSON)</summary><pre style="white-space:pre-wrap;max-height:320px;overflow:auto">'+esc(JSON.stringify(d,null,2))+'</pre></details>';
  return h;

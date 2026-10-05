@@ -303,6 +303,24 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
     manifest = evidence_bundle.get("manifest", {})
     request = evidence_bundle.get("request", {})
     tasks = evidence_bundle.get("tasks", []) or []
+    # Recover task outputs from the consolidated result for older persisted evidence records.
+    if not tasks:
+        consolidated = evidence_bundle.get("result") or {}
+        engineering = consolidated.get("engineering_result") or {}
+        recovered = engineering.get("task_results") or engineering.get("results") or []
+        for item in recovered:
+            if not isinstance(item, dict):
+                continue
+            tasks.append({
+                "task_id": item.get("task_id"), "capability_id": item.get("capability_id"),
+                "status": item.get("status"), "objective": item.get("objective"),
+                "inputs": item.get("inputs") or request.get("inputs") or {},
+                "engineering_result": item.get("engineering_result") or {},
+                "calculation_trace": item.get("calculation_trace") or [],
+                "assumptions": item.get("assumptions") or [], "warnings": item.get("warnings") or [],
+                "compliance": item.get("compliance") or [], "skill_version": item.get("skill_version"),
+                "source_revision": item.get("source_revision"), "limitations": item.get("limitations") or [],
+            })
     governance = evidence_bundle.get("governance", {}) or {}
     request_inputs = request.get("inputs") or {}
     approval = _approval(evidence_bundle)
