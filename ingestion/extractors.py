@@ -249,9 +249,14 @@ def _extract_dxf_metadata(data: bytes, filename: str, mime_type: str, attachment
         if code == "0" and value == "ENDTAB":
             in_layer_table = False
         i += 2
-    summary = f"DXF metadata: units_code={units}, layers={len(layers)}, entities={sum(entity_counts.values())}."
-    metadata = {"units_code": units, "layers": layers, "entity_counts": entity_counts, "binary_geometry_extraction": False}
-    warnings = ["DXF geometry is not converted into engineering geometry in this V1 extractor; only file metadata is extracted."]
+    try:
+        from engineering.building.dxf import extract_lines
+        line_geometry_count = len(extract_lines(data))
+    except Exception:
+        line_geometry_count = 0
+    summary = f"DXF metadata: units_code={units}, layers={len(layers)}, entities={sum(entity_counts.values())}, supported_LINE_geometry={line_geometry_count}."
+    metadata = {"units_code": units, "layers": layers, "entity_counts": entity_counts, "binary_geometry_extraction": False, "supported_line_geometry_count": line_geometry_count, "semantic_interpretation": False}
+    warnings = ["DXF LINE geometry can be extracted deterministically, but architectural semantics are not inferred; human review is required."]
     return ExtractionResult("metadata_only", "dxf", mime_type, summary, metadata, warnings, [], [DocumentChunk.create(attachment_id=attachment_id, index=0, text=summary, metadata=metadata)])
 
 

@@ -76,6 +76,7 @@ def test_dxf_metadata_only():
     result = extract_bytes(dxf, filename='plan.dxf', attachment_id='a4')
     assert result.status == 'metadata_only'
     assert result.metadata['layers'] == ['A-WALL']
+    assert result.metadata['supported_line_geometry_count'] == 0
 
 
 def test_ingestion_register_and_extract():
@@ -105,3 +106,10 @@ def test_api_attachment_ingestion_flow():
     status, result = call(app, 'POST', f'/v1/jobs/{jid}/attachments/{aid}', {})
     assert status.startswith('200') and result['status'] == 'extracted' and 'Airflow' in result['text']
 
+
+
+def test_dxf_ingestion_reports_supported_line_geometry_without_semantics():
+    dxf = b"0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nA-WALL\n10\n0\n20\n0\n11\n1000\n21\n0\n0\nENDSEC\n0\nEOF\n"
+    result = extract_bytes(dxf, filename='plan.dxf', attachment_id='a7')
+    assert result.metadata['supported_line_geometry_count'] == 1
+    assert result.metadata['semantic_interpretation'] is False
