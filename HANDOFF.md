@@ -106,3 +106,15 @@ For the rectangular duct velocity trial (5000 m³/h, 7 m/s, galvanized steel), t
 - The existing Phase 16 drawing foundation is minimal: a CAD-neutral `DrawingModel` with points/lines/dimensions plus deterministic JSON serialization and a parametric facade-elevation example. It is **not** yet the building-layout/HVAC/fire/plumbing drawing engine described in the expanded roadmap.
 
 Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
+
+## Latest implementation checkpoint — 2026-10-06
+- PR #36 merged: governed drawing package linkage to engineering Jobs.
+- Added `engineering/drawing/service.py` to bind drawing manifests to job/tenant/report/revision identity and to enforce an explicit approval gate before controlled issue eligibility.
+- Added `POST /v1/drawings/package`: builds multidisciplinary preliminary drawing packages from normalized building input, records source hashes, calculates coordination conflicts, persists the package manifest into the linked Job result, and exposes JSON/SVG outputs.
+- Before approval, package status is `not_approved` and `dispatch_allowed=false`. For an approved Job, the package is marked `approved_for_controlled_dispatch` with `dispatch_allowed=true`.
+- Added service and API regression tests for package traceability and approval enforcement.
+- Acceptance matrix now records AT-43..AT-58 as unit-covered, AT-59 as package-linkage/API-covered with persistent production artifact storage still remaining, and AT-60 as partial because actual drawing-file dispatch integration is not yet complete.
+- Important boundary: this does **not** claim final construction/statutory drawing approval or full PDF/CAD/BIM semantic interpretation.
+- PR #36 merged commit: `b2fb6bf17104d00ab3e3f228f80c83fc02ecc6b0`.
+- GitHub combined status currently shows only a Vercel pending check for the PR head; no GitHub Actions run was exposed by the connector for that head, so CI must not be claimed for PR #36 without a later verified run.
+- Next implementation priority: persistent drawing/project artifact records and actual controlled drawing-file dispatch (PDF/DXF package), then semantic source interpretation and calculation-to-layout routing.
