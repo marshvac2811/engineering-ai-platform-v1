@@ -89,6 +89,14 @@ For the rectangular duct velocity trial (5000 m³/h, 7 m/s, galvanized steel), t
 - The drawing system is still not a full PDF/CAD/BIM interpreter or construction drawing generator. The next implementation work is source-document geometry extraction, persistent project/drawing records, governed HVAC drawing generation from actual calculation outputs, then fire/plumbing design modules and coordination package integration.
 - Canonical live deployment remains Render and still requires post-merge deployment verification.
 
+## Latest implementation checkpoint — 2026-10-05
+- PR #33 merged: deterministic ASCII-DXF LINE geometry extraction.
+- PR #34 merged: existing DXF ingestion now reports supported LINE geometry count while preserving no-semantic-interpretation.
+- PR #35 merged: controlled drawing evidence package with source hashes, drawing JSON/SVG hashes, revisions, source-calculation references and coordination status.
+- Current drawing stack therefore covers: source registration/hash → normalized building model → confidence/review boundary → explicit-input HVAC/FIRE/PLUMBING preliminary objects → JSON/SVG drawing export → coordination conflict detection → controlled drawing manifest/hashes.
+- CI is green on each merged feature branch; latest drawing evidence branch passed the full suite before merge.
+- Remaining major implementation is the higher-level semantic drawing pipeline: PDF/image/CAD semantic interpretation, persistent project/drawing records, actual HVAC calculation-to-layout routing, governed fire/plumbing engineering calculators, richer drawing rendering (PDF/DXF output from semantic objects), and full controlled drawing dispatch integration.
+
 ## Current verified checkpoint — 2026-10-05
 - `main` commit: `2d778454506d0936a5f0472041191569ddd18247`.
 - PR #30 fixed a stale facade report-type assertion exposed by the legacy-report recovery change; PR #30 is merged.
