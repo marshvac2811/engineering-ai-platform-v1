@@ -77,7 +77,7 @@ def test_api_exposes_engineering_report_and_compliance():
     assert job['status']=='human_review'
     status, report=call(app,'GET',f'/v1/jobs/{jid}/report')
     assert status.startswith('200')
-    assert report['report']['report_type']=='engineering_compliance_report'
+    assert report['report']['report_type']=='facade_u_factor_engineering'
     status, compliance=call(app,'GET',f'/v1/jobs/{jid}/compliance')
     assert status.startswith('200')
     assert compliance['count'] == 1
