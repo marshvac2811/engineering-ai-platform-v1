@@ -18,7 +18,7 @@ def plan_discipline_layout(building:BuildingModel, discipline:str, floor_id:str,
     objects=[]
     for room in floor.rooms:
         spec=room_inputs.get(room.room_id)
-        if not spec: continue
+        if spec is None: continue
         if room.x_mm is None or room.y_mm is None: raise ValueError(f"room {room.room_id} has no coordinates; drawing placement cannot be inferred")
         if discipline=="HVAC":
             airflow=spec.get("airflow_m3h")
