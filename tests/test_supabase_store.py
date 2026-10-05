@@ -17,6 +17,14 @@ class FakeTable:
         self._pending_upsert = rows if isinstance(rows, list) else [rows]
         return self
 
+    def insert(self, row):
+        self._pending_insert = row if isinstance(row, list) else [row]
+        return self
+
+    def update(self, values):
+        self._pending_update = dict(values)
+        return self
+
     def select(self, *_args):
         return self
 
@@ -40,6 +48,19 @@ class FakeTable:
                 else:
                     self.client.data[self.name].append(dict(row))
             return FakeResponse(self._pending_upsert)
+
+        if hasattr(self, "_pending_insert"):
+            for row in self._pending_insert:
+                self.client.data[self.name].append(dict(row))
+            return FakeResponse(self._pending_insert)
+
+        if hasattr(self, "_pending_update"):
+            rows = list(self.client.data[self.name])
+            for key, value in self._filters.items():
+                rows = [x for x in rows if x.get(key) == value]
+            for row in rows:
+                row.update(self._pending_update)
+            return FakeResponse(rows)
 
         rows = list(self.client.data[self.name])
         for key, value in self._filters.items():
@@ -69,7 +90,12 @@ class FakeRPC:
 
 class FakeClient:
     def __init__(self):
-        self.data = {"automation_jobs": [], "automation_job_events": []}
+        self.data = {
+            "automation_jobs": [],
+            "automation_job_events": [],
+            "engineering_report_artifacts": [],
+            "engineering_compliance_checks": [],
+        }
 
     def table(self, name):
         return FakeTable(self, name)
@@ -150,3 +176,41 @@ def test_supabase_store_persists_current_orchestration_state():
     store.save(job)
     restored = store.get(job.job_id)
     assert restored.orchestration["missing_inputs"] == ["roughness_mm", "material"]
+
+
+def test_supabase_store_persists_complete_engineering_report_envelope():
+    client = FakeClient()
+    store = SupabaseJobStore(client)
+    job = Job.create(
+        tenant_id="test-tenant",
+        source="test",
+        inputs={"flow_m3hr": 5000},
+        requested_skill_id="duct_sizing",
+    )
+    job.skill_id = "duct_sizing"
+    job.result = {
+        "engineering_result": {"task_results": [{"capability_id": "duct_sizing"}]},
+        "report": {
+            "report_type": "engineering_workflow_report",
+            "work_items": [{
+                "skill_id": "duct_sizing",
+                "result": {
+                    "engineering_result": {
+                        "recommended_width_mm": 450,
+                        "recommended_height_mm": 450,
+                    },
+                    "calculation_trace": [{"function": "preliminary_rectangular_velocity_sizing"}],
+                },
+            }],
+            "scope": {"work_item_count": 1},
+        },
+    }
+
+    store.save(job)
+
+    rows = client.data["engineering_report_artifacts"]
+    assert len(rows) == 1
+    persisted = rows[0]["report"]
+    assert persisted["scope"]["work_item_count"] == 1
+    assert persisted["work_items"][0]["result"]["engineering_result"]["recommended_width_mm"] == 450
+    assert persisted["work_items"][0]["result"]["calculation_trace"][0]["function"] == "preliminary_rectangular_velocity_sizing"
