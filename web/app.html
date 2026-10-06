@@ -537,7 +537,7 @@ function jobHtml(j){
 }
 
 window.regView="all";window.regShown=50;
-const REG_TABS=[["all","All Reports"],["pending_review","Pending Review"],["approved","Approved"],["dispatched","Dispatched"],["completed","Completed"],["evidence","Evidence"],["revision_history","Revision History"],["failed","Failed / Rework"]];
+const REG_TABS=[["all","All Reports"],["pending_review","Pending Review"],["approved","Approved"],["dispatched","Dispatched"],["evidence","Evidence"],["revision_history","Revision History"],["failed","Failed / Rework"]];
 let regTimer;
 const ACRONYMS={vfd:"VFD",hvac:"HVAC",bms:"BMS",vrf:"VRF",boq:"BOQ",cop:"COP",ach:"ACH"};
 function niceText(v){const t=String(v==null?"":v).replace(/_/g," ").trim().split(" ").map(w=>ACRONYMS[w.toLowerCase()]||w).join(" ");return t?t.charAt(0).toUpperCase()+t.slice(1):"-";}
