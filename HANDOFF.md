@@ -118,3 +118,17 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - PR #36 merged commit: `b2fb6bf17104d00ab3e3f228f80c83fc02ecc6b0`.
 - GitHub combined status currently shows only a Vercel pending check for the PR head; no GitHub Actions run was exposed by the connector for that head, so CI must not be claimed for PR #36 without a later verified run.
 - Next implementation priority: persistent drawing/project artifact records and actual controlled drawing-file dispatch (PDF/DXF package), then semantic source interpretation and calculation-to-layout routing.
+
+## Latest implementation checkpoint — 2026-10-06 (controlled drawing artifacts)
+- PR #37 merged: persistent and controlled engineering drawing artifacts.
+- Added `engineering/drawing/dispatch.py` for deterministic preliminary drawing PDF generation and ASCII-DXF ZIP packaging, with explicit preliminary/review watermarking.
+- Added Supabase migration `20261006070000_012_engineering_drawing_artifacts.sql` for tenant-scoped persistent drawing artifact records and private `engineering-drawing-artifacts` storage.
+- Drawing package manifests now persist drawing JSON payloads/SVGs, project/job/report/revision identity and a manifest SHA-256 bound to that identity. Mutable approval/dispatch flags are excluded from the immutable content hash.
+- The normal approved Job dispatch lifecycle now also creates controlled drawing PDF/DXF artifacts when a drawing package is attached to the Job.
+- Added tenant-scoped GET/download APIs for persisted drawing artifacts.
+- Drawing dispatch files are stored privately; the package contains the PDF, per-drawing ASCII DXF files and manifest JSON. SHA-256 values are recorded in the drawing artifact record and returned in Job dispatch results.
+- Governance boundary remains explicit: these are AI-assisted preliminary engineering drawings, not final construction/statutory approvals. Semantic PDF/CAD/BIM interpretation and calculation-to-layout routing are still future layers.
+- PR #37 merge commit: `80abed341044fb7d8ac4a3e6b4bcab55903944ce`.
+- GitHub connector currently exposes no Actions workflow run for this merge commit; combined status shows Vercel pending only. Do not claim CI passed for this checkpoint until a later verified run exists.
+- Canonical live deployment remains Render; Render deployment and live drawing dispatch verification are still pending because the Render connector is not connected in this chat.
+- Next implementation priority: semantic source interpretation and calculation-to-layout routing, then governed fire/plumbing engineering calculators and richer coordinated drawing generation.
