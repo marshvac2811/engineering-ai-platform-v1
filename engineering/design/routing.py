@@ -12,7 +12,7 @@ from engineering.building.model import BuildingModel
 
 
 _FIELD_BY_DISCIPLINE = {
-    "HVAC": "airflow_m3h",
+    "HVAC": ("airflow_m3h",),
     "FIRE": ("protection_type", "total_storage_m3"),
     "PLUMBING": ("fixture_type", "design_demand_lpm"),
 }
