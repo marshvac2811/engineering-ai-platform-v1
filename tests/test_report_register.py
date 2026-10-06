@@ -74,7 +74,7 @@ def test_audit_trail_endpoint_lists_events():
 def test_register_row_merges_artifact_and_job():
     artifact = {"report_id": "r1", "job_id": "j1", "version": 2, "status": "approved", "title": "T", "skill_id": "duct_sizing",
                 "reviewer": "a@b.com", "created_at": "2026-10-02T06:00:00+00:00", "approved_at": "2026-10-02T07:00:00+00:00",
-                "pdf_storage_path": "p/x.pdf", "pdf_sha256": "aa", "xlsx_storage_path": None}
+                "pdf_storage_path": "p/x.pdf", "pdf_sha256": "aa", "xlsx_storage_path": None, "drawing_artifact_id": "d1", "drawing_status": "dispatched", "drawing_manifest_sha256": "mm", "drawing_pdf_sha256": "dp", "drawing_dxf_zip_sha256": "dx", "drawing_pdf_storage_path": "draw.pdf", "drawing_dxf_zip_storage_path": "draw.zip"}
     row = register_row(artifact, {"status": "completed", "source": "dashboard", "request": "Size a duct"})
     assert row["revision"] == 2 and row["status"] == "completed" and row["request"] == "Size a duct"
     assert row["pdf_available"] is True and row["xlsx_available"] is False
@@ -119,6 +119,7 @@ def test_supabase_store_register_merges_artifacts_with_jobs():
             {"report_id": "r1", "job_id": "j1", "version": 1, "status": "approved", "skill_id": "vfd_energy_savings",
              "reviewer": "jane@example.com", "created_at": "2026-10-02T06:00:00+00:00", "approved_at": "2026-10-02T06:10:00+00:00",
              "pdf_storage_path": "t/j1/v1/r.pdf", "pdf_sha256": "aa", "xlsx_storage_path": "t/j1/v1/e.xlsx"}],
+        "engineering_drawing_artifacts": [{"drawing_artifact_id": "d1", "job_id": "j1", "report_id": "r1", "report_revision": 1, "status": "dispatched", "manifest_sha256": "mm", "pdf_sha256": "dp", "pdf_storage_path": "t/j1/v1/d.pdf", "dxf_zip_sha256": "dx", "dxf_zip_storage_path": "t/j1/v1/d.zip"}],
         "automation_jobs": [{"job_id": "j1", "status": "completed", "source": "dashboard", "skill_id": "vfd_energy_savings",
                              "requested_skill_id": "vfd_energy_savings", "created_at": "2026-10-02T05:59:00+00:00",
                              "request": "Calculate VFD savings"}],
@@ -128,3 +129,5 @@ def test_supabase_store_register_merges_artifacts_with_jobs():
     r = rows[0]
     assert r["status"] == "completed" and r["reviewed_by"] == "jane@example.com" and r["pdf_available"] and r["xlsx_available"]
     assert r["request"] == "Calculate VFD savings"
+    assert r["drawing_status"] == "dispatched" and r["drawing_manifest_sha256"] == "mm"
+    assert r["drawing_pdf_available"] and r["drawing_dxf_available"]
