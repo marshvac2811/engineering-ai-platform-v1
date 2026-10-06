@@ -99,6 +99,11 @@ button:disabled{opacity:.55;cursor:wait}
 <div id="jobTabs" class="job-tabs"></div>
 <div id="jobQueueNote" class="queue-note"></div>
 <div id="jobs" class="empty">Loading...</div>
+<div id="dispatchedPanel" style="display:none">
+  <div class="queue-note"><strong>Dispatched</strong>Completed controlled dispatch records are kept here. Search by job, project, client, skill or status.</div>
+  <div class="actions" style="margin-bottom:10px"><input id="dispatchSearch" type="search" placeholder="Search dispatched jobs..." oninput="renderDispatched()" style="min-width:280px;padding:9px;border:1px solid #d9e0e9;border-radius:8px"></div>
+  <div id="dispatchedJobs" class="empty">Loading...</div>
+</div>
 </section>
 </main>
 
@@ -537,24 +542,25 @@ async function loadRegister(){
 }
 
 let activeJobTab="review";
+let cachedJobs=[];
 function jobBucket(status){
  const s=String(status||"unknown").toLowerCase();
  if(s==="human_review") return "review";
  if(s==="awaiting_information") return "information";
  if(s==="rework") return "rework";
- if(["approved","dispatching","dispatched","completed"].includes(s)) return "completed";
  if(["failed","calculation_failed","input_validation_failed","skill_not_registered"].includes(s)) return "attention";
+ if(["approved","dispatching"].includes(s)) return "progress";
+ if(["dispatched","completed"].includes(s)) return "dispatched";
  return "progress";
 }
 function jobTabDefinitions(jobs){
  return [
-  {id:"review",label:"Ready for Review",help:"Engineering results that require reviewer approval.",count:jobs.filter(j=>jobBucket(j.status)==="review").length},
-  {id:"information",label:"Information Needed",help:"Jobs waiting for missing project/client information. These are not ready for approval.",count:jobs.filter(j=>jobBucket(j.status)==="information").length},
-  {id:"rework",label:"Rework",help:"Jobs returned for correction before they can be reviewed again.",count:jobs.filter(j=>jobBucket(j.status)==="rework").length},
-  {id:"progress",label:"In Progress",help:"Jobs still being processed by the engineering workflow.",count:jobs.filter(j=>jobBucket(j.status)==="progress").length},
-  {id:"attention",label:"Attention / Failed",help:"Jobs with an execution or validation problem requiring investigation.",count:jobs.filter(j=>jobBucket(j.status)==="attention").length},
-  {id:"completed",label:"Approved / Dispatched",help:"Jobs that have completed review and/or controlled dispatch.",count:jobs.filter(j=>jobBucket(j.status)==="completed").length},
-  {id:"all",label:"All Jobs",help:"Complete lifecycle view. Use the action-specific tabs for normal review work.",count:jobs.length}
+  {id:"review",label:"Ready for Review",help:"Only jobs requiring engineering approval.",count:jobs.filter(j=>jobBucket(j.status)==="review").length},
+  {id:"information",label:"Information Needed",help:"Only jobs waiting for missing information. These are not ready for approval.",count:jobs.filter(j=>jobBucket(j.status)==="information").length},
+  {id:"rework",label:"Rework",help:"Only jobs returned for correction before review.",count:jobs.filter(j=>jobBucket(j.status)==="rework").length},
+  {id:"progress",label:"In Progress",help:"Only jobs still moving through engineering execution.",count:jobs.filter(j=>jobBucket(j.status)==="progress").length},
+  {id:"attention",label:"Attention / Failed",help:"Only jobs requiring investigation or corrective action.",count:jobs.filter(j=>jobBucket(j.status)==="attention").length},
+  {id:"dispatched",label:"Dispatched",help:"Completed controlled dispatch records. Use the search below.",count:jobs.filter(j=>jobBucket(j.status)==="dispatched").length}
  ];
 }
 function renderJobTabs(jobs){
@@ -564,29 +570,38 @@ function renderJobTabs(jobs){
  tabs.innerHTML=defs.map(t=>'<button class="job-tab '+(activeJobTab===t.id?"active":"")+'" onclick="selectJobTab(\''+t.id+'\')">'+esc(t.label)+'<span class="count">'+t.count+'</span></button>').join("");
  const selected=defs.find(x=>x.id===activeJobTab)||defs[0];
  note.innerHTML='<strong>'+esc(selected.label)+'</strong>'+esc(selected.help);
+ document.getElementById("dispatchedPanel").style.display=activeJobTab==="dispatched"?"block":"none";
+ document.getElementById("jobs").style.display=activeJobTab==="dispatched"?"none":"block";
  return defs;
 }
-function selectJobTab(tab){activeJobTab=tab;window.jobsShown=20;loadJobs();}
+function selectJobTab(tab){activeJobTab=tab;window.jobsShown=20;renderJobTabs(cachedJobs);if(tab==="dispatched")renderDispatched();else loadJobs();}
+function dispatchSearchText(j){
+ return [j.job_id,j.source,j.requested_skill_id,j.skill_id,j.status,j.project_context?.project,j.project_context?.client].filter(Boolean).join(" ").toLowerCase();
+}
+function renderDispatched(){
+ const box=document.getElementById("dispatchedJobs");
+ const q=(document.getElementById("dispatchSearch")?.value||"").trim().toLowerCase();
+ const list=cachedJobs.filter(j=>jobBucket(j.status)==="dispatched" && (!q||dispatchSearchText(j).includes(q)));
+ if(!list.length){box.innerHTML='<div class="empty">No dispatched jobs match your search.</div>';return;}
+ box.innerHTML=list.slice(0,50).map(jobHtml).join("")+(list.length>50?'<div class="small">Showing first 50 matches. Refine the search to narrow the results.</div>':"");
+}
 async function loadJobs(){
  loadRegister();
  const box=document.getElementById("jobs");
  try{
   const r=await api("/v1/jobs");const d=await r.json();
   if(!r.ok)throw Error(d.error||"Jobs unavailable");
-  const jobs=Array.isArray(d.jobs)?d.jobs:[];
-  renderJobTabs(jobs);
-  if(!jobs.length){box.innerHTML='<div class="empty">No jobs yet.</div>';return;}
-  const filtered=activeJobTab==="all"?jobs:jobs.filter(j=>jobBucket(j.status)===activeJobTab);
+  cachedJobs=Array.isArray(d.jobs)?d.jobs:[];
+  renderJobTabs(cachedJobs);
+  if(activeJobTab==="dispatched"){renderDispatched();return;}
+  const filtered=cachedJobs.filter(j=>jobBucket(j.status)===activeJobTab);
   const shown=window.jobsShown||20;
-  if(!filtered.length){box.innerHTML='<div class="empty">No jobs in this queue.</div>';return;}
+  if(!filtered.length){box.innerHTML='<div class="empty">No jobs currently require action in this queue.</div>';return;}
   box.innerHTML=filtered.slice(0,shown).map(jobHtml).join("")+(filtered.length>shown?'<div class="actions"><button onclick="window.jobsShown=(window.jobsShown||20)+20;loadJobs()">Show more ('+(filtered.length-shown)+' more)</button></div>':"");
   filtered.slice(0,shown).filter(j=>String(j.status||"")==="awaiting_information").forEach(j=>{
    const b=document.getElementById("btn-"+j.job_id);
    if(b)b.onclick=()=>provideInfo(j.job_id,(j.orchestration?.missing_inputs||[]).map(String));
   });
-  const hasAwaiting=jobs.some(j=>String(j.status||"")==="awaiting_information");
-  const requestMsg=document.getElementById("requestMsg");
-  if(!hasAwaiting && requestMsg.textContent==="One input is needed to continue.") requestMsg.style.display="none";
  }catch(e){box.innerHTML='<div class="msg err" style="display:block">'+esc(e.message)+'</div>';}
 }
 
