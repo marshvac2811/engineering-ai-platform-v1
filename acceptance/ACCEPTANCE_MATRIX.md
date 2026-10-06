@@ -140,8 +140,8 @@ These trials extend the governed lifecycle without claiming final construction-d
 | AT-56 | Drawing evidence linkage | Objects retain source-calculation references | IMPLEMENTED — unit covered |
 | AT-57 | Preliminary boundary | Output explicitly remains preliminary and review-required | IMPLEMENTED — unit covered |
 | AT-58 | No invented engineering input | Missing airflow/protection/fixture input is rejected | IMPLEMENTED — unit covered |
-| AT-59 | End-to-end drawing package | Source → building model → design objects → drawing → evidence | IMPLEMENTED — package linkage/API covered; persistent production artifact storage remains |
-| AT-60 | Controlled drawing dispatch | Approval gate and artifact hashes prevent unauthorized issue | PARTIAL — approval gate and manifest hash implemented; actual dispatch artifact integration remains |
+| AT-59 | End-to-end drawing package | Source → building model → design objects → drawing → evidence | IMPLEMENTED — package linkage, persistent artifact storage and evidence linkage covered |
+| AT-60 | Controlled drawing dispatch | Approval gate and artifact hashes prevent unauthorized issue | IMPLEMENTED — approval gate, controlled PDF/DXF artifacts, private storage and hashes covered by regression/API layer; live Render issue trial remains pending |
 
 ### Drawing implementation boundary
 
