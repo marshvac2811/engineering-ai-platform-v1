@@ -176,6 +176,9 @@ FIELD_QUESTIONS = {
     "efficiency_priority": "Is lowest kW/TR a high priority or standard priority?",
     "efficiency_kw_per_tr": "What chiller efficiency should be used, in kW/TR?",
     "annual_hours": "What are the annual operating hours?",
+    "annual_energy_kwh": "What is the annual electricity consumption, in kWh/year?",
+    "tariff": "What electricity tariff should be used, in ₹/kWh?",
+    "tariff_per_kwh": "What electricity tariff should be used, in ₹/kWh?",
     "load_factor_pct": "What average load factor should be used, in percent?",
     "tariff_per_kwh": "What electricity tariff should be used, in â‚¹/kWh?",
     "duty_modules": "How many duty chiller modules are required?",
@@ -439,6 +442,8 @@ def extract_facts(text: str) -> Dict[str, Any]:
                 if m and key == "refrigerant":
                     out[key] = m.group(1).upper()
                     break
+    if "tariff_per_kwh" in out and "tariff" not in out:
+        out["tariff"] = out["tariff_per_kwh"]
 
     material_patterns = [
         (r"\b(?:gi|g\.i\.|galvanized\s*iron|galvanised\s*iron)\b(?:\s+pipe)?", "gi"),
