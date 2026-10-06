@@ -41,6 +41,7 @@ def register_row(artifact: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any
         "source": job.get("source"),
         "status": job_status,
         "report_status": artifact.get("status"),
+        "supersedes_report_id": artifact.get("supersedes_report_id") or job.get("supersedes_report_id"),
         "reviewed_by": artifact.get("reviewer") or None,
         "approved_at": artifact.get("approved_at"),
         "dispatched_at": artifact.get("dispatched_at"),
