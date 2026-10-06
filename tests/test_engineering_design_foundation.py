@@ -46,3 +46,13 @@ def test_coordination_detects_cross_discipline_clearance_conflict():
 def test_no_geometry_is_invented_when_coordinates_missing():
     b=ingest_structured_layout({"building_id":"B1","name":"Demo","floors":[{"floor_id":"L1","name":"Ground","rooms":[{"room_id":"R1","name":"Office","area_m2":20}]}]})
     with pytest.raises(ValueError,match="no coordinates"): plan_discipline_layout(b,"HVAC","L1",{"R1":{"airflow_m3h":500}})
+
+
+def test_fire_storage_and_plumbing_demand_are_drawable_from_explicit_calculation_outputs():
+    b=building()
+    fire=plan_discipline_layout(b,"FIRE","L1",{"R1":{"total_storage_m3":132.0,"source_calculation":"fire-storage-1"}})
+    plumbing=plan_discipline_layout(b,"PLUMBING","L1",{"R2":{"design_demand_lpm":20.0,"source_calculation":"plumbing-demand-1"}})
+    assert fire.objects[0].kind == "fire_tank"
+    assert fire.objects[0].attributes["storage_m3"] == 132.0
+    assert plumbing.objects[0].kind == "water_demand"
+    assert plumbing.objects[0].attributes["design_demand_lpm"] == 20.0
