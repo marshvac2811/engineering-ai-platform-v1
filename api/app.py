@@ -1005,6 +1005,42 @@ class APIApp:
                 job = service.register_attachment(job_id, filename=str(body.get("filename", "attachment.bin")), mime_type=body.get("mime_type"), data=data, metadata=body.get("metadata", {}))
                 return self._json(start_response, "201 Created", job.to_dict())
 
+            if len(parts) == 6 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "attachments" and parts[4] and parts[5] == "building-interpretation" and method == "POST":
+                ctx.require_scope("jobs:write")
+                job_id, attachment_id = parts[2], parts[4]
+                extraction = service.extract_attachment(job_id, attachment_id)
+                from engineering.building.interpreter import interpret_building_source
+                job = service._get(job_id)
+                attachment = next((a for a in job.attachments if a.get("attachment_id") == attachment_id), None)
+                if not attachment:
+                    raise KeyError(f"Unknown attachment: {attachment_id}")
+                raw_lines = None
+                if str(extraction.get("source_type") or "").lower() == "dxf":
+                    from engineering.building.dxf import extract_lines
+                    raw = service.ingestion.store.get(attachment["storage_key"])
+                    raw_lines = [
+                        {"start": {"x_mm": line.start.x, "y_mm": line.start.y},
+                         "end": {"x_mm": line.end.x, "y_mm": line.end.y},
+                         "layer": line.layer}
+                        for line in extract_lines(raw)
+                    ]
+                interpretation = interpret_building_source(
+                    source_type=extraction.get("source_type"),
+                    text=extraction.get("text") or "",
+                    metadata=extraction.get("metadata") or {},
+                    attachment_id=attachment_id,
+                    filename=attachment.get("filename"),
+                    line_geometry=raw_lines,
+                )
+                result = job.result if isinstance(job.result, dict) else {}
+                interpretations = dict(result.get("building_interpretations") or {})
+                interpretations[attachment_id] = interpretation
+                result["building_interpretations"] = interpretations
+                job.result = result
+                job.add_event("building_source_interpreted", "Building source facts were interpreted conservatively.", attachment_id=attachment_id, status=interpretation.get("status"))
+                service.store.save(job)
+                return self._json(start_response, "200 OK", interpretation)
+
             if len(parts) == 5 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "attachments" and parts[4]:
                 job_id, attachment_id = parts[2], parts[4]
                 if method == "POST":
