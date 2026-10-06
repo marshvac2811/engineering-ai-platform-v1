@@ -26,10 +26,20 @@ def plan_discipline_layout(building:BuildingModel, discipline:str, floor_id:str,
             objects.append(EngineeringObject(f"AT-{room.room_id}","HVAC","air_terminal",room.x_mm,room.y_mm,floor_id,source_calculation=str(spec.get("source_calculation") or ""),confidence=room.confidence.score if room.confidence else 1.0,attributes={"airflow_m3h":airflow}))
         elif discipline=="FIRE":
             kind=spec.get("protection_type")
-            if not kind: raise ValueError(f"FIRE room {room.room_id} requires explicit protection_type")
-            objects.append(EngineeringObject(f"FP-{room.room_id}","FIRE",str(kind).lower(),room.x_mm,room.y_mm,floor_id,source_calculation=str(spec.get("source_calculation") or ""),confidence=room.confidence.score if room.confidence else 1.0))
+            storage_m3=spec.get("total_storage_m3")
+            if kind:
+                objects.append(EngineeringObject(f"FP-{room.room_id}","FIRE",str(kind).lower(),room.x_mm,room.y_mm,floor_id,source_calculation=str(spec.get("source_calculation") or ""),confidence=room.confidence.score if room.confidence else 1.0))
+            elif storage_m3 is not None:
+                objects.append(EngineeringObject(f"FT-{room.room_id}","FIRE","fire_tank",room.x_mm,room.y_mm,floor_id,source_calculation=str(spec.get("source_calculation") or ""),confidence=room.confidence.score if room.confidence else 1.0,attributes={"storage_m3":storage_m3}))
+            else:
+                raise ValueError(f"FIRE room {room.room_id} requires explicit protection_type or total_storage_m3")
         else:
             fixture=spec.get("fixture_type")
-            if not fixture: raise ValueError(f"PLUMBING room {room.room_id} requires explicit fixture_type")
-            objects.append(EngineeringObject(f"PL-{room.room_id}","PLUMBING","fixture",room.x_mm,room.y_mm,floor_id,source_calculation=str(spec.get("source_calculation") or ""),confidence=room.confidence.score if room.confidence else 1.0,attributes={"fixture_type":fixture}))
+            demand=spec.get("design_demand_lpm")
+            if fixture:
+                objects.append(EngineeringObject(f"PL-{room.room_id}","PLUMBING","fixture",room.x_mm,room.y_mm,floor_id,source_calculation=str(spec.get("source_calculation") or ""),confidence=room.confidence.score if room.confidence else 1.0,attributes={"fixture_type":fixture}))
+            elif demand is not None:
+                objects.append(EngineeringObject(f"PD-{room.room_id}","PLUMBING","water_demand",room.x_mm,room.y_mm,floor_id,source_calculation=str(spec.get("source_calculation") or ""),confidence=room.confidence.score if room.confidence else 1.0,attributes={"design_demand_lpm":demand}))
+            else:
+                raise ValueError(f"PLUMBING room {room.room_id} requires explicit fixture_type or design_demand_lpm")
     return DisciplineDrawing(f"{discipline}-{building.building_id}-{floor_id}-R{revision}",f"{discipline} Preliminary Layout - {floor.name}",discipline,floor_id,objects,revision=revision,status="preliminary",metadata={"building_id":building.building_id,"human_review_required":True,"design_boundary":"preliminary engineering layout; discipline calculations and project/code review required"})
