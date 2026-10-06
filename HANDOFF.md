@@ -15,7 +15,7 @@ web/app.html served directly by the Render app.
 
 Live site: https://engineering-ai-platform-v1.onrender.com
 
-## Status: V1 workflow functional; Render live service verified; authenticated artifact workflow verification remains open
+## Status: V1 workflow functional; Render live service verified; authenticated artifact workflow verification remains the final live gate
 
 The core workflow is operational for **24 executable skills (25 registered; `chiller_efficiency` remains source-audit pending)**. Trial 1 reached human review with deterministic duct sizing, correct missing-input behavior, and traceability metadata. A production defect was then found: the dashboard Report view rendered only report metadata instead of the persisted engineering work items, and legacy evidence records could produce an apparently blank artifact workbook. The consolidated rendering/recovery fix has been merged; the canonical Render service is live on commit `b481bc1c7ed7b52d49fa32805e40cfb567e22985`; authenticated Trial 1 dispatch and artifact verification remain the final live gate.
 
@@ -186,3 +186,14 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 
 
 - Acceptance reconciliation: AT-59 now records persistent drawing artifact/evidence linkage as implemented; AT-60 records controlled PDF/DXF dispatch, private storage and hashes as implemented at repository/API level, with only the live Render issue trial still pending.
+
+
+## Live verification checkpoint — 2026-10-06 (final gate status)
+- Render service `engineering-ai-platform-v1` is configured for automatic deployment from `main` and the current live deploy is commit `57336595019c18b203681987b52e82a18a3b778e`.
+- Render runtime logs verified successful startup and authenticated dashboard/API traffic: `GET /v1/account`, `GET /v1/jobs`, `GET /v1/reports`, and an individual job report all returned HTTP 200.
+- Production Supabase currently contains 18 jobs, including 6 at human review, 4 in approved-like/completed states, and 0 failed jobs in the current register query.
+- Controlled report artifacts are proven in production for approved HVAC decarbonisation and VFD energy-savings jobs: approved watermark, PDF/XLSX SHA-256 values, approval timestamps and dispatch timestamps are persisted.
+- The current live Trial 1 duct-sizing job `0be60e84-759b-4cc0-aef8-79024646f5e6` is correctly at `human_review` with a draft report; it has not been dispatched, so no approval is being fabricated.
+- The persistent drawing-artifact register is currently empty. This is expected until an approved Job carrying a drawing package reaches controlled drawing dispatch; direct database insertion is not used because it would bypass the governed approval lifecycle.
+- GitHub Actions has no workflow run exposed by the connected GitHub action for commit `57336595019c18b203681987b52e82a18a3b778e`; CI is therefore not claimed here without a verified run.
+- Governance boundary remains unchanged: drawing outputs are AI-assisted preliminary engineering drawings and require qualified engineer review; `chiller_efficiency` remains source-audit pending.
