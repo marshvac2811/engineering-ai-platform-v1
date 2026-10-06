@@ -194,11 +194,13 @@ class SupabaseJobStore(JobStore):
         packages = list((job.result or {}).get("drawing_packages") or [])
         if not packages:
             return
+        changed = False
         for package in packages:
             if not isinstance(package, dict):
                 continue
             if job.status in {JobStatus.APPROVED, JobStatus.DISPATCHING, JobStatus.DISPATCHED, JobStatus.COMPLETED} and not package.get("dispatch_allowed"):
                 package = authorize_drawing_package_issue(package, job)
+                changed = True
             artifact_id = package.get("drawing_artifact_id")
             if not artifact_id:
                 continue
@@ -222,6 +224,8 @@ class SupabaseJobStore(JobStore):
                 for existing in job.result.get("drawing_packages") or []:
                     if isinstance(existing, dict) and existing.get("drawing_artifact_id") == artifact_id:
                         existing.update(package)
+        if changed and job.result is not None:
+            self.client.table(self.jobs_table).update({"result": job.result}).eq("job_id", job.job_id).execute()
 
     def create_drawing_dispatch_artifacts(self, job: Job) -> Dict[str, Any]:
         packages = list((job.result or {}).get("drawing_packages") or [])
