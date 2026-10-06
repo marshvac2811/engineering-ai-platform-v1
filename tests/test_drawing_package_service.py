@@ -6,6 +6,7 @@ from engineering.building.ingest import ingest_structured_layout
 from engineering.design.planner import plan_discipline_layout
 from engineering.design.routing import route_calculation_outputs
 from engineering.drawing.service import build_job_drawing_package, authorize_drawing_package_issue
+from engineering.drawing.dispatch import build_drawing_dispatch_package
 
 
 def _building():
@@ -78,3 +79,18 @@ def test_fire_plumbing_calculation_outputs_flow_into_one_coordinated_package():
     assert manifest["dispatch_allowed"] is False
     assert set(manifest["drawings"][0]["source_calculations"] + manifest["drawings"][1]["source_calculations"]) == {"fire-storage-task-1", "plumbing-demand-task-1"}
     assert manifest["manifest_sha256"]
+
+
+def test_controlled_drawing_dispatch_builds_watermarked_pdf_and_hashed_dxf_package():
+    drawing = plan_discipline_layout(_building(), "FIRE", "F1", {
+        "R1": {"total_storage_m3": 132.0, "source_calculation": "fire-storage-task-1"}
+    })
+    job = SimpleNamespace(job_id="J-DISPATCH-1", tenant_id="T1", report_id="R-DISPATCH-1", result={"report_revision": 1}, status=SimpleNamespace(value="approved"))
+    manifest = build_job_drawing_package(job, [drawing], source_hashes={"plan.pdf": "abc"})
+    issued = authorize_drawing_package_issue(manifest, job)
+    built = build_drawing_dispatch_package(manifest=issued, drawings=issued["drawing_payloads"])
+    assert built["pdf"]["bytes"].startswith(b"%PDF")
+    assert b"PRELIMINARY" in built["pdf"]["bytes"]
+    assert len(built["dxf_zip"]["bytes"]) > 100
+    assert len(built["pdf"]["sha256"]) == 64
+    assert len(built["dxf_zip"]["sha256"]) == 64
