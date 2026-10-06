@@ -653,6 +653,12 @@ async function loadJobs(){
   const r=await api("/v1/jobs");const d=await r.json();
   if(!r.ok)throw Error(d.error||"Jobs unavailable");
   cachedJobs=Array.isArray(d.jobs)?d.jobs:[];
+  const activeContinuationJob=cachedJobs.find(j=>String(j.job_id||"")===String(activeContinuationJobId||""));
+  if(activeContinuationJob && activeContinuationJob.status==="awaiting_information"){
+   renderContinuation(activeContinuationJob);
+  }else if(activeContinuationJobId){
+   startFreshRequest();
+  }
   renderJobTabs(cachedJobs);
   if(activeJobTab==="dispatched"){renderDispatched();return;}
   cachedJobs.sort((a,b)=>String(b.created_at||b.updated_at||"").localeCompare(String(a.created_at||a.updated_at||"")));
