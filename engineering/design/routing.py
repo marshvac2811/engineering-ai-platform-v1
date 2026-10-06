@@ -13,8 +13,8 @@ from engineering.building.model import BuildingModel
 
 _FIELD_BY_DISCIPLINE = {
     "HVAC": "airflow_m3h",
-    "FIRE": "protection_type",
-    "PLUMBING": "fixture_type",
+    "FIRE": ("protection_type", "total_storage_m3"),
+    "PLUMBING": ("fixture_type", "design_demand_lpm"),
 }
 
 
@@ -36,7 +36,7 @@ def route_calculation_outputs(
     room_inputs: Dict[str, Dict[str, Any]] = {}
     blockers: List[str] = []
     routed: List[Dict[str, Any]] = []
-    field = _FIELD_BY_DISCIPLINE[discipline]
+    fields = _FIELD_BY_DISCIPLINE[discipline]
 
     for output in calculation_outputs:
         if not isinstance(output, dict):
@@ -56,11 +56,11 @@ def route_calculation_outputs(
         if rooms[room_id].x_mm is None or rooms[room_id].y_mm is None:
             blockers.append(f"Room {room_id} has no explicit coordinates; placement was not inferred.")
             continue
-        value = output.get(field)
-        if value is None:
-            blockers.append(f"Calculation output for {room_id} is missing explicit {field}.")
+        field = next((candidate for candidate in fields if output.get(candidate) is not None), None)
+        if field is None:
+            blockers.append(f"Calculation output for {room_id} is missing an explicit routed value.")
             continue
-        room_inputs[room_id] = {field: value, "source_calculation": source_calculation}
+        room_inputs[room_id] = {field: output[field], "source_calculation": source_calculation}
         routed.append({"room_id": room_id, "source_calculation": source_calculation, "field": field})
     return {
         "status": "ready" if routed and not blockers else ("partial" if routed else "blocked"),
