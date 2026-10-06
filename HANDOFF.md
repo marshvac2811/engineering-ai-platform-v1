@@ -132,3 +132,12 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - GitHub connector currently exposes no Actions workflow run for this merge commit; combined status shows Vercel pending only. Do not claim CI passed for this checkpoint until a later verified run exists.
 - Canonical live deployment remains Render; Render deployment and live drawing dispatch verification are still pending because the Render connector is not connected in this chat.
 - Next implementation priority: semantic source interpretation and calculation-to-layout routing, then governed fire/plumbing engineering calculators and richer coordinated drawing generation.
+
+## Latest implementation checkpoint — 2026-10-06 (source interpretation and calculation-to-layout routing)
+- Added `engineering/building/interpreter.py` for conservative interpretation of extracted building evidence. Explicit room/area/dimension facts can be surfaced from text-bearing sources; scanned/image-only PDFs remain blocked because automatic OCR/visual semantics are not claimed.
+- DXF interpretation exposes deterministic LINE geometry only and explicitly keeps architectural semantics disabled.
+- Added `POST /v1/jobs/{job_id}/attachments/{attachment_id}/building-interpretation`, which stores the interpretation in the Job result and audit events.
+- Added `engineering/design/routing.py` and `POST /v1/drawings/route`. Calculation outputs are routed to drawing rooms only when they contain an explicit room_id, source_calculation reference, discipline-specific value and source geometry coordinates. No nearest-room, name matching or geometric guessing is performed.
+- Routed layouts remain preliminary and human-review-required. This is a routing/traceability layer, not a replacement for the deterministic engineering calculators.
+- Main currently includes these changes directly; GitHub Actions workflow runs are not exposed by the connector for these commits, so CI is not claimed as verified for this checkpoint.
+- Next priority remains governed fire/plumbing engineering calculators and richer coordinated drawing generation, followed by semantic visual/CAD interpretation when a dedicated parser/vision capability is introduced.
