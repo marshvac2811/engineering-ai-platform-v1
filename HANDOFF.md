@@ -161,3 +161,18 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Both Fire/Plumbing adapters now preserve skill_version in SkillResult, closing a metadata traceability gap.
 - Added regression coverage for Fire storage and Plumbing demand routing and drawing generation.
 - Next step: controlled coordinated Fire/Plumbing package trials, followed by a full repository test/CI verification.
+
+
+## Latest implementation checkpoint — 2026-10-06 (coordinated Fire/Plumbing drawing package)
+- Fire/Plumbing calculation-to-layout integration is complete at the repository layer.
+- Routing now accepts HVAC as a normalized single-field tuple and Fire/Plumbing as explicit alternative routed fields, preventing discipline-specific field handling bugs.
+- Fire water storage can route explicit total_storage_m3 into a preliminary fire_tank drawing object.
+- Plumbing water demand can route explicit design_demand_lpm into a preliminary water_demand drawing object.
+- Existing explicit Fire protection_type and Plumbing fixture_type drawing paths remain supported.
+- Both new adapters now preserve skill_version in SkillResult.
+- Added AT-63, AT-64 and AT-65 covering calculation-to-layout and combined controlled package lineage.
+- AT-65 verifies that Fire and Plumbing preliminary drawings can be combined into one job-linked drawing package while remaining not approved / not dispatchable until the engineering Job approval gate.
+- Registry verification: 25 registered skill IDs; 24 integrated/executable; chiller_efficiency remains source-audit-pending.
+- Verification limitation: this environment has no local repository checkout and cannot execute pytest locally; the GitHub connector did not expose an Actions run for these direct-main commits. Therefore no new CI pass is claimed for this checkpoint. The previously verified main suite remains 272 passed on run 37346834387 before these later additions.
+- Vercel statuses are deployment checks only and are not being used as a substitute for the required Render live verification.
+- Canonical live deployment remains Render. Live Fire/Plumbing calculation, drawing package, approval, controlled PDF/DXF artifact, Evidence Register and Revision History verification still requires the Render connection/live environment.
