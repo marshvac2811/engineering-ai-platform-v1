@@ -141,3 +141,14 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Routed layouts remain preliminary and human-review-required. This is a routing/traceability layer, not a replacement for the deterministic engineering calculators.
 - Main currently includes these changes directly; GitHub Actions workflow runs are not exposed by the connector for these commits, so CI is not claimed as verified for this checkpoint.
 - Next priority remains governed fire/plumbing engineering calculators and richer coordinated drawing generation, followed by semantic visual/CAD interpretation when a dedicated parser/vision capability is introduced.
+
+## Latest implementation checkpoint — 2026-10-06 (Fire + Plumbing engineering core)
+- Added `fire_water_storage` as a deterministic preliminary skill. It calculates storage only from explicit/governed required flow, duration and optional reserve percentage; it does not invent statutory fire demand, sprinkler density, pump duty or pipe sizing.
+- Added `plumbing_water_demand` as a deterministic preliminary skill. It aggregates explicit fixture flow rates and an explicit diversity factor; it does not infer code fixture units, simultaneous-use rules, pipe sizes or statutory demand.
+- Added adapters, unit tests and registry entries for both skills.
+- Registry is now **25 skill IDs: 24 integrated/executable + 1 source-audit-pending (`chiller_efficiency`)**.
+- Acceptance matrix extended with AT-61 Fire Water Storage and AT-62 Plumbing Water Demand. Drawing trials remain AT-43 through AT-60.
+- Removed the duplicate `crm_pipeline` registry block.
+- These Fire/Plumbing skills are deliberately input-governed preliminary capabilities. Standards-derived design logic will only be added when a source/audit basis is explicitly established.
+- GitHub Actions results for these latest direct-main commits are not exposed by the connector, so CI is not claimed as verified for this checkpoint.
+- Next priority: connect these calculators to the discipline drawing planner and calculation-to-layout routing, then add controlled Fire/Plumbing coordinated package trials.
