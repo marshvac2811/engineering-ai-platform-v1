@@ -477,6 +477,28 @@ class RuleBasedIntentProvider:
             return requested_skill_id, [IntentCandidate(requested_skill_id, 999, ["Explicit skill_id supplied by caller."])], 1.0
 
         t = text.lower()
+        # High-confidence natural-language energy/HVAC rescue. This runs before
+        # generic phrase scoring so a valid client request cannot fall through to
+        # "unsupported" merely because it also mentions adjacent options such as
+        # solar, BESS, retrofit, lifecycle or decarbonisation.
+        hvac_energy_markers = (
+            "hvac", "chiller plant", "air conditioning plant", "cooling plant",
+            "energy audit", "energy assessment", "energy saving", "energy savings",
+            "energy efficiency", "energy optimization", "energy optimisation",
+            "decarbon", "carbon reduction", "retrofit roadmap",
+        )
+        if any(marker in t for marker in hvac_energy_markers):
+            explicit_payback = any(x in t for x in ("payback", "roi", "retrofit economics"))
+            if explicit_payback and not any(x in t for x in ("decarbon", "carbon", "asset life")):
+                return "energy_payback", [IntentCandidate(
+                    "energy_payback", 100,
+                    ["High-confidence natural-language energy/retrofit request."]
+                )], 0.99
+            return "hvac_decarbonisation", [IntentCandidate(
+                "hvac_decarbonisation", 100,
+                ["High-confidence natural-language HVAC/energy request."]
+            )], 0.99
+
         # Broad life-safety inspection requests must not be routed to an unrelated
         # specialist merely because a generic word overlaps a routing phrase.
         if ("life-safety" in t or "life safety" in t or "fire pump room" in t) and not any(
