@@ -53,3 +53,15 @@ def test_missing_geometry_blocks_layout_placement():
     )
     assert result["status"] == "blocked"
     assert any("coordinates" in x for x in result["blockers"])
+
+
+def test_routes_fire_water_storage_to_explicit_tank_location():
+    result = route_calculation_outputs(_building(), discipline="FIRE", floor_id="F1", calculation_outputs=[{"room_id":"R1","source_calculation":"fire-storage-1","total_storage_m3":132.0}])
+    assert result["status"] == "ready"
+    assert result["room_inputs"]["R1"]["total_storage_m3"] == 132.0
+
+
+def test_routes_plumbing_demand_to_explicit_service_location():
+    result = route_calculation_outputs(_building(), discipline="PLUMBING", floor_id="F1", calculation_outputs=[{"room_id":"R1","source_calculation":"plumbing-demand-1","design_demand_lpm":20.0}])
+    assert result["status"] == "ready"
+    assert result["room_inputs"]["R1"]["design_demand_lpm"] == 20.0
