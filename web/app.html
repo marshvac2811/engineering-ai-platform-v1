@@ -306,7 +306,7 @@ async function viewArtifact(jobId,kind){
 async function downloadDrawingArtifact(jobId,kind){
  const msg=document.getElementById("regMsg");
  if(msg)msg.textContent="Preparing drawing download...";
- try{const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/drawing-artifacts/"+kind);const d=await r.json();if(!r.ok)throw Error(d.error||"Drawing download unavailable");window.open(d.url,"_blank","noopener");if(msg)msg.textContent="";}catch(e){if(msg)msg.textContent="Could not download drawing: "+e.message;}
+ try{const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/drawings/artifacts/"+kind);const d=await r.json();if(!r.ok)throw Error(d.error||"Drawing download unavailable");window.open(d.url,"_blank","noopener");if(msg)msg.textContent="";}catch(e){if(msg)msg.textContent="Could not download drawing: "+e.message;}
 }
 async function downloadArtifact(jobId,kind){
  const msg=document.getElementById("dlmsg-"+jobId)||document.getElementById("regMsg");
