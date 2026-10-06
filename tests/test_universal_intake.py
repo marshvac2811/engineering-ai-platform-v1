@@ -45,3 +45,24 @@ def test_pump_request_with_static_elevation_and_missing_material_uses_governed_a
     assert plan.status == "ready_for_execution"
     assert not any("static head" in q.lower() for q in plan.questions)
     assert any("assumption" in r.lower() for r in plan.rationale)
+
+
+
+def test_natural_language_hvac_plant_energy_request_routes_without_skill_id():
+    text = (
+        "Assess an existing 250 TR HVAC plant for energy savings and optimisation. "
+        "Identify efficiency improvement opportunities, asset-life impact and a practical "
+        "decarbonisation roadmap using the available plant data."
+    )
+    plan = build_plan(text)
+    assert plan.selected_skill_id == "hvac_decarbonisation"
+    assert plan.status == "awaiting_information"
+    assert plan.engineering_plan["status"] in {"awaiting_information", "ready_for_execution"}
+    assert any("hvac" in q.lower() or "energy" in q.lower() for q in plan.questions)
+
+
+def test_energy_payback_request_stays_on_payback_capability_when_explicit():
+    plan = build_plan(
+        "Evaluate the retrofit economics and payback of replacing an existing HVAC plant."
+    )
+    assert plan.selected_skill_id == "energy_payback"
