@@ -58,6 +58,7 @@ button:disabled{opacity:.55;cursor:wait}
 <textarea id="request" rows="5" placeholder="Example: Upload the plant data above, then ask: Audit this hospital for energy savings, assess HVAC optimization, rooftop solar and BESS options, and prepare a decarbonization roadmap using applicable standards and the available project data."></textarea>
 <button id="submit" style="margin-top:12px" onclick="submitRequest()">Submit Request</button>
 <div id="requestMsg" class="msg"></div>
+<div id="continuationBox" class="need" style="display:none;margin-top:12px"></div>
 </section>
 
 <section class="card">
@@ -110,6 +111,8 @@ button:disabled{opacity:.55;cursor:wait}
 <script>
 let token=localStorage.getItem("engineering_ai_access_token");
 if(!token) location.replace("/login");
+let activeContinuationJobId=localStorage.getItem("engineering_ai_active_continuation_job")||"";
+let activeContinuationFields=[];
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function showMsg(el,ok,msg){el.className="msg "+(ok?"ok":"err");el.style.display="block";el.textContent=msg;}
@@ -215,57 +218,106 @@ async function loadAccount(){
  }catch(e){}
 }
 
+function renderContinuation(job){
+ const box=document.getElementById("continuationBox"), btn=document.getElementById("submit");
+ if(!box)return;
+ const orch=job?.orchestration||{};
+ const missing=Array.isArray(orch.missing_inputs)?orch.missing_inputs.map(String):[];
+ const questions=Array.isArray(orch.questions)?orch.questions.map(String):[];
+ activeContinuationJobId=String(job?.job_id||"");
+ activeContinuationFields=missing;
+ if(activeContinuationJobId)localStorage.setItem("engineering_ai_active_continuation_job",activeContinuationJobId);
+ if(job?.status!=="awaiting_information"){box.style.display="none";box.innerHTML="";activeContinuationJobId="";activeContinuationFields=[];localStorage.removeItem("engineering_ai_active_continuation_job");btn.textContent="Submit New Request";return;}
+ box.style.display="block";
+ const questionText=questions.join(" ")||"Please provide the missing engineering information.";
+ const fields=missing.length
+  ? missing.map(f=>'<div style="margin-top:9px"><label class="small" for="top-answer-'+esc(f)+'">'+esc(fieldLabel(f))+'</label><input id="top-answer-'+esc(f)+'" type="text" inputmode="decimal" autocomplete="off" placeholder="Enter '+esc(fieldLabel(f))+'" style="margin-top:4px"></div>').join("")
+  : '<textarea id="top-answer-message" rows="3" placeholder="Provide the requested project information." style="margin-top:8px"></textarea>';
+ box.innerHTML='<strong>Continue this existing engineering request</strong>'+
+  '<div class="small" style="margin-top:5px">Job '+esc(String(job.job_id).slice(0,8))+' is waiting for information. Your next answer will be added to this job — it will NOT create a second job.</div>'+
+  '<div style="margin-top:7px">'+esc(questionText)+'</div>'+fields+
+  '<div class="actions"><button onclick="continueFromTop()">Continue Existing Job</button><button class="secondary" onclick="startFreshRequest()">Start a New Request Instead</button></div>';
+ btn.textContent="Continue Existing Job";
+}
+function startFreshRequest(){
+ activeContinuationJobId="";activeContinuationFields=[];localStorage.removeItem("engineering_ai_active_continuation_job");
+ const box=document.getElementById("continuationBox");if(box){box.style.display="none";box.innerHTML="";}
+ const btn=document.getElementById("submit");if(btn)btn.textContent="Submit New Request";
+}
+async function continueFromTop(){
+ const msg=document.getElementById("requestMsg"), jobId=activeContinuationJobId;
+ if(!jobId){showMsg(msg,false,"No existing information-needed job is selected. Please submit a new request.");return;}
+ const updates={};let message="";
+ if(activeContinuationFields.length){
+  for(const f of activeContinuationFields){
+   const v=document.getElementById("top-answer-"+f)?.value.trim();
+   if(!v){showMsg(msg,false,"Please enter all requested information before continuing.");return;}
+   updates[f]=v;
+  }
+ }else{
+  message=document.getElementById("top-answer-message")?.value.trim()||"";
+  if(!message){showMsg(msg,false,"Please provide the requested engineering information.");return;}
+ }
+ const btn=document.querySelector("#continuationBox button:not(.secondary)");
+ if(btn)btn.disabled=true;showMsg(msg,true,"Continuing the existing engineering request...");
+ try{
+  const payload={inputs:updates};if(message)payload.message=message;
+  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/information",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const d=await r.json();if(!r.ok)throw Error(d.error||"Information update failed");
+  if(d.job?.status==="awaiting_information")renderContinuation(d.job);else startFreshRequest();
+  document.getElementById("request").value="";
+  showMsg(msg,true,d.job?.status==="awaiting_information" ? "More information is required; the same job remains active." : "Existing request continued successfully and is now in the engineering workflow.");
+  await loadJobs();
+ }catch(e){showMsg(msg,false,e.message);if(btn)btn.disabled=false;}
+}
 async function submitRequest(){
  const btn=document.getElementById("submit"), msg=document.getElementById("requestMsg");
+ if(activeContinuationJobId && btn.textContent==="Continue Existing Job"){await continueFromTop();return;}
  const message=document.getElementById("request").value.trim();
  if(!message){showMsg(msg,false,"Please enter an engineering request.");return;}
  btn.disabled=true;showMsg(msg,true,"Processing your request...");
  try{
   const project=document.getElementById("reqProject")?.value.trim();
- const client=document.getElementById("reqClient")?.value.trim();
- const payload={message};
- if(project)payload.project=project;
- if(client)payload.client=client;
- const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  const d=await r.json();
-  if(!r.ok)throw Error(d.error||"Request failed");
+  const client=document.getElementById("reqClient")?.value.trim();
+  const payload={message};if(project)payload.project=project;if(client)payload.client=client;
+  const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const d=await r.json();if(!r.ok)throw Error(d.error||"Request failed");
   document.getElementById("request").value="";
   if(document.getElementById("reqProject"))document.getElementById("reqProject").value="";
   if(document.getElementById("reqClient"))document.getElementById("reqClient").value="";
-  const needs = d.job?.orchestration?.questions || d.job?.orchestration?.missing_inputs || [];
-  const needText = needs.length ? needs.join(" ") : "Additional engineering information is required. Open the job for the exact request.";
-  showMsg(msg,true, d.job?.status==="awaiting_information" ? needText : "Request submitted successfully.");
+  if(d.job?.status==="awaiting_information"){
+   renderContinuation(d.job);
+   const needs=d.job?.orchestration?.questions||d.job?.orchestration?.missing_inputs||[];
+   showMsg(msg,true,needs.length?needs.join(" "):"The request is waiting for additional information.");
+  }else{
+   startFreshRequest();
+   showMsg(msg,true,"Request submitted successfully.");
+  }
   await loadJobs();
  }catch(e){showMsg(msg,false,e.message);}
  finally{btn.disabled=false;}
 }
 
 async function provideInfo(jobId,fields){
- const msg=document.getElementById("msg-"+jobId);
- const updates={};
- let message="";
+ const msg=document.getElementById("msg-"+jobId), updates={};let message="";
  if(!fields.length){
-  const input=document.getElementById("message-"+jobId);
-  message=input?.value.trim()||"";
+  const input=document.getElementById("message-"+jobId);message=input?.value.trim()||"";
   if(!message){showMsg(msg,false,"Please provide the requested engineering information.");return;}
  }else{
   for(const field of fields){
-   const input=document.getElementById("answer-"+jobId+"-"+field);
-   const value=input?.value.trim();
+   const input=document.getElementById("answer-"+jobId+"-"+field), value=input?.value.trim();
    if(!value){showMsg(msg,false,"Please enter all required information.");return;}
    updates[field]=value;
   }
  }
- const button=document.getElementById("btn-"+jobId);button.disabled=true;
+ const button=document.getElementById("btn-"+jobId);if(button)button.disabled=true;
  try{
-  const payload={inputs:updates};
-  if(message)payload.message=message;
-  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/information",{
-   method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)
-  });
+  const payload={inputs:updates};if(message)payload.message=message;
+  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/information",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   const d=await r.json();if(!r.ok)throw Error(d.error||"Information update failed");
+  if(activeContinuationJobId===String(jobId)){if(d.job?.status==="awaiting_information")renderContinuation(d.job);else startFreshRequest();}
   await loadJobs();
- }catch(e){showMsg(msg,false,e.message);button.disabled=false;}
+ }catch(e){showMsg(msg,false,e.message);if(button)button.disabled=false;}
 }
 
 function kv(k,v){return '<div style="margin-top:4px"><strong>'+esc(k)+':</strong> '+esc(v==null||v===""?"-":String(v))+'</div>';}
