@@ -8,7 +8,8 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable
 from uuid import uuid4
 
-from .package import build_drawing_package
+from .package import build_drawing_package, sha256_text
+import json
 
 
 def build_job_drawing_package(job: Any, drawings: Iterable[Any], *, source_hashes: Dict[str, str] | None = None, conflicts=None) -> Dict[str, Any]:
@@ -25,6 +26,10 @@ def build_job_drawing_package(job: Any, drawings: Iterable[Any], *, source_hashe
     manifest["report_revision"] = int((getattr(job, "result", {}) or {}).get("report_revision") or 1)
     project_context = getattr(job, "project_context", {}) or {}
     manifest["project_name"] = project_context.get("project") or project_context.get("project_name") or None
+    # Rebind the immutable content hash after adding job/report identity. Mutable
+    # approval/dispatch flags are deliberately excluded from this content hash.
+    hash_payload = {k: v for k, v in manifest.items() if k not in {"manifest_sha256", "issue_status", "dispatch_allowed", "approval_job_status"}}
+    manifest["manifest_sha256"] = sha256_text(json.dumps(hash_payload, sort_keys=True, separators=(",", ":"), default=str))
     manifest["issue_status"] = "not_approved"
     manifest["dispatch_allowed"] = False
     return manifest
