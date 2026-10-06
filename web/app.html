@@ -50,7 +50,7 @@ button:disabled{opacity:.55;cursor:wait}
 <main>
 <section class="card">
 <h2>New Engineering Request</h2>
-<p class="muted">Describe the engineering outcome you need in normal language. AI interprets the request, determines the engineering work, identifies governing requirements, asks only for missing information, executes verified capabilities when available, and routes the result for human review.</p>
+<p class="muted">Describe the engineering outcome you need in normal language. AI interprets the request, determines the engineering work, identifies governing requirements, asks only for missing information, executes verified capabilities when available, and routes the result for human review.</p><div class="small" style="margin-top:8px"><strong>Note:</strong> This box starts a new engineering request. Use the Continue form in an Information Needed job to answer an existing request.</div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
 <div style="flex:1;min-width:200px"><label class="small" for="reqProject">Project (optional)</label><input id="reqProject" type="text" placeholder="e.g. Hotel ABC Retrofit" style="margin-top:4px"></div>
 <div style="flex:1;min-width:200px"><label class="small" for="reqClient">Client (optional)</label><input id="reqClient" type="text" placeholder="e.g. Hotel ABC Pvt Ltd" style="margin-top:4px"></div>
@@ -417,12 +417,21 @@ function jobHtml(j){
  const orch=j.orchestration||{}, missing=Array.isArray(orch.missing_inputs)?orch.missing_inputs.map(String):[];
  const questions=Array.isArray(orch.questions)?orch.questions.map(String):[];
  const result=j.result?.engineering_result||j.result?.engineeringResult;
- let html='<div class="job '+(review?"review":"")+'"><div><strong>Engineering Request</strong></div>'+
-  '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>';
+ const requestText=String(orch.normalized_request||"").trim();
+ const skillText=String(j.requested_skill_id||j.skill_id||"").trim();
+ const project=String(j.project_context?.project||"").trim();
+ const client=String(j.project_context?.client||"").trim();
+ let html='<div class="job '+(review?"review":"")+'"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>Engineering Request</strong><span class="small">Job '+esc(rawId.slice(0,8))+'</span></div>'+
+  '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>'+
+  (skillText?'<div class="small" style="margin-top:5px"><strong>Capability:</strong> '+esc(skillText)+'</div>':"")+
+  (project?'<div class="small" style="margin-top:5px"><strong>Project:</strong> '+esc(project)+'</div>':"")+
+  (client?'<div class="small" style="margin-top:5px"><strong>Client:</strong> '+esc(client)+'</div>':"")+
+  (requestText?'<div class="result" style="margin-top:10px"><strong>Original engineering request</strong><div class="small" style="margin-top:5px;white-space:pre-wrap">'+esc(requestText)+'</div></div>':"");
  if(status==="awaiting_information"){
   const questionText=questions.join(" ");
   const genericQuestion=!missing.length;
   html+='<div class="need"><strong>Information needed</strong>'+
+   '<div class="small" style="margin-top:5px">Continue this existing job here. Do not start a new request for these answers.</div>'+
    '<div style="margin-top:5px">'+esc(questionText||"Please provide the engineering objective and any project drawings, specifications, measurements, or other data available.")+'</div>'+
    (genericQuestion
     ? '<div style="margin-top:10px"><label class="small" for="message-'+id+'">Your response</label><textarea id="message-'+id+'" rows="4" placeholder="Describe the engineering objective and provide the project information you have." style="margin-top:4px"></textarea></div>'+
@@ -594,6 +603,7 @@ async function loadJobs(){
   cachedJobs=Array.isArray(d.jobs)?d.jobs:[];
   renderJobTabs(cachedJobs);
   if(activeJobTab==="dispatched"){renderDispatched();return;}
+  cachedJobs.sort((a,b)=>String(b.created_at||b.updated_at||"").localeCompare(String(a.created_at||a.updated_at||"")));
   const filtered=cachedJobs.filter(j=>jobBucket(j.status)===activeJobTab);
   const shown=window.jobsShown||20;
   if(!filtered.length){box.innerHTML='<div class="empty">No jobs currently require action in this queue.</div>';return;}
