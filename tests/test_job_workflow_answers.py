@@ -128,3 +128,37 @@ def test_missing_information_questions_are_actionable_for_hvac_energy_job():
     assert set(("annual_energy_kwh", "tariff")).issubset(set(plan.missing_inputs))
     assert any("annual electricity consumption" in q.lower() for q in plan.questions)
     assert any("electricity tariff" in q.lower() for q in plan.questions)
+
+
+def test_continuation_preserves_original_engineering_request_and_routes_energy_job():
+    service = JobService(InMemoryJobStore(), tenant_id="test-tenant")
+    request = (
+        "Carry out a complete preliminary HVAC energy optimisation and decarbonisation "
+        "assessment for an existing commercial hospital facility, using project data, "
+        "identifying savings opportunities and retrofit options, and prepare a roadmap."
+    )
+    job = service.create_from_plan(build_plan(request))
+    assert job.status == JobStatus.AWAITING_INFORMATION
+    assert job.requested_skill_id == "hvac_decarbonisation"
+    original = job.orchestration["normalized_request"]
+
+    service.provide_missing_information(
+        job.job_id,
+        message="Annual electricity consumption is 2500000 kWh/year and electricity tariff is Rs 8.50/kWh.",
+    )
+
+    assert job.orchestration["normalized_request"] == original
+    assert job.requested_skill_id == "hvac_decarbonisation"
+    assert job.status == JobStatus.HUMAN_REVIEW
+    assert job.result["status"] == "completed"
+
+
+def test_missing_information_questions_are_actionable_for_hvac_energy_job():
+    plan = build_plan(
+        "Audit the existing hospital HVAC plant for energy optimisation and decarbonisation."
+    )
+    assert plan.selected_skill_id == "hvac_decarbonisation"
+    assert plan.status == "awaiting_information"
+    assert set(("annual_energy_kwh", "tariff")).issubset(set(plan.missing_inputs))
+    assert any("annual electricity consumption" in q.lower() for q in plan.questions)
+    assert any("electricity tariff" in q.lower() for q in plan.questions)
