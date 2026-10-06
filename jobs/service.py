@@ -182,7 +182,7 @@ class JobService:
         job.inputs.update(updates)
         job.add_event("information_received", "Missing input information supplied.", fields=list(updates))
         from orchestrator.intake import build_plan
-        continuation_request = str(message or job.orchestration.get("normalized_request", "")).strip()
+        continuation_request = str(job.orchestration.get("normalized_request", "")).strip()
         plan = build_plan(
             continuation_request,
             requested_skill_id=job.requested_skill_id,
@@ -191,8 +191,10 @@ class JobService:
             standards_context=job.standards_context,
             assumptions_context=job.assumptions_context,
         )
-        if continuation_request:
-            job.orchestration["normalized_request"] = continuation_request
+        # Preserve the original engineering request on continuation. The reply is input data,
+        # not a replacement for the engineering objective; otherwise a follow-up such as
+        # "annual energy 2,500,000 kWh, tariff ₹8.50/kWh" can make the job unroutable.
+        plan.normalized_request = continuation_request or job.orchestration.get("normalized_request", "")
         job.orchestration = plan.to_dict()
         if plan.status == "ready_for_execution":
             job.transition(JobStatus.QUEUED, "All required inputs supplied; job returned to queue.")
