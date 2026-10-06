@@ -110,10 +110,12 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
     "hvac_decarbonisation": ("decarbon", "decarbonisation", "carbon saving", "hvac retrofit", "asset life extension",
                                "do-nothing vs", "do nothing vs", "decarbonisation scenarios", "decarbonisation impact",
                                "hvac energy assessment", "hvac energy optimization", "hvac energy optimisation",
+                               "hvac optimization", "hvac optimisation", "hvac assessment", "hvac audit",
+                               "energy audit", "energy assessment", "energy audit of hvac", "energy audit for hvac",
                                "hvac plant assessment", "hvac plant optimization", "hvac plant optimisation",
                                "existing hvac plant", "plant energy assessment", "plant energy optimization",
-                               "plant energy optimisation", "energy audit of hvac", "energy audit for hvac",
-                               "energy efficiency assessment", "energy efficiency improvement"),
+                               "plant energy optimisation", "plant assessment", "energy efficiency assessment",
+                               "energy efficiency improvement", "energy efficiency", "energy saving assessment"),
     "energy_payback": ("payback", "energy savings", "energy cost saving", "roi", "retrofit payback", "retrofit payback",
                        "energy retrofit", "retrofit economics"),
     "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate", "hvac boq", "boq for", "boq covering", "boq outline"),
@@ -505,7 +507,9 @@ class RuleBasedIntentProvider:
             decarb_text = (
                 "decarbon" in t or "carbon saving" in t or "asset life" in t
                 or "hvac plant" in t or "plant energy" in t
-                or "hvac energy" in t
+                or "hvac energy" in t or "hvac " in t
+                or "energy audit" in t or "energy assessment" in t
+                or "energy efficiency" in t or "energy saving assessment" in t
             )
             payback_text = any(x in t for x in ("payback", "roi", "retrofit economics"))
             if decarb_text and not payback_text:
@@ -629,8 +633,11 @@ def build_plan(
                     "AI provider returned no executable capability; deterministic registered-capability routing supplied the safe fallback.",
                     *[item for candidate in fallback_candidates if candidate.skill_id == fallback_skill for item in candidate.rationale],
                 ]
+            else:
+                provider_rationale = [str(x) for x in decision.get("rationale") or []]
+        else:
+            provider_rationale = [str(x) for x in decision.get("rationale") or []]
         provider_extracted = dict(decision.get("extracted_inputs") or {})
-        provider_rationale = [str(x) for x in decision.get("rationale") or []]
         request_understanding = {
             "objective": decision.get("objective", ""),
             "disciplines": list(decision.get("disciplines") or []),
