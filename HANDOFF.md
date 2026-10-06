@@ -15,9 +15,9 @@ web/app.html served directly by the Render app.
 
 Live site: https://engineering-ai-platform-v1.onrender.com
 
-## Status: V1 workflow functional; CI green; live Render artifact verification remains open
+## Status: V1 workflow functional; Render live service verified; authenticated artifact workflow verification remains open
 
-The core workflow is operational for **24 executable skills (25 registered; `chiller_efficiency` remains source-audit pending)**. Trial 1 reached human review with deterministic duct sizing, correct missing-input behavior, and traceability metadata. A production defect was then found: the dashboard Report view rendered only report metadata instead of the persisted engineering work items, and legacy evidence records could produce an apparently blank artifact workbook. The consolidated rendering/recovery fix has been merged; a fresh production deployment and one post-deploy Trial 1 dispatch verification remain required before declaring the artifact path closed.
+The core workflow is operational for **24 executable skills (25 registered; `chiller_efficiency` remains source-audit pending)**. Trial 1 reached human review with deterministic duct sizing, correct missing-input behavior, and traceability metadata. A production defect was then found: the dashboard Report view rendered only report metadata instead of the persisted engineering work items, and legacy evidence records could produce an apparently blank artifact workbook. The consolidated rendering/recovery fix has been merged; the canonical Render service is live on commit `b481bc1c7ed7b52d49fa32805e40cfb567e22985`; authenticated Trial 1 dispatch and artifact verification remain the final live gate.
 
 ## Done
 - 24 engineering skills executable (HVAC, BMS, Energy, Commercial, Fire, Plumbing) - see
@@ -102,7 +102,7 @@ For the rectangular duct velocity trial (5000 m³/h, 7 m/s, galvanized steel), t
 - PR #30 fixed a stale facade report-type assertion exposed by the legacy-report recovery change; PR #30 is merged.
 - GitHub Actions run `37346834387`: **272 passed**, 1 warning.
 - The previous `d07515e...` main run failed only because `tests/test_api.py` expected the obsolete `engineering_compliance_report`; production behavior was not changed by the fix.
-- Canonical deployment remains Render. Live `/health`/Trial 1/report/evidence/PDF/XLSX verification is still not confirmed from this chat because Render is not connected here.
+- Canonical deployment remains Render. The Render service is now connected and verified live; authenticated `/v1` Trial 1/report/evidence/PDF/XLSX verification remains open.
 - The existing Phase 16 drawing foundation is minimal: a CAD-neutral `DrawingModel` with points/lines/dimensions plus deterministic JSON serialization and a parametric facade-elevation example. It is **not** yet the building-layout/HVAC/fire/plumbing drawing engine described in the expanded roadmap.
 
 Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
@@ -130,7 +130,7 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Governance boundary remains explicit: these are AI-assisted preliminary engineering drawings, not final construction/statutory approvals. Semantic PDF/CAD/BIM interpretation and calculation-to-layout routing are still future layers.
 - PR #37 merge commit: `80abed341044fb7d8ac4a3e6b4bcab55903944ce`.
 - GitHub connector currently exposes no Actions workflow run for this merge commit; combined status shows Vercel pending only. Do not claim CI passed for this checkpoint until a later verified run exists.
-- Canonical live deployment remains Render; Render deployment and live drawing dispatch verification are still pending because the Render connector is not connected in this chat.
+- Canonical live deployment remains Render; the service is now verified live on Render. Authenticated drawing dispatch verification remains open.
 - Next implementation priority: semantic source interpretation and calculation-to-layout routing, then governed fire/plumbing engineering calculators and richer coordinated drawing generation.
 
 ## Latest implementation checkpoint — 2026-10-06 (source interpretation and calculation-to-layout routing)
@@ -150,7 +150,7 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Acceptance matrix extended with AT-61 Fire Water Storage and AT-62 Plumbing Water Demand. Drawing trials remain AT-43 through AT-60.
 - Removed the duplicate `crm_pipeline` registry block.
 - These Fire/Plumbing skills are deliberately input-governed preliminary capabilities. Standards-derived design logic will only be added when a source/audit basis is explicitly established.
-- GitHub Actions results for these latest direct-main commits are not exposed by the connector, so CI is not claimed as verified for this checkpoint.
+- GitHub Actions results for these latest direct-main commits are not exposed by the connector, so CI is not claimed as verified for this checkpoint. Render runtime verification has now caught and fixed the Fire/Plumbing import/binding defects.
 - Next priority: connect these calculators to the discipline drawing planner and calculation-to-layout routing, then add controlled Fire/Plumbing coordinated package trials.
 
 
