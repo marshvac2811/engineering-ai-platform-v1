@@ -108,8 +108,14 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
     "vfd_derating": ("vfd derating", "vfd altitude", "vfd temperature", "drive sizing", "derating for"),
     "harmonic_screening": ("harmonics", "harmonic screening", "ieee 519", "vfd harmonic", "harmonic distortion", "harmonic risk"),
     "hvac_decarbonisation": ("decarbon", "decarbonisation", "carbon saving", "hvac retrofit", "asset life extension",
-                               "do-nothing vs", "do nothing vs", "decarbonisation scenarios", "decarbonisation impact"),
-    "energy_payback": ("payback", "energy savings", "energy cost saving", "roi", "retrofit payback", "retrofit payback"),
+                               "do-nothing vs", "do nothing vs", "decarbonisation scenarios", "decarbonisation impact",
+                               "hvac energy assessment", "hvac energy optimization", "hvac energy optimisation",
+                               "hvac plant assessment", "hvac plant optimization", "hvac plant optimisation",
+                               "existing hvac plant", "plant energy assessment", "plant energy optimization",
+                               "plant energy optimisation", "energy audit of hvac", "energy audit for hvac",
+                               "energy efficiency assessment", "energy efficiency improvement"),
+    "energy_payback": ("payback", "energy savings", "energy cost saving", "roi", "retrofit payback", "retrofit payback",
+                       "energy retrofit", "retrofit economics"),
     "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate", "hvac boq", "boq for", "boq covering", "boq outline"),
     "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance", "deviates on", "technical deviation"),
 }
@@ -489,6 +495,25 @@ class RuleBasedIntentProvider:
             candidates.append(IntentCandidate(
                 "hvac_fault_diagnosis", 3, [f"Matched fault-diagnosis rule: {fault_rule_label}"]
             ))
+        # Resolve the common energy/decarbonisation overlap conservatively.
+        # A request about an existing HVAC/plant assessment with energy-efficiency,
+        # carbon, asset-life or retrofit objectives belongs to the HVAC
+        # decarbonisation workflow; a request explicitly centred on payback/ROI
+        # remains an energy-payback workflow. This prevents equal-score ties from
+        # incorrectly returning "no capability" for valid natural-language jobs.
+        if any(c.skill_id == "hvac_decarbonisation" for c in candidates):
+            decarb_text = (
+                "decarbon" in t or "carbon saving" in t or "asset life" in t
+                or "hvac plant" in t or "plant energy" in t
+                or "hvac energy" in t
+            )
+            payback_text = any(x in t for x in ("payback", "roi", "retrofit economics"))
+            if decarb_text and not payback_text:
+                for c in candidates:
+                    if c.skill_id == "hvac_decarbonisation":
+                        c.score += 3
+                        c.rationale.append("Energy/HVAC plant assessment mapped to the decarbonisation capability.")
+                        break
         candidates.sort(key=lambda c: (-c.score, c.skill_id))
         if not candidates:
             return None, [], 0.0
@@ -591,6 +616,19 @@ def build_plan(
         )
         skill_id = decision.get("skill_id")
         confidence = float(decision.get("confidence", 0.0))
+        # If the configured AI provider cannot establish a capability, fall back
+        # to the audited deterministic vocabulary before telling the client that
+        # the request is unsupported. The fallback still goes through the same
+        # registry-defined input and governance gates below.
+        if not skill_id:
+            fallback_skill, fallback_candidates, fallback_confidence = RuleBasedIntentProvider().route(text)
+            if fallback_skill:
+                skill_id = fallback_skill
+                confidence = fallback_confidence
+                provider_rationale = [
+                    "AI provider returned no executable capability; deterministic registered-capability routing supplied the safe fallback.",
+                    *[item for candidate in fallback_candidates if candidate.skill_id == fallback_skill for item in candidate.rationale],
+                ]
         provider_extracted = dict(decision.get("extracted_inputs") or {})
         provider_rationale = [str(x) for x in decision.get("rationale") or []]
         request_understanding = {
