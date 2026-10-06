@@ -159,3 +159,10 @@ The current implementation is a **CAD-neutral, deterministic drawing foundation*
 - Route only when room_id, source_calculation, explicit design_demand_lpm, and source geometry coordinates are present.
 - Generate a preliminary water_demand drawing object with calculation lineage.
 - Human review required; no fixture-unit rules, pipe sizing or placement inferred.
+
+
+### AT-65 — Fire + Plumbing coordinated calculation-to-package trial
+- Fire storage and Plumbing demand outputs are routed only to explicit room coordinates.
+- Both preliminary discipline drawings retain their source calculation references.
+- A combined controlled drawing package contains both disciplines with manifest SHA-256.
+- Package remains unissued until the linked engineering Job is explicitly approved.
