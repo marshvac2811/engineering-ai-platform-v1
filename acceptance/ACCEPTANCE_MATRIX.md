@@ -1,6 +1,6 @@
 # Engineering AI Platform V1 — 42-Trial Acceptance Matrix
 
-Acceptance scope: 23 registered engineering skill IDs; 22 currently integrated/executable; 1 source-audit-pending (chiller_efficiency).
+Acceptance scope: 25 registered engineering skill IDs; 24 currently integrated/executable; 1 source-audit-pending (chiller_efficiency).
 
 Release rule: every accepted trial must prove the governed lifecycle: natural-language intake → skill selection → missing-input handling → validation → deterministic execution → engineering result → evidence → human review → approval → controlled artifact generation → SHA-256 integrity → register/history → dispatch where approved.
 
@@ -18,7 +18,7 @@ Release rule: every accepted trial must prove the governed lifecycle: natural-la
 11. No unauthorized dispatch occurs.
 12. Rework preserves the prior report and creates explicit revision lineage.
 
-## Baseline skill trials — 23
+## Baseline skill trials — 25
 
 | ID | Skill | Trial objective | Minimum evidence | Status |
 |---|---|---|---|---|
@@ -45,6 +45,8 @@ Release rule: every accepted trial must prove the governed lifecycle: natural-la
 | AT-21 | hvac_boq | Commercial HVAC BOQ | Itemized BOQ, quantities/basis, evidence | PLANNED |
 | AT-22 | deviation_statement | Governed commercial deviation statement | Deviation basis, traceability, review evidence | PLANNED |
 | AT-23 | facade_u_factor | Preliminary facade U-factor / ECBC-supported calculation | Area-weighted result, ECBC basis, limitations, artifacts | PLANNED |
+| AT-61 | fire_water_storage | Preliminary fire-water storage arithmetic from explicit governed flow/duration | Flow, duration, storage trace, limitations | PLANNED |
+| AT-62 | plumbing_water_demand | Preliminary plumbing demand from explicit fixture flows and diversity | Fixture aggregation, demand trace, limitations | PLANNED |
 
 ## Additional cross-skill and governance trials — 19
 
@@ -73,8 +75,8 @@ Release rule: every accepted trial must prove the governed lifecycle: natural-la
 ## Release gates
 
 ### Gate A — Registry integrity
-- 23 skill IDs are accounted for.
-- 22 are integrated/executable.
+- 25 skill IDs are accounted for.
+- 24 are integrated/executable.
 - chiller_efficiency is explicitly isolated as source-audit pending.
 - Duplicate skill IDs must not silently change the acceptance count.
 
@@ -114,7 +116,7 @@ Each executed trial should capture: Trial ID; date/time; environment; job ID; pr
 
 ## Scope correction
 
-The current registry contains 23 skill IDs. The correct operational statement is 22 integrated/executable plus 1 source-audit-pending.
+The current registry contains 25 skill IDs. The correct operational statement is 24 integrated/executable plus 1 source-audit-pending.
 
 ## Drawing / design foundation trials — 18
 
