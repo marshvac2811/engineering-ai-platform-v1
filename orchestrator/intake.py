@@ -481,13 +481,20 @@ class RuleBasedIntentProvider:
         # generic phrase scoring so a valid client request cannot fall through to
         # "unsupported" merely because it also mentions adjacent options such as
         # solar, BESS, retrofit, lifecycle or decarbonisation.
-        hvac_energy_markers = (
+        hvac_markers = (
             "hvac", "chiller plant", "air conditioning plant", "cooling plant",
+        )
+        energy_markers = (
             "energy audit", "energy assessment", "energy saving", "energy savings",
             "energy efficiency", "energy optimization", "energy optimisation",
-            "decarbon", "carbon reduction", "retrofit roadmap",
+            "decarbon", "carbon reduction", "retrofit roadmap", "asset life",
         )
-        if any(marker in t for marker in hvac_energy_markers):
+        fault_markers = ("troubleshoot", "fault", "trip", "diagnose", "cavitation", "refrigerant shortage")
+        if any(marker in t for marker in energy_markers) and (
+            any(marker in t for marker in hvac_markers)
+            or "plant" in t
+            or "retrofit" in t
+        ) and not any(marker in t for marker in fault_markers):
             explicit_payback = any(x in t for x in ("payback", "roi", "retrofit economics"))
             if explicit_payback and not any(x in t for x in ("decarbon", "carbon", "asset life")):
                 return "energy_payback", [IntentCandidate(
