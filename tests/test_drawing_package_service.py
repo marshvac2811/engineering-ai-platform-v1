@@ -4,6 +4,7 @@ import pytest
 
 from engineering.building.ingest import ingest_structured_layout
 from engineering.design.planner import plan_discipline_layout
+from engineering.design.routing import route_calculation_outputs
 from engineering.drawing.service import build_job_drawing_package, authorize_drawing_package_issue
 
 
@@ -51,3 +52,29 @@ def test_drawing_package_issue_is_explicitly_controlled():
     issued = authorize_drawing_package_issue(manifest, job)
     assert issued["dispatch_allowed"] is True
     assert issued["issue_status"] == "approved_for_controlled_dispatch"
+
+
+def test_fire_plumbing_calculation_outputs_flow_into_one_coordinated_package():
+    building = _building()
+    fire_route = route_calculation_outputs(
+        building,
+        discipline="FIRE",
+        floor_id="F1",
+        calculation_outputs=[{"room_id": "R1", "source_calculation": "fire-storage-task-1", "total_storage_m3": 132.0}],
+    )
+    plumbing_route = route_calculation_outputs(
+        building,
+        discipline="PLUMBING",
+        floor_id="F1",
+        calculation_outputs=[{"room_id": "R1", "source_calculation": "plumbing-demand-task-1", "design_demand_lpm": 20.0}],
+    )
+    assert fire_route["status"] == "ready"
+    assert plumbing_route["status"] == "ready"
+    fire = plan_discipline_layout(building, "FIRE", "F1", fire_route["room_inputs"])
+    plumbing = plan_discipline_layout(building, "PLUMBING", "F1", plumbing_route["room_inputs"])
+    job = SimpleNamespace(job_id="J-FP-1", tenant_id="T1", report_id="R-FP-1", result={"report_revision": 1})
+    manifest = build_job_drawing_package(job, [fire, plumbing], source_hashes={"plan.pdf": "abc"})
+    assert manifest["issue_status"] == "not_approved"
+    assert manifest["dispatch_allowed"] is False
+    assert set(manifest["drawings"][0]["source_calculations"] + manifest["drawings"][1]["source_calculations"]) == {"fire-storage-task-1", "plumbing-demand-task-1"}
+    assert manifest["manifest_sha256"]
