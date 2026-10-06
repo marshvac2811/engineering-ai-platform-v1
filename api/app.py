@@ -783,6 +783,28 @@ class APIApp:
                 )
                 return self._json(start_response, "201 Created", job.to_dict())
 
+            if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "drawings" and method == "GET":
+                ctx.require_scope("jobs:read")
+                job = service._get(parts[2])
+                getter = getattr(service.store, "get_drawing_artifact", None)
+                artifact = getter(job.job_id, tenant_id=service.tenant_id) if getter else None
+                if artifact is None:
+                    return self._json(start_response, "404 Not Found", {"error": "No persistent drawing package is available for this job"})
+                return self._json(start_response, "200 OK", artifact)
+
+            if len(parts) == 5 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "drawings" and parts[4] == "artifacts" and method == "GET":
+                return self._json(start_response, "400 Bad Request", {"error": "Drawing artifact kind is required"})
+
+            if len(parts) == 6 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "drawings" and parts[4] == "artifacts" and method == "GET":
+                ctx.require_scope("jobs:read")
+                job = service._get(parts[2])
+                kind = parts[5]
+                getter = getattr(service.store, "get_drawing_artifact_download", None)
+                link = getter(job.job_id, kind, tenant_id=service.tenant_id) if getter else None
+                if link is None:
+                    return self._json(start_response, "404 Not Found", {"error": "Controlled drawing artifact is not available; approve and dispatch the job first."})
+                return self._json(start_response, "200 OK", link)
+
             if len(parts) == 3 and parts[0] == "v1" and parts[1] == "jobs":
                 job_id = parts[2]
                 job = service._get(job_id)
