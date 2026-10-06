@@ -11,7 +11,7 @@ from orchestrator.engine import execute, registered_skills
 ROOT = Path(__file__).resolve().parents[1]
 
 
-# One governed, deterministic baseline input set per executable skill.
+# One governed, deterministic baseline input set per executable skill; source-audit-pending skills remain excluded.
 # chiller_efficiency is intentionally excluded because the registry marks it
 # source_audit_pending and therefore non-executable.
 BASELINE_CASES = {
@@ -190,6 +190,18 @@ BASELINE_CASES = {
             {"name": "opaque", "area_m2": 20, "u_factor": 0.6},
         ]
     },
+    "fire_water_storage": {
+        "required_flow_lpm": 1000,
+        "duration_min": 120,
+        "reserve_pct": 10,
+    },
+    "plumbing_water_demand": {
+        "fixtures": [
+            {"fixture_type": "WC", "count": 4, "flow_lpm": 6},
+            {"fixture_type": "Wash Basin", "count": 4, "flow_lpm": 4},
+        ],
+        "diversity_factor_pct": 50,
+    },
 }
 
 
@@ -202,7 +214,7 @@ def req(skill_id: str, inputs: dict, *, project_context: dict | None = None):
 
 
 @pytest.mark.parametrize("skill_id", sorted(BASELINE_CASES))
-def test_at_01_to_at_23_executable_skill_baselines(skill_id):
+def test_executable_skill_baselines(skill_id):
     result = execute(req(skill_id, BASELINE_CASES[skill_id]))
     assert result.status in {"draft_ready", "completed"}, (
         f"{skill_id} failed baseline trial: {result.to_dict()}"
