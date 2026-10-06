@@ -414,6 +414,31 @@ class SupabaseJobStore(JobStore):
                     jobs[str(row["job_id"])]["project_context"] = row.get("project_context") or {}
         except Exception:
             pass
+        drawing_by_report = {}
+        try:
+            dq = self.client.table("engineering_drawing_artifacts").select(
+                "drawing_artifact_id,job_id,report_id,report_revision,status,manifest_sha256,pdf_sha256,pdf_storage_path,dxf_zip_sha256,dxf_zip_storage_path"
+            )
+            if tenant_id:
+                dq = dq.eq("tenant_id", tenant_id)
+            for d in getattr(dq.execute(), "data", None) or []:
+                key = (str(d.get("report_id") or ""), int(d.get("report_revision") or 1))
+                drawing_by_report[key] = d
+        except Exception:
+            drawing_by_report = {}
+        for a in artifacts:
+            key = (str(a.get("report_id") or ""), int(a.get("version") or 1))
+            d = drawing_by_report.get(key)
+            if d:
+                a.update({
+                    "drawing_artifact_id": d.get("drawing_artifact_id"),
+                    "drawing_status": d.get("status"),
+                    "drawing_manifest_sha256": d.get("manifest_sha256"),
+                    "drawing_pdf_sha256": d.get("pdf_sha256"),
+                    "drawing_dxf_zip_sha256": d.get("dxf_zip_sha256"),
+                    "drawing_pdf_storage_path": d.get("pdf_storage_path"),
+                    "drawing_dxf_zip_storage_path": d.get("dxf_zip_storage_path"),
+                })
         return rows_from_artifacts(artifacts, jobs)
 
     def get_artifact_download(self, job_id: str, kind: str, *, tenant_id: Optional[str] = None,
