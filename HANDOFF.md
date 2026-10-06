@@ -17,10 +17,10 @@ Live site: https://engineering-ai-platform-v1.onrender.com
 
 ## Status: V1 workflow functional; CI green; live Render artifact verification remains open
 
-The core workflow is operational for 22 executable skills (23 registered; `chiller_efficiency` remains source-audit pending). Trial 1 reached human review with deterministic duct sizing, correct missing-input behavior, and traceability metadata. A production defect was then found: the dashboard Report view rendered only report metadata instead of the persisted engineering work items, and legacy evidence records could produce an apparently blank artifact workbook. The consolidated rendering/recovery fix has been merged; a fresh production deployment and one post-deploy Trial 1 dispatch verification remain required before declaring the artifact path closed.
+The core workflow is operational for **24 executable skills (25 registered; `chiller_efficiency` remains source-audit pending)**. Trial 1 reached human review with deterministic duct sizing, correct missing-input behavior, and traceability metadata. A production defect was then found: the dashboard Report view rendered only report metadata instead of the persisted engineering work items, and legacy evidence records could produce an apparently blank artifact workbook. The consolidated rendering/recovery fix has been merged; a fresh production deployment and one post-deploy Trial 1 dispatch verification remain required before declaring the artifact path closed.
 
 ## Done
-- 22 engineering skills executable (HVAC, BMS, Energy, Commercial) - see
+- 24 engineering skills executable (HVAC, BMS, Energy, Commercial, Fire, Plumbing) - see
   skill_registry/registry.yaml for the full list and required inputs.
 - Evidence bundle preserves standards/compliance/source_revision/inputs per task.
 - PDF and Excel reports are table-based with readable labels and units, not raw JSON.
@@ -152,3 +152,12 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - These Fire/Plumbing skills are deliberately input-governed preliminary capabilities. Standards-derived design logic will only be added when a source/audit basis is explicitly established.
 - GitHub Actions results for these latest direct-main commits are not exposed by the connector, so CI is not claimed as verified for this checkpoint.
 - Next priority: connect these calculators to the discipline drawing planner and calculation-to-layout routing, then add controlled Fire/Plumbing coordinated package trials.
+
+
+## Latest implementation checkpoint — 2026-10-06 (Fire/Plumbing calculation-to-layout integration)
+- Fire and Plumbing preliminary calculators are now connected to the governed drawing routing/planner layer.
+- route_calculation_outputs preserves the existing explicit protection_type / fixture_type paths and additionally accepts only explicit total_storage_m3 for Fire water-tank layout and explicit design_demand_lpm for Plumbing demand layout.
+- plan_discipline_layout renders these values as traceable preliminary fire_tank and water_demand objects. No room matching, code-demand inference, pipe sizing, pump selection or automatic placement is performed.
+- Both Fire/Plumbing adapters now preserve skill_version in SkillResult, closing a metadata traceability gap.
+- Added regression coverage for Fire storage and Plumbing demand routing and drawing generation.
+- Next step: controlled coordinated Fire/Plumbing package trials, followed by a full repository test/CI verification.
