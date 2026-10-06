@@ -51,6 +51,13 @@ def register_row(artifact: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any
         "xlsx_sha256": artifact.get("xlsx_sha256"),
         "evidence_sha256": artifact.get("evidence_sha256"),
         "evidence_available": bool(artifact.get("evidence_sha256") or artifact.get("xlsx_storage_path")),
+        "drawing_artifact_id": artifact.get("drawing_artifact_id"),
+        "drawing_status": artifact.get("drawing_status"),
+        "drawing_manifest_sha256": artifact.get("drawing_manifest_sha256"),
+        "drawing_pdf_sha256": artifact.get("drawing_pdf_sha256"),
+        "drawing_dxf_zip_sha256": artifact.get("drawing_dxf_zip_sha256"),
+        "drawing_pdf_available": bool(artifact.get("drawing_pdf_storage_path")),
+        "drawing_dxf_available": bool(artifact.get("drawing_dxf_zip_storage_path")),
     }
 
 
@@ -136,7 +143,7 @@ def build_register_workbook(rows: List[Dict[str, Any]]) -> bytes:
     ws.title = "Report Register"
     header = ["Date", "Job ID", "Report ID", "Revision", "Project", "Client", "Request", "Skill",
               "Status", "Reviewed By", "Approval Date", "Dispatch Date", "PDF Available", "Evidence XLSX Available",
-              "PDF SHA-256", "Evidence SHA-256", "Superseded"]
+              "PDF SHA-256", "Evidence SHA-256", "Drawing Status", "Drawing Manifest SHA-256", "Drawing PDF SHA-256", "Drawing DXF ZIP SHA-256", "Drawing PDF Available", "Drawing DXF Available", "Superseded"]
     ws.append(header)
     fill, font = PatternFill("solid", fgColor="1F3A5F"), Font(bold=True, color="FFFFFF")
     for c in ws[1]:
@@ -147,9 +154,9 @@ def build_register_workbook(rows: List[Dict[str, Any]]) -> bytes:
             _s(r.get("project")), _s(r.get("client")), _s(r.get("request")), _s(r.get("skill_id")),
             _s(r.get("status")), _s(r.get("reviewed_by")), _s(r.get("approved_at")), _s(r.get("dispatched_at")),
             "Yes" if r.get("pdf_available") else "No", "Yes" if r.get("xlsx_available") else "No",
-            _s(r.get("pdf_sha256")), _s(r.get("evidence_sha256")), "Yes" if r.get("superseded") else "No",
+            _s(r.get("pdf_sha256")), _s(r.get("evidence_sha256")), _s(r.get("drawing_status")), _s(r.get("drawing_manifest_sha256")), _s(r.get("drawing_pdf_sha256")), _s(r.get("drawing_dxf_zip_sha256")), "Yes" if r.get("drawing_pdf_available") else "No", "Yes" if r.get("drawing_dxf_available") else "No", "Yes" if r.get("superseded") else "No",
         ])
-    widths = [20, 24, 24, 10, 22, 22, 46, 22, 16, 22, 20, 20, 12, 18, 40, 40, 12]
+    widths = [20, 24, 24, 10, 22, 22, 46, 22, 16, 22, 20, 20, 12, 18, 40, 40, 20, 40, 40, 40, 18, 18, 12]
     for i, w in enumerate(widths):
         ws.column_dimensions[chr(65 + i)].width = w
     for row in ws.iter_rows(min_row=2):
