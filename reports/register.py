@@ -13,7 +13,7 @@ VIEWS: Dict[str, Optional[frozenset]] = {
     "all": None,
     "pending_review": frozenset({"draft_ready", "human_review"}),
     "approved": frozenset({"approved", "dispatching"}),
-    "dispatched": frozenset({"dispatched"}),
+    "dispatched": frozenset({"dispatched", "completed"}),
     "completed": frozenset({"completed"}),
     "failed": frozenset({"failed", "retry", "cancelled", "rework"}),
     "evidence": None,
