@@ -176,3 +176,6 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Verification limitation: this environment has no local repository checkout and cannot execute pytest locally; the GitHub connector did not expose an Actions run for these direct-main commits. Therefore no new CI pass is claimed for this checkpoint. The previously verified main suite remains 272 passed on run 37346834387 before these later additions.
 - Vercel statuses are deployment checks only and are not being used as a substitute for the required Render live verification.
 - Canonical live deployment remains Render. Live Fire/Plumbing calculation, drawing package, approval, controlled PDF/DXF artifact, Evidence Register and Revision History verification still requires the Render connection/live environment.
+
+
+- Added a controlled drawing-dispatch regression confirming an approved Fire drawing package produces a preliminary/watermarked PDF and hashed DXF ZIP before controlled issue.
