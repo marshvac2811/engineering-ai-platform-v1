@@ -161,3 +161,5 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Both Fire/Plumbing adapters now preserve skill_version in SkillResult, closing a metadata traceability gap.
 - Added regression coverage for Fire storage and Plumbing demand routing and drawing generation.
 - Next step: controlled coordinated Fire/Plumbing package trials, followed by a full repository test/CI verification.
+
+CI verification marker: Fire/Plumbing calculation-to-layout integration checkpoint 2026-10-06.
