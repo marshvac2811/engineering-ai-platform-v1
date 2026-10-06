@@ -714,6 +714,57 @@ skills:
   - compliance statement
   - technical compliance
   - tender compliance
+- skill_id: fire_water_storage
+  version: 1.0.0
+  domain: FIRE
+  source_repository: internal-governed
+  source_path: skills/fire/preliminary_water_storage
+  execution: deterministic_python
+  classification: preliminary
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: required_flow_lpm
+    data_type: number
+    description: Explicit governed/project fire flow requirement in L/min.
+  - name: duration_min
+    data_type: number
+    description: Explicit governed/project duration in minutes.
+  optional_inputs:
+  - name: reserve_pct
+    data_type: number
+    description: Explicit additional reserve percentage.
+  conditional_inputs: []
+  implementation_binding: skills.fire.preliminary_water_storage.adapter:FireWaterStorageSkill
+  routing_terms:
+  - fire water storage
+  - fire tank volume
+  - fire reserve
+  - fire water requirement
+- skill_id: plumbing_water_demand
+  version: 1.0.0
+  domain: PLUMBING
+  source_repository: internal-governed
+  source_path: skills/plumbing/preliminary_water_demand
+  execution: deterministic_python
+  classification: preliminary
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: fixtures
+    data_type: array
+    description: Explicit fixture types, quantities and flow rates.
+  optional_inputs:
+  - name: diversity_factor_pct
+    data_type: number
+    description: Explicit project/governed diversity factor percentage.
+  conditional_inputs: []
+  implementation_binding: skills.plumbing.preliminary_water_demand.adapter:PlumbingWaterDemandSkill
+  routing_terms:
+  - plumbing water demand
+  - fixture demand
+  - domestic water demand
+  - plumbing flow
 - skill_id: facade_u_factor
   domain: FACADE
   source_repository: universal-engineering-compliance
