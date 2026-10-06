@@ -146,3 +146,16 @@ These trials extend the governed lifecycle without claiming final construction-d
 ### Drawing implementation boundary
 
 The current implementation is a **CAD-neutral, deterministic drawing foundation**. PDF/CAD/BIM interpretation and full construction drawing generation are incremental capabilities. No drawing output may be represented as final statutory/construction approval merely because an SVG/JSON artifact exists.
+
+
+### AT-63 — Fire water storage calculation → explicit drawing location
+- Execute fire_water_storage from explicit governed flow/duration/reserve inputs.
+- Route only when room_id, source_calculation, explicit total_storage_m3, and source geometry coordinates are present.
+- Generate a preliminary fire_tank drawing object with calculation lineage.
+- Human review required; no statutory demand or tank placement inferred.
+
+### AT-64 — Plumbing water demand calculation → explicit drawing location
+- Execute plumbing_water_demand from explicit fixture flows and diversity factor.
+- Route only when room_id, source_calculation, explicit design_demand_lpm, and source geometry coordinates are present.
+- Generate a preliminary water_demand drawing object with calculation lineage.
+- Human review required; no fixture-unit rules, pipe sizing or placement inferred.
