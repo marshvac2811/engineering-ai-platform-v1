@@ -514,6 +514,12 @@ class JobService:
             artifacts = self.store.create_dispatch_artifacts(job)
             job.dispatch_result = {"artifacts": artifacts}
             self.store.save(job)
+            drawing_dispatch = {}
+            if (job.result or {}).get("drawing_packages") and hasattr(self.store, "create_drawing_dispatch_artifacts"):
+                drawing_dispatch = self.store.create_drawing_dispatch_artifacts(job)
+                if drawing_dispatch:
+                    job.dispatch_result["drawing_artifacts"] = drawing_dispatch
+                    self.store.save(job)
             result = self.dispatcher(job)
         except Exception as exc:  # external providers should not crash the lifecycle
             job.errors.append(str(exc))
