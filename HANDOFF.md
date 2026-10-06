@@ -183,3 +183,6 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 
 - Report Register enhancement: controlled drawing artifacts are now merged into report-register rows and Excel export, including drawing status, manifest SHA-256, drawing PDF SHA-256, DXF ZIP SHA-256 and availability. Dashboard Evidence view exposes those hashes and provides controlled Drawing PDF/DXF download actions.
 - Added regression coverage for Supabase-backed register merging of drawing artifacts.
+
+
+- Acceptance reconciliation: AT-59 now records persistent drawing artifact/evidence linkage as implemented; AT-60 records controlled PDF/DXF dispatch, private storage and hashes as implemented at repository/API level, with only the live Render issue trial still pending.
