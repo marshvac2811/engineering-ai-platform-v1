@@ -614,8 +614,12 @@ skills:
   required_inputs:
   - name: annual_energy_kwh
     data_type: number
+    description: Annual electricity consumption for the assessment, in kWh/year.
+    question: What is the annual electricity consumption, in kWh/year?
   - name: tariff
     data_type: number
+    description: Electricity tariff used to convert energy savings into annual cost savings, in ₹/kWh.
+    question: What electricity tariff should be used, in ₹/kWh?
   optional_inputs:
   - name: mode
     data_type: string
