@@ -66,3 +66,12 @@ def test_energy_payback_request_stays_on_payback_capability_when_explicit():
         "Evaluate the retrofit economics and payback of replacing an existing HVAC plant."
     )
     assert plan.selected_skill_id == "energy_payback"
+
+
+def test_broad_hvac_energy_audit_request_routes_to_hvac_decarbonisation():
+    plan = build_plan(
+        "Audit this hospital for energy savings, assess HVAC optimization, rooftop solar "
+        "and BESS options, and prepare a decarbonization roadmap using applicable standards."
+    )
+    assert plan.selected_skill_id == "hvac_decarbonisation"
+    assert plan.status in {"awaiting_information", "ready_for_execution"}
