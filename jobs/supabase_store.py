@@ -15,6 +15,8 @@ import uuid
 from .models import Job, JobEvent, JobStatus
 from .store import JobStore
 from reports.artifacts import build_approved_pdf, build_evidence_xlsx, sha256_bytes
+from engineering.drawing.dispatch import build_drawing_dispatch_package
+from engineering.drawing.service import authorize_drawing_package_issue
 
 
 class SupabaseJobStore(JobStore):
@@ -66,6 +68,7 @@ class SupabaseJobStore(JobStore):
             ).execute()
 
         self._persist_engineering_artifacts(job)
+        self._persist_drawing_artifacts(job)
         return job
 
     @staticmethod
@@ -186,6 +189,115 @@ class SupabaseJobStore(JobStore):
             raise RuntimeError(
                 f"Engineering artifact persistence failed for job {job.job_id}: {exc}"
             ) from exc
+
+    def _persist_drawing_artifacts(self, job: Job) -> None:
+        packages = list((job.result or {}).get("drawing_packages") or [])
+        if not packages:
+            return
+        changed = False
+        for package in packages:
+            if not isinstance(package, dict):
+                continue
+            if job.status in {JobStatus.APPROVED, JobStatus.DISPATCHING, JobStatus.DISPATCHED, JobStatus.COMPLETED} and not package.get("dispatch_allowed"):
+                package = authorize_drawing_package_issue(package, job)
+                changed = True
+            artifact_id = package.get("drawing_artifact_id")
+            if not artifact_id:
+                continue
+            row = {
+                "drawing_artifact_id": artifact_id,
+                "tenant_id": job.tenant_id,
+                "job_id": job.job_id,
+                "report_id": package.get("report_id") or job.report_id,
+                "report_revision": int(package.get("report_revision") or 1),
+                "project_name": package.get("project_name"),
+                "status": package.get("issue_status") or "not_approved",
+                "dispatch_allowed": bool(package.get("dispatch_allowed")),
+                "manifest": package,
+                "drawings": package.get("drawing_payloads") or [],
+                "manifest_sha256": package.get("manifest_sha256") or "",
+                "created_at": job.updated_at or job.created_at,
+                "updated_at": job.updated_at or job.created_at,
+            }
+            self.client.table("engineering_drawing_artifacts").upsert(row, on_conflict="drawing_artifact_id").execute()
+            if job.result is not None:
+                for existing in job.result.get("drawing_packages") or []:
+                    if isinstance(existing, dict) and existing.get("drawing_artifact_id") == artifact_id:
+                        existing.update(package)
+        if changed and job.result is not None:
+            self.client.table(self.jobs_table).update({"result": job.result}).eq("job_id", job.job_id).execute()
+
+    def create_drawing_dispatch_artifacts(self, job: Job) -> Dict[str, Any]:
+        packages = list((job.result or {}).get("drawing_packages") or [])
+        if not packages:
+            return {}
+        response = (self.client.table("engineering_drawing_artifacts")
+                    .select("*")
+                    .eq("job_id", job.job_id)
+                    .eq("tenant_id", job.tenant_id)
+                    .eq("dispatch_allowed", True)
+                    .order("report_revision", desc=True)
+                    .limit(1)
+                    .execute())
+        rows = getattr(response, "data", None) or []
+        if not rows:
+            raise RuntimeError("Approved drawing package is missing; controlled drawing dispatch is not permitted")
+        artifact = rows[0]
+        manifest = artifact.get("manifest") or {}
+        drawings = artifact.get("drawings") or manifest.get("drawing_payloads") or []
+        if not drawings:
+            raise RuntimeError("Drawing package has no persisted drawing payloads")
+        built = build_drawing_dispatch_package(manifest=manifest, drawings=drawings)
+        prefix = f"{job.tenant_id}/{job.job_id}/v{int(artifact.get('report_revision') or 1)}/{artifact.get('drawing_artifact_id')}"
+        pdf_path = f"{prefix}/drawing-package.pdf"
+        zip_path = f"{prefix}/drawing-package-dxf.zip"
+        bucket = "engineering-drawing-artifacts"
+        self.client.storage.from_(bucket).upload(pdf_path, built["pdf"]["bytes"], {"content-type":"application/pdf","cache-control":"private, max-age=0","upsert":"false"})
+        self.client.storage.from_(bucket).upload(zip_path, built["dxf_zip"]["bytes"], {"content-type":"application/zip","cache-control":"private, max-age=0","upsert":"false"})
+        self.client.table("engineering_drawing_artifacts").update({
+            "pdf_sha256": built["pdf"]["sha256"],
+            "pdf_storage_path": pdf_path,
+            "pdf_filename": built["pdf"]["filename"],
+            "dxf_zip_sha256": built["dxf_zip"]["sha256"],
+            "dxf_zip_storage_path": zip_path,
+            "dxf_zip_filename": built["dxf_zip"]["filename"],
+            "status": "dispatched",
+            "updated_at": job.updated_at or job.created_at,
+            "dispatched_at": job.updated_at or job.created_at,
+        }).eq("drawing_artifact_id", artifact["drawing_artifact_id"]).execute()
+        return {
+            "drawing_artifact_id": artifact["drawing_artifact_id"],
+            "report_revision": int(artifact.get("report_revision") or 1),
+            "pdf": {"filename": built["pdf"]["filename"], "storage_path": pdf_path, "sha256": built["pdf"]["sha256"]},
+            "dxf_zip": {"filename": built["dxf_zip"]["filename"], "storage_path": zip_path, "sha256": built["dxf_zip"]["sha256"]},
+            "manifest_sha256": manifest.get("manifest_sha256"),
+        }
+
+    def get_drawing_artifact(self, job_id: str, *, tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        query = self.client.table("engineering_drawing_artifacts").select("*").eq("job_id", job_id).order("report_revision", desc=True).limit(1)
+        if tenant_id:
+            query = query.eq("tenant_id", tenant_id)
+        rows = getattr(query.execute(), "data", None) or []
+        return rows[0] if rows else None
+
+    def get_drawing_artifact_download(self, job_id: str, kind: str, *, tenant_id: Optional[str] = None, expires_in: int = 600) -> Optional[Dict[str, Any]]:
+        if kind not in {"pdf", "dxf_zip"}:
+            raise ValueError("kind must be 'pdf' or 'dxf_zip'")
+        artifact = self.get_drawing_artifact(job_id, tenant_id=tenant_id)
+        if not artifact:
+            return None
+        path = artifact.get(f"{kind}_storage_path")
+        if not path:
+            return None
+        filename = artifact.get(f"{kind}_filename") or path.rsplit("/", 1)[-1]
+        signed = self.client.storage.from_("engineering-drawing-artifacts").create_signed_url(path, expires_in, {"download": filename})
+        data = signed.get("data") if isinstance(signed, dict) else getattr(signed, "data", None)
+        if data is None:
+            data = signed
+        url = (data or {}).get("signedURL") or (data or {}).get("signedUrl")
+        if not url:
+            return None
+        return {"kind": kind, "url": url, "filename": filename, "sha256": artifact.get(f"{kind}_sha256"), "expires_in_seconds": expires_in}
 
     def create_dispatch_artifacts(self, job: Job) -> Dict[str, Any]:
         """Create and persist the final watermarked PDF plus internal evidence workbook."""

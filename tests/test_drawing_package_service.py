@@ -29,6 +29,9 @@ def test_drawing_package_links_job_and_remains_unissued():
     assert manifest["issue_status"] == "not_approved"
     assert manifest["dispatch_allowed"] is False
     assert manifest["drawings"][0]["source_calculations"] == ["task-1"]
+    assert manifest["drawing_artifact_id"]
+    assert manifest["manifest_sha256"]
+    assert manifest["drawing_payloads"][0]["drawing_id"] == "HVAC-F1-001"
 
 
 def test_drawing_package_issue_requires_approved_job():
