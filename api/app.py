@@ -409,6 +409,39 @@ class APIApp:
                 drawing = plan_discipline_layout(building, discipline, floor_id, room_inputs, revision=str(body.get("revision", "A")))
                 return self._json(start_response, "200 OK", {"building": building_to_dict(building), "drawing": drawing_to_dict(drawing), "svg": drawing_to_svg(drawing), "governance": {"status": "preliminary", "human_review_required": True}})
 
+            if len(parts) == 3 and parts[0] == "v1" and parts[1] == "drawings" and parts[2] == "route" and method == "POST":
+                ctx.require_scope("jobs:write")
+                payload = body.get("building")
+                if not isinstance(payload, dict):
+                    raise ValueError("building must be an object")
+                outputs = body.get("calculation_outputs")
+                if not isinstance(outputs, list):
+                    raise ValueError("calculation_outputs must be an array")
+                building = ingest_structured_layout(payload)
+                from engineering.design.routing import route_calculation_outputs
+                routed = route_calculation_outputs(
+                    building,
+                    discipline=str(body.get("discipline", "")).strip().upper(),
+                    floor_id=str(body.get("floor_id", "")).strip(),
+                    calculation_outputs=outputs,
+                )
+                drawing = None
+                if routed["status"] == "ready":
+                    drawing = plan_discipline_layout(
+                        building,
+                        routed["discipline"],
+                        routed["floor_id"],
+                        routed["room_inputs"],
+                        revision=str(body.get("revision", "A")),
+                    )
+                return self._json(start_response, "200 OK", {
+                    "building": building_to_dict(building),
+                    "routing": routed,
+                    "drawing": drawing_to_dict(drawing) if drawing else None,
+                    "svg": drawing_to_svg(drawing) if drawing else None,
+                    "governance": {"preliminary": True, "human_review_required": True, "inference_performed": False},
+                })
+
             if len(parts) == 3 and parts[0] == "v1" and parts[1] == "drawings" and parts[2] == "coordinate" and method == "POST":
                 ctx.require_scope("jobs:write")
                 raw_objects = body.get("objects")
