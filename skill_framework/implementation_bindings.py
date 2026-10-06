@@ -34,6 +34,8 @@ IMPLEMENTATION_BINDINGS: Tuple[ImplementationBinding, ...] = (
     ImplementationBinding("deviation_statement", "skills.commercial.deviation.adapter", "DeviationStatementSkill"),
     ImplementationBinding("facade_u_factor", "skills.hvac.facade_u_factor.adapter", "FacadeUFactorSkill"),
     ImplementationBinding("bms_alarm_evaluation", "skills.bms.alarm.adapter", "BMSAlarmEvaluationSkill"),
+    ImplementationBinding("fire_water_storage", "skills.fire.preliminary_water_storage.adapter", "FireWaterStorageSkill"),
+    ImplementationBinding("plumbing_water_demand", "skills.plumbing.preliminary_water_demand.adapter", "PlumbingWaterDemandSkill"),
 )
 
 
