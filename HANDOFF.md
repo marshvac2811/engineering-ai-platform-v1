@@ -197,3 +197,15 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - The persistent drawing-artifact register is currently empty. This is expected until an approved Job carrying a drawing package reaches controlled drawing dispatch; direct database insertion is not used because it would bypass the governed approval lifecycle.
 - GitHub Actions has no workflow run exposed by the connected GitHub action for commit `57336595019c18b203681987b52e82a18a3b778e`; CI is therefore not claimed here without a verified run.
 - Governance boundary remains unchanged: drawing outputs are AI-assisted preliminary engineering drawings and require qualified engineer review; `chiller_efficiency` remains source-audit pending.
+
+
+## Latest implementation checkpoint — 2026-10-07 (consolidated intake/routing audit)
+- Consolidated the recurring natural-language intake defect exposed by the chiller-selection trial.
+- Chiller selection/recommendation requests are now prioritized before broad HVAC-energy rescue routing, preventing annual energy/cost wording from diverting a selection job into decarbonisation/payback.
+- Semantic extraction now recognizes average operating load as load_factor_pct, ₹/kWh tariff notation, and an explicit “continue operating if one chiller is unavailable” statement as redundancy_level = N+1.
+- Chiller advisor contract corrected: duty_modules is optional because a module count cannot be safely invented without an explicit module-capacity basis. When absent, the calculator reports module configuration as PENDING_MODULE_CAPACITY_BASIS.
+- Chiller calculator now accepts N/N+1/N+2 redundancy text and reports the redundancy basis explicitly.
+- Added tests/test_platform_intake_regression.py covering chiller fact extraction, routing priority and no-invention module handling.
+- Consolidated implementation is on final commit 969816cbf80624b36c86c6a883a12ddc16312b17.
+- Render deployment for that final commit succeeded at 2026-10-07 01:07:57Z. Runtime logs show application startup complete and the primary Render URL serving HTTP 200.
+- Local pytest execution was unavailable in this environment; the regression test was added, and Render build/deploy succeeded. Do not claim the new pytest file was executed unless a later CI run verifies it.
