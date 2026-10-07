@@ -69,3 +69,27 @@ def test_vfd_acceptance_request_asks_only_for_static_head_fraction():
     assert "tariff_per_kwh" not in plan.missing_inputs
     assert "static_head_fraction" in plan.missing_inputs
 
+def test_specific_capabilities_beat_broad_energy_terms():
+    cases = [
+        (
+            "Calculate pump head for 25 m3/hr flow, 80 mm pipe, 120 m length and 12 m static head with 10% margin.",
+            "pump_head",
+        ),
+        (
+            "Size a rectangular supply air duct for 5000 m3/h at 7 m/s.",
+            "duct_sizing",
+        ),
+        (
+            "Select a new chiller plant for 600 TR with 5000 hours, 70% load, ₹9/kWh and N+1 redundancy; recommend arrangement and annual energy cost.",
+            "chiller_selection_advisor",
+        ),
+        (
+            "Assess a 30 kW chilled-water pump VFD retrofit for annual energy saving, cost saving and payback.",
+            "vfd_energy_savings",
+        ),
+    ]
+    for request, expected in cases:
+        selected, _candidates, confidence = RuleBasedIntentProvider().route(request)
+        assert selected == expected
+        assert confidence >= 0.99
+
