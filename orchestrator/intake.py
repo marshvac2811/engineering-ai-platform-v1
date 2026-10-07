@@ -530,6 +530,21 @@ class RuleBasedIntentProvider:
                     ["Explicit VFD energy-savings/financial objective."]
                 )], 0.99
 
+        # Explicit equipment-sizing/design objectives must beat broad energy-language
+        # rescue. This preserves objective-aware routing without making every mention
+        # of an equipment noun authoritative.
+        explicit_objective_routes = (
+            ("duct_sizing", ("duct sizing", "size a duct", "size the duct", "sizing a duct", "sizing the duct"), "Explicit duct-sizing objective."),
+            ("pump_head", ("pump head", "calculate pump head", "calculate tdh", "total dynamic head", "pump duty"), "Explicit pump-head/duty objective."),
+            ("cooling_tower", ("cooling tower sizing", "size a cooling tower", "cooling tower calculation"), "Explicit cooling-tower sizing objective."),
+            ("refrigerant_pipe_sizing", ("refrigerant pipe sizing", "size refrigerant pipe", "sizing refrigerant pipe", "size the suction line", "size the liquid line"), "Explicit refrigerant-piping sizing objective."),
+            ("vrf_sizing", ("vrf sizing", "size the vrf", "size a vrf", "vrf calculation"), "Explicit VRF sizing objective."),
+            ("facade_u_factor", ("u-factor calculation", "u factor calculation", "calculate facade u-factor", "calculate facade u factor"), "Explicit facade U-factor calculation objective."),
+        )
+        for skill_id, markers, rationale in explicit_objective_routes:
+            if any(marker in t for marker in markers):
+                return skill_id, [IntentCandidate(skill_id, 100, [rationale])], 0.99
+
         # Chiller-selection intent is a distinct engineering decision workflow.
         # It must win before the broader HVAC-energy rescue because selection
         # requests commonly mention annual energy/cost and therefore overlap
