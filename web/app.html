@@ -585,7 +585,10 @@ async function loadRegister(){
   const d=await r.json();if(!r.ok)throw Error(d.error||"Register unavailable");
   document.getElementById("regTabs").innerHTML=REG_TABS.map(([k,l])=>'<button class="'+(k===window.regView?"":"secondary")+'" onclick="setRegView(\''+k+'\')">'+l+' ('+((d.views||{})[k]||0)+')</button>').join("");
   const sel=document.getElementById("regSkill"),cur=sel.value;
-  sel.innerHTML='<option value="">All skills</option>'+(d.skills||[]).map(x=>'<option value="'+esc(x)+'"'+(x===cur?" selected":"")+'>'+esc(niceText(x))+'</option>').join("");
+  const validSkill=cur && (d.skills||[]).includes(cur) ? cur : "";
+  if(cur!==validSkill) sel.value="";
+  sel.innerHTML='<option value="">All skills</option>'+(d.skills||[]).map(x=>'<option value="'+esc(x)+'"'+(x===validSkill?" selected":"")+'>'+esc(niceText(x))+'</option>').join("");
+  if(cur!==validSkill && cur) { window.regShown=50; return loadRegister(); }
   if(!d.reports.length){box.innerHTML='<div class="empty">No reports match this view yet.</div>';return;}
   const btn=(label,fn)=>'<button class="secondary" style="padding:5px 9px;font-size:12px" onclick="'+fn+'">'+label+'</button>';
   box.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'+
