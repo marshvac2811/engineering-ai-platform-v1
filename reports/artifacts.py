@@ -105,6 +105,10 @@ def _compliance_rows(tasks) -> list:
 
 
 def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str = DEFAULT_WATERMARK) -> bytes:
+    # The artifact is generated during DISPATCHING, but the controlled document
+    # represents the already-approved engineering result. Keep lifecycle state in
+    # the audit record while using the client-facing controlled-document label here.
+    document_status = "Approved for controlled dispatch" if str(job.status.value) in _APPROVED else humanize(job.status.value)
     if str(job.status.value) not in _APPROVED:
         raise ValueError("Approved PDF can only be generated after human approval")
 
@@ -350,7 +354,7 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
     if project_context.get("client"):
         summary_rows.append(("Client", project_context.get("client")))
     summary_rows += [
-        ("Job ID", job.job_id), ("Report ID", job.report_id), ("Status", humanize(job.status.value)),
+        ("Job ID", job.job_id), ("Report ID", job.report_id), ("Status", document_status),
         ("Scope of work", ", ".join(humanize(t.get("capability_id")) for t in tasks if t.get("capability_id")) or humanize(job.requested_skill_id or job.skill_id)),
         ("Request", (request.get("orchestration") or {}).get("normalized_request")),
         ("Approved by", approval["by"]), ("Approval date", approval["at"]),
