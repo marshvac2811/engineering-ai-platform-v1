@@ -212,7 +212,7 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         _, res_rows = _results_rows(task, request_inputs)
         title = task.get("objective") or humanize(task.get("capability_id"))
         block = [Paragraph(f"Task {index}: {P(title, body).text}", task_h),
-                 Paragraph(f"Method: {P(humanize(task.get('capability_id')), small).text} &nbsp;|&nbsp; Status: {P(humanize(task.get('status')), small).text}", small),
+                 Paragraph(f"Method: {P(humanize(task.get('capability_id')), small).text} &nbsp;|&nbsp; Status: {P(humanize(job.status.value), small).text}", small),
                  Spacer(1, 3)]
         story.append(KeepTogether(block))
         if res_rows:
