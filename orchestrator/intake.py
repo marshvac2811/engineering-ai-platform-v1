@@ -494,18 +494,41 @@ class RuleBasedIntentProvider:
             "energy efficiency", "energy optimization", "energy optimisation",
             "decarbon", "carbon reduction", "retrofit roadmap", "asset life",
         )
-        # Dedicated VFD energy-savings intent must win before the broader
-        # HVAC-energy/payback rescue. VFD requests commonly mention savings,
-        # cost saving and payback, but those words do not make them energy_payback.
-        vfd_energy_markers = (
-            "vfd", "variable frequency drive", "variable speed drive",
+        # Dedicated VFD routing must be objective-aware. The word "VFD" alone
+        # is not sufficient because the platform also has separate VFD derating
+        # and harmonic-screening capabilities. Route the explicit engineering
+        # objective first; otherwise let the registered vocabulary resolve it.
+        vfd_markers = ("vfd", "variable frequency drive", "variable speed drive")
+        vfd_energy_objective = (
+            "vfd energy", "vfd saving", "vfd savings", "energy saving", "energy savings",
+            "energy cost saving", "payback", "roi", "annual energy", "annual cost saving",
             "speed reduction", "affinity law",
         )
-        if any(marker in t for marker in vfd_energy_markers):
-            return "vfd_energy_savings", [IntentCandidate(
-                "vfd_energy_savings", 100,
-                ["High-confidence VFD energy-savings request."]
-            )], 0.99
+        vfd_derating_objective = (
+            "vfd derating", "vfd altitude", "vfd temperature", "drive sizing",
+            "derating for", "altitude", "ambient temperature",
+        )
+        vfd_harmonic_objective = (
+            "harmonic", "harmonics", "ieee 519", "harmonic distortion", "harmonic risk",
+        )
+        if any(marker in t for marker in vfd_markers):
+            if any(marker in t for marker in vfd_harmonic_objective):
+                return "harmonic_screening", [IntentCandidate(
+                    "harmonic_screening", 100,
+                    ["Explicit VFD harmonic-screening objective."]
+                )], 0.99
+            if any(marker in t for marker in vfd_derating_objective) and not any(
+                marker in t for marker in ("energy saving", "energy savings", "payback", "roi")
+            ):
+                return "vfd_derating", [IntentCandidate(
+                    "vfd_derating", 100,
+                    ["Explicit VFD derating/drive-sizing objective."]
+                )], 0.99
+            if any(marker in t for marker in vfd_energy_objective):
+                return "vfd_energy_savings", [IntentCandidate(
+                    "vfd_energy_savings", 100,
+                    ["Explicit VFD energy-savings/financial objective."]
+                )], 0.99
 
         # Chiller-selection intent is a distinct engineering decision workflow.
         # It must win before the broader HVAC-energy rescue because selection
