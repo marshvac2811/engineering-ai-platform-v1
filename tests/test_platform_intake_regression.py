@@ -113,3 +113,36 @@ def test_vfd_subcapabilities_route_by_explicit_objective():
         selected, _candidates, confidence = RuleBasedIntentProvider().route(request)
         assert selected == expected
         assert confidence >= 0.99
+
+
+def test_explicit_specific_objectives_beat_broad_energy_language():
+    cases = [
+        (
+            "Size a rectangular supply air duct for 5000 m3/h at 7 m/s and consider energy efficiency.",
+            "duct_sizing",
+        ),
+        (
+            "Calculate pump head for a chilled-water pump and assess the energy efficiency implications.",
+            "pump_head",
+        ),
+        (
+            "Perform cooling tower sizing and include an energy efficiency assessment.",
+            "cooling_tower",
+        ),
+        (
+            "Size the refrigerant pipework and consider energy efficiency.",
+            "refrigerant_pipe_sizing",
+        ),
+        (
+            "Do VRF sizing and assess energy efficiency.",
+            "vrf_sizing",
+        ),
+        (
+            "Calculate the facade U-factor and assess energy efficiency.",
+            "facade_u_factor",
+        ),
+    ]
+    for request, expected in cases:
+        selected, _candidates, confidence = RuleBasedIntentProvider().route(request)
+        assert selected == expected
+        assert confidence >= 0.99
