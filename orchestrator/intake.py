@@ -494,6 +494,23 @@ class RuleBasedIntentProvider:
             "energy efficiency", "energy optimization", "energy optimisation",
             "decarbon", "carbon reduction", "retrofit roadmap", "asset life",
         )
+        # Chiller-selection intent is a distinct engineering decision workflow.
+        # It must win before the broader HVAC-energy rescue because selection
+        # requests commonly mention annual energy/cost and therefore overlap
+        # with decarbonisation/payback vocabulary.
+        chiller_selection_markers = (
+            "chiller selection", "select chiller", "new chiller plant",
+            "replace the existing chiller", "replace existing chiller",
+            "chiller arrangement", "chiller configuration", "duty module",
+            "duty modules", "number of chillers", "number of chiller",
+            "redundancy requirement", "redundant chiller", "chiller recommendation",
+            "chiller plant recommendation",
+        )
+        if any(marker in t for marker in chiller_selection_markers):
+            return "chiller_selection_advisor", [IntentCandidate(
+                "chiller_selection_advisor", 100,
+                ["High-confidence chiller plant selection/recommendation request."]
+            )], 0.99
         fault_markers = ("troubleshoot", "fault", "trip", "diagnose", "cavitation", "refrigerant shortage")
         if any(marker in t for marker in energy_markers) and (
             any(marker in t for marker in hvac_markers)
