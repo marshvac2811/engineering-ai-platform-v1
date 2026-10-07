@@ -719,10 +719,11 @@ def build_plan(
     if requested_skill_id:
         skill_id, candidates, confidence = provider.route(text, requested_skill_id)
     elif hasattr(provider, "classify_and_extract"):
-        decision = provider.classify_and_extract(
-            text,
-            {
-                "provided_inputs": provided_inputs,
+        try:
+            decision = provider.classify_and_extract(
+                text,
+                {
+                    "provided_inputs": provided_inputs,
                 "project_context": {
                     **project_context,
                     "documents": [
@@ -736,6 +737,29 @@ def build_plan(
                 "reasoning_context": reasoning_context,
             },
         )
+        except ProviderUnavailableError as exc:
+            # Intake must remain usable when the optional AI interpretation provider
+            # is unavailable. Fall back to the audited deterministic router rather
+            # than leaving the Submit Request workflow apparently dead.
+            fallback_skill, fallback_candidates, fallback_confidence = RuleBasedIntentProvider().route(text)
+            decision = {
+                "skill_id": fallback_skill,
+                "confidence": fallback_confidence,
+                "extracted_inputs": {},
+                "objective": text.strip(),
+                "disciplines": [],
+                "requested_outputs": [],
+                "methodology": {},
+                "governance": {},
+                "entities": [],
+                "constraints": [],
+                "tasks": [],
+                "reasoning": {"provider_fallback": str(exc)},
+                "evidence_usage": [],
+                "missing_evidence": [],
+                "compliance_claims": [],
+                "rationale": ["AI interpretation provider was unavailable; deterministic registered-capability routing was used safely."],
+            }
         skill_id = decision.get("skill_id")
         confidence = float(decision.get("confidence", 0.0))
         # If the configured AI provider cannot establish a capability, fall back
