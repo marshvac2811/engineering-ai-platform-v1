@@ -278,7 +278,7 @@ async function continueFromTop(){
 }
 async function submitRequest(){
  const btn=document.getElementById("submit"), msg=document.getElementById("requestMsg");
- if(activeContinuationJobId && btn.textContent==="Continue Existing Job"){await continueFromTop();return;}
+ // This button always starts a NEW request. Existing information-needed jobs are continued only through their dedicated Continue controls.
  const message=document.getElementById("request").value.trim();
  if(!message){showMsg(msg,false,"Please enter an engineering request.");return;}
  btn.disabled=true;showMsg(msg,true,"Processing your request...");
