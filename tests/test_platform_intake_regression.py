@@ -93,3 +93,23 @@ def test_specific_capabilities_beat_broad_energy_terms():
         assert selected == expected
         assert confidence >= 0.99
 
+
+def test_vfd_subcapabilities_route_by_explicit_objective():
+    cases = [
+        (
+            "Screen a 75 kW VFD installation for harmonic distortion and IEEE 519 compliance risk.",
+            "harmonic_screening",
+        ),
+        (
+            "Check VFD derating for a drive at 2500 m altitude and 45 C ambient temperature.",
+            "vfd_derating",
+        ),
+        (
+            "Assess VFD energy saving for a pump with 15% speed reduction, annual energy cost saving and payback.",
+            "vfd_energy_savings",
+        ),
+    ]
+    for request, expected in cases:
+        selected, _candidates, confidence = RuleBasedIntentProvider().route(request)
+        assert selected == expected
+        assert confidence >= 0.99
