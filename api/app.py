@@ -23,7 +23,7 @@ from reports.store import InMemoryReportStore
 from jobs.supabase_store import build_supabase_job_store_from_env
 from ingestion.factory import build_ingestion_service
 from orchestrator.registry_loader import load_registry
-from orchestrator.intake import build_plan
+from orchestrator.intake import build_plan, RuleBasedIntentProvider
 from orchestrator.provider_factory import build_intent_provider
 from orchestrator.provider import ProviderUnavailableError
 from api.auth import DevelopmentHeaderAuthenticator, ApiKeyAuthenticator, SupabaseJWTAuthenticator, EdgeVerifiedAuthenticator, AuthContext, AuthenticationError
@@ -372,8 +372,7 @@ class APIApp:
                 message = str(body.get("message", "")).strip()
                 if not message:
                     raise ValueError("message is required")
-                provider = build_intent_provider()
-                project_context = dict(body.get("project_context") or {})
+                # Known registered requests must never depend on an external AI provider.\n                # Route them deterministically first so Submit Request remains responsive even\n                # when an optional provider is slow, unavailable, or misconfigured.\n                deterministic_provider = RuleBasedIntentProvider()\n                deterministic_skill, _, deterministic_confidence = deterministic_provider.route(message)\n                if deterministic_skill and deterministic_confidence >= 0.99:\n                    provider = deterministic_provider\n                else:\n                    provider = build_intent_provider()\n                project_context = dict(body.get("project_context") or {})
                 if body.get("project"):
                     project_context["project"] = str(body.get("project")).strip()
                 if body.get("client"):
