@@ -146,3 +146,32 @@ def test_explicit_specific_objectives_beat_broad_energy_language():
         selected, _candidates, confidence = RuleBasedIntentProvider().route(request)
         assert selected == expected
         assert confidence >= 0.99
+
+
+def test_cross_discipline_objectives_beat_overlapping_generic_terms():
+    cases = [
+        (
+            "Calculate fire tank volume from the required fire water flow and duration; the fire pump is 100 m3/hr.",
+            "fire_water_storage",
+        ),
+        (
+            "Calculate domestic water demand from the fixture schedule and apply the project diversity factor.",
+            "plumbing_water_demand",
+        ),
+        (
+            "Size the BMS controllers for 420 total points and provide the controller/panel count.",
+            "bms_controller_sizing",
+        ),
+        (
+            "Generate the BMS points list for 6 AHUs and 2 chillers.",
+            "bms_points_generation",
+        ),
+        (
+            "Evaluate the BMS alarm threshold for AHU supply-air temperature point SAT-01.",
+            "bms_alarm_evaluation",
+        ),
+    ]
+    for request, expected in cases:
+        selected, _candidates, confidence = RuleBasedIntentProvider().route(request)
+        assert selected == expected
+        assert confidence >= 0.99
