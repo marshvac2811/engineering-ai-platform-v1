@@ -42,3 +42,30 @@ def test_chiller_module_count_is_not_invented_when_no_module_basis_exists():
     assert result["duty_modules"] is None
     assert result["module_configuration_status"] == "PENDING_MODULE_CAPACITY_BASIS"
     assert result["redundancy_level"] == "N+1"
+
+VFD_ACCEPTANCE_REQUEST = """
+We have a 30 kW chilled-water pump in a commercial building operating about 5,500 hours per year.
+It currently runs at fixed speed. We are considering a VFD and expect the average speed to reduce by 15%.
+Electricity tariff is ₹9/kWh. Please assess annual electrical energy saving, annual cost saving and simple
+payback. VFD installation cost is ₹3,00,000.
+"""
+
+
+def test_vfd_request_wins_over_broad_energy_payback_language():
+    selected, candidates, confidence = RuleBasedIntentProvider().route(VFD_ACCEPTANCE_REQUEST)
+    assert selected == "vfd_energy_savings"
+    assert confidence >= 0.99
+    assert candidates[0].skill_id == "vfd_energy_savings"
+
+
+def test_vfd_acceptance_request_asks_only_for_static_head_fraction():
+    from orchestrator.intake import build_plan
+
+    plan = build_plan(VFD_ACCEPTANCE_REQUEST)
+    assert plan.selected_skill_id == "vfd_energy_savings"
+    assert "motor_kw" not in plan.missing_inputs
+    assert "annual_hours" not in plan.missing_inputs
+    assert "speed_reduction_pct" not in plan.missing_inputs
+    assert "tariff_per_kwh" not in plan.missing_inputs
+    assert "static_head_fraction" in plan.missing_inputs
+
