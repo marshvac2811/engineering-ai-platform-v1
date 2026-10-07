@@ -396,10 +396,12 @@ skills:
     data_type: number
   - name: tariff_per_kwh
     data_type: number
-  - name: duty_modules
-    data_type: number
   - name: redundancy_level
     data_type: string
+  optional_inputs:
+  - name: duty_modules
+    data_type: number
+    description: Optional explicit number of duty modules. If omitted, the advisor reports module configuration as pending an explicit module-capacity basis.
   optional_inputs: []
   conditional_inputs: []
   implementation_binding: skills.hvac.chiller_selection.adapter:ChillerSelectionAdvisorSkill
