@@ -120,6 +120,8 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
                        "energy retrofit", "retrofit economics"),
     "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate", "hvac boq", "boq for", "boq covering", "boq outline"),
     "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance", "deviates on", "technical deviation"),
+    "fire_water_storage": ("fire water storage", "fire tank volume", "fire reserve", "fire water requirement"),
+    "plumbing_water_demand": ("plumbing water demand", "fixture demand", "domestic water demand", "plumbing flow"),
 }
 
 FIELD_QUESTIONS = {
@@ -529,6 +531,20 @@ class RuleBasedIntentProvider:
                     "vfd_energy_savings", 100,
                     ["Explicit VFD energy-savings/financial objective."]
                 )], 0.99
+
+        # Explicit BMS/fire/plumbing objectives must beat broad vocabulary collisions.
+        # In particular, a fire-tank request must not fall into generic pump-head,
+        # and controller sizing must not fall into the broader BMS points workflow.
+        explicit_non_energy_routes = (
+            ("bms_alarm_evaluation", ("bms alarm", "alarm threshold", "evaluate alarm", "alarm configuration"), "Explicit BMS alarm-evaluation objective."),
+            ("bms_controller_sizing", ("size bms controller", "size bms controllers", "controller sizing", "size controllers"), "Explicit BMS controller-sizing objective."),
+            ("bms_points_generation", ("generate bms points", "generate points list", "create bms points", "create points list"), "Explicit BMS points-generation objective."),
+            ("fire_water_storage", ("fire water storage", "fire tank volume", "fire reserve", "fire water requirement", "calculate fire tank"), "Explicit fire-water storage objective."),
+            ("plumbing_water_demand", ("plumbing water demand", "domestic water demand", "fixture demand", "calculate plumbing flow"), "Explicit plumbing water-demand objective."),
+        )
+        for skill_id, markers, rationale in explicit_non_energy_routes:
+            if any(marker in t for marker in markers):
+                return skill_id, [IntentCandidate(skill_id, 100, [rationale])], 0.99
 
         # Explicit equipment-sizing/design objectives must beat broad energy-language
         # rescue. This preserves objective-aware routing without making every mention
