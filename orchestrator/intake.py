@@ -724,23 +724,20 @@ def build_plan(
             else []
         )
     else:
-        # Deterministic registered-capability routing is the safety gate for
-        # natural-language intake. When it produces a high-confidence match,
-        # prefer that audited capability over a generic/provider classification.
-        # This prevents broad terms such as "payback", "energy saving" or
-        # "retrofit" from stealing requests that contain a more specific
-        # engineering objective (VFD, pump head, duct sizing, chiller selection,
-        # BMS points, etc.).
         skill_id, candidates, confidence = provider.route(text, requested_skill_id)
-        deterministic_skill, deterministic_candidates, deterministic_confidence = RuleBasedIntentProvider().route(text)
-        if deterministic_skill and deterministic_confidence >= 0.99:
-            skill_id = deterministic_skill
-            candidates = deterministic_candidates
-            confidence = deterministic_confidence
-            provider_rationale = [
-                "Deterministic registered-capability routing took precedence over a broader provider classification.",
-                *[item for candidate in deterministic_candidates if candidate.skill_id == deterministic_skill for item in candidate.rationale],
-            ]
+
+    # Final deterministic safety gate: a high-confidence registered
+    # capability outranks a broader AI/provider classification. This is applied
+    # after both provider branches so the rule is consistent for every intake.
+    deterministic_skill, deterministic_candidates, deterministic_confidence = RuleBasedIntentProvider().route(text)
+    if deterministic_skill and deterministic_confidence >= 0.99:
+        skill_id = deterministic_skill
+        candidates = deterministic_candidates
+        confidence = deterministic_confidence
+        provider_rationale = [
+            "Deterministic registered-capability routing took precedence over a broader provider classification.",
+            *[item for candidate in deterministic_candidates if candidate.skill_id == deterministic_skill for item in candidate.rationale],
+        ]
 
     extracted = extract_facts(text)
 
