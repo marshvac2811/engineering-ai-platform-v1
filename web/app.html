@@ -81,7 +81,7 @@ button:disabled{opacity:.55;cursor:wait}
 
 <section class="card">
 <h2>Engineering Report Register</h2>
-<p class="muted">Every engineering report in one place. Open the report, evidence or audit trail, or download the approved PDF and Excel workbook, without needing the job ID.</p>
+<p class="muted">Historical controlled evidence archive. <strong>A new trial appears here only after approval/dispatch.</strong> For a trial that has just been submitted, use the Jobs queue below; this prevents older reports from being mistaken for the current run.</p>
 <div id="regTabs" class="actions" style="flex-wrap:wrap"></div>
 <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
  <input id="regSearch" placeholder="Search report ID, job ID, skill, reviewer or request" oninput="regSearchChanged()" style="flex:1;min-width:220px">
@@ -205,8 +205,14 @@ async function runTrial(skill,mode){
   if(client)trialPayload.client=client;
   const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(trialPayload)});
   const d=await r.json();if(!r.ok)throw Error(d.error||"Trial failed");
-  showMsg(msg,true,"Trial submitted: "+(d.job?.job_id||"job created")+". Results will appear under Jobs.");
+  const jobId=String(d.job?.job_id||"");
+  latestTrialJobId=jobId;
+  sessionStorage.setItem("engineering_ai_latest_trial_job",jobId);
+  activeJobTab="review";
+  window.jobsShown=20;
+  showMsg(msg,true,"Trial submitted successfully — Job "+jobId.slice(0,8)+". The current run is now selected below; older reports are not the trial result.");
   await loadJobs();
+  document.getElementById("jobs")?.scrollIntoView({behavior:"smooth",block:"start"});
  }catch(e){showMsg(msg,false,e.message);}
  finally{buttons.forEach(b=>b.disabled=false);}
 }
@@ -466,6 +472,7 @@ function fieldLabel(field){
 }
 function jobHtml(j){
  const rawId=String(j.job_id), id=esc(rawId), status=String(j.status||"unknown"), review=status==="human_review";
+ const isLatestTrial=latestTrialJobId && rawId===latestTrialJobId;
  const orch=j.orchestration||{}, missing=Array.isArray(orch.missing_inputs)?orch.missing_inputs.map(String):[];
  const questions=Array.isArray(orch.questions)?orch.questions.map(String):[];
  const result=j.result?.engineering_result||j.result?.engineeringResult;
@@ -473,7 +480,7 @@ function jobHtml(j){
  const skillText=String(j.requested_skill_id||j.skill_id||"").trim();
  const project=String(j.project_context?.project||"").trim();
  const client=String(j.project_context?.client||"").trim();
- let html='<div class="job '+(review?"review":"")+'"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>Engineering Request</strong><span class="small">Job '+esc(rawId.slice(0,8))+'</span></div>'+
+ let html='<div class="job '+(review?"review":"")+'" style="'+(isLatestTrial?"border:2px solid #1769e0;box-shadow:0 0 0 2px rgba(23,105,224,.08);":"")+'"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>Engineering Request'+(isLatestTrial?' <span style="font-size:11px;color:#1769e0">CURRENT TRIAL</span>':"")+"</strong><span class=\"small\">Job '+esc(rawId.slice(0,8))+'</span></div>'+
   '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>'+
   (skillText?'<div class="small" style="margin-top:5px"><strong>Capability:</strong> '+esc(skillText)+'</div>':"")+
   (project?'<div class="small" style="margin-top:5px"><strong>Project:</strong> '+esc(project)+'</div>':"")+
@@ -607,6 +614,7 @@ async function loadRegister(){
 
 let activeJobTab="review";
 let cachedJobs=[];
+let latestTrialJobId="";
 function jobBucket(status){
  const s=String(status||"unknown").toLowerCase();
  if(s==="human_review") return "review";
@@ -656,6 +664,7 @@ async function loadJobs(){
   const r=await api("/v1/jobs");const d=await r.json();
   if(!r.ok)throw Error(d.error||"Jobs unavailable");
   cachedJobs=Array.isArray(d.jobs)?d.jobs:[];
+  if(!latestTrialJobId) latestTrialJobId=sessionStorage.getItem("engineering_ai_latest_trial_job")||"";
   const activeContinuationJob=cachedJobs.find(j=>String(j.job_id||"")===String(activeContinuationJobId||""));
   if(activeContinuationJob && activeContinuationJob.status==="awaiting_information"){
    renderContinuation(activeContinuationJob);
