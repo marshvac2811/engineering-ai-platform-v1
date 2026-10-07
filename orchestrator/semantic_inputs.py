@@ -23,7 +23,7 @@ ALIASES = {
     "ambient_temp_c": ["ambient temperature", "ambient temp"],
     "altitude_m": ["site altitude", "altitude", "elevation above sea level"],
     "annual_hours": ["annual hours", "operating hours", "hours per year"],
-    "load_factor_pct": ["load factor", "loading factor"],
+    "load_factor_pct": ["load factor", "loading factor", "average operating load", "average load"],
     "speed_reduction_pct": ["speed reduction", "speed reduction percentage"],
     "motor_kw": ["motor power", "motor rating", "motor capacity"],
     "pump_efficiency_pct": ["pump efficiency", "pump hydraulic efficiency"],
@@ -149,7 +149,7 @@ def normalize_engineering_inputs(text: str) -> Dict[str, Any]:
         if not units:
             continue
         labels = _label_pattern(aliases)
-        pattern = rf"(?<![a-z]){labels}(?:\s*(?:is|are|of|at|=|:))?\s*([\d,.]+)\s*({units})(?![a-z])"
+        pattern = rf"(?<![a-z]){labels}(?:\s*(?:is|are|of|at|=|:))?\s*(?:₹|rs\.?|inr)?\s*([\d,.]+)\s*({units})(?![a-z])"
         m = re.search(pattern, text, re.IGNORECASE)
         if not m:
             continue
@@ -162,6 +162,11 @@ def normalize_engineering_inputs(text: str) -> Dict[str, Any]:
         if m:
             value = float(m.group(1).replace(",", ""))
             out[field] = int(value) if value.is_integer() else value
+
+    # “Continue operating if one chiller is unavailable” explicitly means N+1.
+    # This does not invent a module count; module sizing remains a separate input.
+    if re.search(r"continue\s+operating\s+if\s+(?:one|1)\s+chiller\s+is\s+unavailable|one\s+chiller\s+(?:can\s+be\s+)?unavailable", text, re.IGNORECASE):
+        out["redundancy_level"] = "N+1"
 
     fittings = _extract_fittings(text)
     if fittings:
