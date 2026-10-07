@@ -494,6 +494,19 @@ class RuleBasedIntentProvider:
             "energy efficiency", "energy optimization", "energy optimisation",
             "decarbon", "carbon reduction", "retrofit roadmap", "asset life",
         )
+        # Dedicated VFD energy-savings intent must win before the broader
+        # HVAC-energy/payback rescue. VFD requests commonly mention savings,
+        # cost saving and payback, but those words do not make them energy_payback.
+        vfd_energy_markers = (
+            "vfd", "variable frequency drive", "variable speed drive",
+            "speed reduction", "affinity law",
+        )
+        if any(marker in t for marker in vfd_energy_markers):
+            return "vfd_energy_savings", [IntentCandidate(
+                "vfd_energy_savings", 100,
+                ["High-confidence VFD energy-savings request."]
+            )], 0.99
+
         # Chiller-selection intent is a distinct engineering decision workflow.
         # It must win before the broader HVAC-energy rescue because selection
         # requests commonly mention annual energy/cost and therefore overlap
