@@ -135,7 +135,7 @@ async function refresh(){
 async function api(url,opt={}){
  let h=Object.assign({},opt.headers||{},{"Authorization":"Bearer "+token});
  const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),15000);
+ const timeout=setTimeout(()=>controller.abort(),60000);
  try{
   let r=await fetch(url,Object.assign({},opt,{headers:h,signal:controller.signal}));
   if(r.status===401){await refresh();h.Authorization="Bearer "+token;r=await fetch(url,Object.assign({},opt,{headers:h,signal:controller.signal}));}
@@ -287,7 +287,7 @@ async function submitRequest(){
   const client=document.getElementById("reqClient")?.value.trim();
   const payload={message};if(project)payload.project=project;if(client)payload.client=client;
   const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  const d=await r.json();if(!r.ok)throw Error(d.error||"Request failed");
+  let d;try{d=await r.json();}catch(parseError){const raw=await r.text().catch(()=>"");throw Error(raw||("Server returned an invalid response (HTTP "+r.status+")"));}if(!r.ok)throw Error(d.error||"Request failed");
   document.getElementById("request").value="";
   if(document.getElementById("reqProject"))document.getElementById("reqProject").value="";
   if(document.getElementById("reqClient"))document.getElementById("reqClient").value="";
