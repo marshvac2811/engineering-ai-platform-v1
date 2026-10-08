@@ -71,10 +71,10 @@ button:disabled{opacity:.55;cursor:wait}
 <input id="plantFiles" type="file" multiple hidden accept=".xlsx,.xls,.csv,.pdf,.txt,.json,.doc,.docx">
 <div id="fileList" class="file-list"></div>
 <div class="trial-grid" style="margin-top:14px">
-  <div class="trial"><h3>HVAC Decarbonisation — Impact</h3><p>Baseline energy, efficiency improvement, tariff, O&M and asset-life impact.</p><button class="secondary" onclick="runTrial('hvac_decarbonisation','impact')">Run trial</button></div>
-  <div class="trial"><h3>HVAC Decarbonisation — Scenarios</h3><p>Do-nothing vs proper O&M vs full retrofit over a planning horizon.</p><button class="secondary" onclick="runTrial('hvac_decarbonisation','scenarios')">Run trial</button></div>
-  <div class="trial"><h3>Energy Retrofit Payback</h3><p>Old/new equipment efficiency, annual energy, investment, savings and lifecycle economics.</p><button class="secondary" onclick="runTrial('energy_payback')">Run trial</button></div>
-  <div class="trial"><h3>VFD Energy Savings</h3><p>Motor power, speed reduction, static-head correction, annual hours and tariff.</p><button class="secondary" onclick="runTrial('vfd_energy_savings')">Run trial</button></div>
+  <div class="trial"><h3>HVAC Decarbonisation — Impact</h3><p>Baseline energy, efficiency improvement, tariff, O&M and asset-life impact.</p><button type="button" class="secondary" data-trial-skill="hvac_decarbonisation" data-trial-mode="impact">Run trial</button></div>
+  <div class="trial"><h3>HVAC Decarbonisation — Scenarios</h3><p>Do-nothing vs proper O&M vs full retrofit over a planning horizon.</p><button type="button" class="secondary" data-trial-skill="hvac_decarbonisation" data-trial-mode="scenarios">Run trial</button></div>
+  <div class="trial"><h3>Energy Retrofit Payback</h3><p>Old/new equipment efficiency, annual energy, investment, savings and lifecycle economics.</p><button type="button" class="secondary" data-trial-skill="energy_payback">Run trial</button></div>
+  <div class="trial"><h3>VFD Energy Savings</h3><p>Motor power, speed reduction, static-head correction, annual hours and tariff.</p><button type="button" class="secondary" data-trial-skill="vfd_energy_savings">Run trial</button></div>
 </div>
 <div id="trialMsg" class="msg"></div>
 </section>
@@ -108,6 +108,39 @@ button:disabled{opacity:.55;cursor:wait}
 </section>
 </main>
 
+<script>
+/* Early trial guard: keep Trial Lab actions alive even if the main dashboard script fails to initialize. */
+(function(){
+  const buttons=document.querySelectorAll("[data-trial-skill]"), msg=document.getElementById("trialMsg");
+  if(!buttons.length||!msg)return;
+  const samples={
+    hvac_decarbonisation:{annual_energy_kwh:1500000,tariff:8.5,mode:"impact",efficiency_gain_pct:8,om_program_cost:350000,capacity_tr:250,replacement_cost:9000000,life_extension_years:6,grid_emission_factor:0.716,horizon_years:10,neglect_creep_pct:4,failure_year:6,emergency_premium_pct:25,retrofit_efficiency_gain_pct:35,retrofit_cost:12000000,retrofit_om_cost:140000},
+    energy_payback:{capacity_old:500,efficiency_old:1.05,capacity_new:500,efficiency_new:0.72,annual_hours:4000,load_factor_pct:65,tariff_per_kwh:8.5,investment:4500000,incremental_om:100000,project_life_years:10},
+    vfd_energy_savings:{motor_kw:75,speed_reduction_pct:15,static_head_fraction:25,annual_hours:6000,tariff_per_kwh:8.5}
+  };
+  async function send(btn){
+    const skill=btn.dataset.trialSkill, mode=btn.dataset.trialMode||"";
+    buttons.forEach(b=>b.disabled=true); msg.className="msg ok";msg.style.display="block";msg.textContent="Running "+skill+(mode?" / "+mode:"")+" trial...";
+    const token=localStorage.getItem("engineering_ai_access_token");
+    if(!token){msg.className="msg err";msg.textContent="Session expired. Please sign in again.";buttons.forEach(b=>b.disabled=false);return;}
+    const input=JSON.parse(JSON.stringify(samples[skill]||{})); if(skill==="hvac_decarbonisation")input.mode=mode||"impact";
+    const requests={hvac_decarbonisation:"Perform a complete HVAC energy saving, decarbonisation, asset-life and scenario assessment using the supplied plant data.",energy_payback:"Assess the energy, financial and lifecycle payback of the proposed equipment retrofit using the supplied plant data.",vfd_energy_savings:"Calculate VFD energy savings and economic impact for the supplied motor/system data."};
+    const payload={message:requests[skill]||"Perform an energy engineering assessment using the supplied plant data.",requested_skill_id:skill,inputs:input};
+    try{
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),60000);
+      const r=await fetch("/v1/intake",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify(payload),signal:controller.signal});
+      const raw=await r.text();clearTimeout(timer);let d={};try{d=raw?JSON.parse(raw):{};}catch(e){}
+      if(!r.ok)throw Error(d.error||d.message||("Trial failed (HTTP "+r.status+")"));
+      const id=String(d.job?.job_id||"");sessionStorage.setItem("engineering_ai_latest_trial_job",id);
+      msg.textContent=id?"Trial submitted successfully — Job "+id.slice(0,8)+".":"Trial submitted successfully.";
+      if(typeof loadJobs==="function")await loadJobs();
+      document.getElementById("jobs")?.scrollIntoView({behavior:"smooth",block:"start"});
+    }catch(e){msg.className="msg err";msg.textContent=e.name==="AbortError"?"Trial request timed out after 60 seconds.":(e.message||"Trial failed.");}
+    finally{buttons.forEach(b=>b.disabled=false);}
+  }
+  buttons.forEach(b=>b.addEventListener("click",()=>{if(typeof window.runTrial==="function")window.runTrial(b.dataset.trialSkill,b.dataset.trialMode);else send(b);}));
+})();
+</script>
 <script>
 /* Early submit guard: keep the primary intake action alive even if a later dashboard script fails to initialize. */
 (function(){
