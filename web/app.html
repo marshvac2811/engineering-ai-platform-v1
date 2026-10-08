@@ -56,7 +56,7 @@ button:disabled{opacity:.55;cursor:wait}
 <div style="flex:1;min-width:200px"><label class="small" for="reqClient">Client (optional)</label><input id="reqClient" type="text" placeholder="e.g. Hotel ABC Pvt Ltd" style="margin-top:4px"></div>
 </div>
 <textarea id="request" rows="5" placeholder="Example: Upload the plant data above, then ask: Audit this hospital for energy savings, assess HVAC optimization, rooftop solar and BESS options, and prepare a decarbonization roadmap using applicable standards and the available project data."></textarea>
-<button id="submit" style="margin-top:12px" onclick="submitRequest()">Submit Request</button>
+<button id="submit" type="button" style="margin-top:12px">Submit Request</button>
 <div id="requestMsg" class="msg"></div>
 <div id="continuationBox" class="need" style="display:none;margin-top:12px"></div>
 </section>
@@ -108,6 +108,33 @@ button:disabled{opacity:.55;cursor:wait}
 </section>
 </main>
 
+<script>
+/* Early submit guard: keep the primary intake action alive even if a later dashboard script fails to initialize. */
+(function(){
+  const btn=document.getElementById("submit"), box=document.getElementById("request"), msg=document.getElementById("requestMsg");
+  if(!btn||!box||!msg)return;
+  async function send(){
+    const message=box.value.trim();
+    if(!message){msg.className="msg err";msg.style.display="block";msg.textContent="Please enter an engineering request.";return;}
+    btn.disabled=true;msg.className="msg ok";msg.style.display="block";msg.textContent="Submitting engineering request...";
+    const token=localStorage.getItem("engineering_ai_access_token");
+    if(!token){msg.className="msg err";msg.textContent="Session expired. Please sign in again.";btn.disabled=false;return;}
+    const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),60000);
+    try{
+      const r=await fetch("/v1/intake",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({message}),signal:controller.signal});
+      const raw=await r.text();
+      let d={};try{d=raw?JSON.parse(raw):{};}catch(e){}
+      if(!r.ok)throw Error(d.error||d.message||("Request failed (HTTP "+r.status+")"));
+      box.value="";
+      msg.textContent=d.job?.job_id?"Request submitted successfully — Job "+String(d.job.job_id).slice(0,8)+".":"Request submitted successfully.";
+      if(typeof loadJobs==="function")await loadJobs();
+    }catch(e){
+      msg.className="msg err";msg.textContent=e.name==="AbortError"?"Request timed out after 60 seconds.":(e.message||"Request failed.");
+    }finally{clearTimeout(timer);btn.disabled=false;}
+  }
+  btn.addEventListener("click",send);
+})();
+</script>
 <script>
 let token=localStorage.getItem("engineering_ai_access_token");
 if(!token) location.replace("/login");
