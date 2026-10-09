@@ -347,6 +347,7 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
     # Summary (also keeps the legacy "Cover" fields)
     ws = wb.active
     ws.title = "Summary"
+    document_status = "Approved for controlled dispatch" if str(job.status.value) in _APPROVED else humanize(job.status.value)
     project_context = getattr(job, "project_context", None) or {}
     summary_rows = []
     if project_context.get("project"):

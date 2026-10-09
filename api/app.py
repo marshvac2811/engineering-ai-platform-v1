@@ -372,7 +372,16 @@ class APIApp:
                 message = str(body.get("message", "")).strip()
                 if not message:
                     raise ValueError("message is required")
-                # Known registered requests must never depend on an external AI provider.\n                # Route them deterministically first so Submit Request remains responsive even\n                # when an optional provider is slow, unavailable, or misconfigured.\n                deterministic_provider = RuleBasedIntentProvider()\n                deterministic_skill, _, deterministic_confidence = deterministic_provider.route(message)\n                if deterministic_skill and deterministic_confidence >= 0.99:\n                    provider = deterministic_provider\n                else:\n                    provider = build_intent_provider()\n                project_context = dict(body.get("project_context") or {})
+                # Known registered requests must never depend on an external AI provider.
+                # Route them deterministically first so Submit Request remains responsive even
+                # when an optional provider is slow, unavailable, or misconfigured.
+                deterministic_provider = RuleBasedIntentProvider()
+                deterministic_skill, _, deterministic_confidence = deterministic_provider.route(message)
+                if deterministic_skill and deterministic_confidence >= 0.99:
+                    provider = deterministic_provider
+                else:
+                    provider = build_intent_provider()
+                project_context = dict(body.get("project_context") or {})
                 if body.get("project"):
                     project_context["project"] = str(body.get("project")).strip()
                 if body.get("client"):

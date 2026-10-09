@@ -15,6 +15,7 @@ import unicodedata
 from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
 
 from orchestrator.engine import SKILLS
+from orchestrator.provider import ProviderUnavailableError
 from skill_framework.registry import load_skill_registry
 from skill_framework.input_resolver import resolve_input_requirements
 from governance.engine import build_governance_context
@@ -419,11 +420,12 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "range_c": [r"(?:range|delta\s*t|Î”t)\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
         "coc": [r"(?:coc|cycles?\s*of\s*concentration)\s*[:=]?\s*([\d,.]+)"],
         "drift_pct": [r"drift\s*(?:loss)?\s*[:=]?\s*([\d,.]+)\s*%"],
-        "annual_hours": [r"([\d,.]+)\s*(?:annual\s*hours|hours\s*/\s*year|hr\s*/\s*yr)"],
-        "tariff_per_kwh": [r"(?:tariff|electricity\s*tariff)\s*[:=]?\s*(?:â‚¹|rs\.?\s*)?([\d,.]+)\s*/?\s*kwh"],
+        "annual_hours": [r"([\d,.]+)\s*(?:annual\s*hours|hours\s*/\s*year|hr\s*/\s*yr)", r"([\d,.]+)\s*(?:operating\s*)?(?:hours|hrs|h)\s*(?:per|a|/)\s*(?:year|yr|annum)\b", r"(?:annual\s*(?:operating\s*)?hours|operating\s*hours(?:\s*per\s*year)?)\s*(?:is|of|=|:)?\s*([\d,.]+)"],
+        "motor_kw": [r"([\d,.]+)\s*kw\s*(?:motor|pump|fan|drive)\b", r"motor\s*(?:power|rating|size)?\s*(?:is|of|=|:)?\s*([\d,.]+)\s*kw\b"],
+        "tariff_per_kwh": [r"(?:tariff|electricity\s*tariff|electricity\s*rate|energy\s*rate)\s*(?:is|of|=|:|at)?\s*(?:₹|rs\.?\s*|inr\s*)?([\d,.]+)\s*(?:/|per)\s*kwh", r"(?:tariff|electricity\s*tariff)\s*[:=]?\s*(?:â‚¹|rs\.?\s*)?([\d,.]+)\s*/?\s*kwh"],
         "load_factor_pct": [r"(?:load\s*factor)\s*[:=]?\s*([\d,.]+)\s*%"],
-        "speed_reduction_pct": [r"(?:speed\s*reduction)\s*[:=]?\s*([\d,.]+)\s*%"],
-        "static_head_fraction": [r"(?:static\s*head\s*fraction|static\s*head)\s*[:=]?\s*([\d,.]+)\s*%"],
+        "speed_reduction_pct": [r"(?:speed\s*reduction)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:%|percent)", r"([\d,.]+)\s*(?:%|percent)\s*(?:speed\s*reduction|reduction\s*in\s*speed)"],
+        "static_head_fraction": [r"(?:static[\s-]*head(?:\s*fraction)?)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:%|percent)", r"([\d,.]+)\s*(?:%|percent)\s*(?:static[\s-]*head(?:\s*fraction)?)"],
         "ambient_temp_c": [r"ambient\s*(?:temperature|temp)?\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
         "altitude_m": [r"(?:site\s+)?altitude\s*[:=]?\s*([\d,.]+)\s*m\b", r"elevation\s+above\s+sea\s+level\s*[:=]?\s*([\d,.]+)\s*m\b"],
         "total_vfd_kva": [r"(?:vfd\s*load|total\s*vfd)\s*[:=]?\s*([\d,.]+)\s*kva"],
