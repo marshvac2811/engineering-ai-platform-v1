@@ -568,7 +568,7 @@ function jobHtml(j){
  const skillText=String(j.requested_skill_id||j.skill_id||"").trim();
  const project=String(j.project_context?.project||"").trim();
  const client=String(j.project_context?.client||"").trim();
- let html='<div class="job '+(review?"review":"")+'" style="'+(isLatestTrial?"border:2px solid #1769e0;box-shadow:0 0 0 2px rgba(23,105,224,.08);":"")+'"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>Engineering Request'+(isLatestTrial?' <span style="font-size:11px;color:#1769e0">CURRENT TRIAL</span>':"")+"</strong><span class=\"small\">Job '+esc(rawId.slice(0,8))+'</span></div>'+
+ let html='<div class="job '+(review?"review":"")+'" style="'+(isLatestTrial?"border:2px solid #1769e0;box-shadow:0 0 0 2px rgba(23,105,224,.08);":"")+'"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>Engineering Request'+(isLatestTrial?' <span style="font-size:11px;color:#1769e0">CURRENT TRIAL</span>':"")+'</strong><span class="small">Job '+esc(rawId.slice(0,8))+'</span></div>'+
   '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>'+
   (skillText?'<div class="small" style="margin-top:5px"><strong>Capability:</strong> '+esc(skillText)+'</div>':"")+
   (project?'<div class="small" style="margin-top:5px"><strong>Project:</strong> '+esc(project)+'</div>':"")+
