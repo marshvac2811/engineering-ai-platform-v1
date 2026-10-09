@@ -121,8 +121,22 @@ button:disabled{opacity:.55;cursor:wait}
   async function send(btn){
     const skill=btn.dataset.trialSkill, mode=btn.dataset.trialMode||"";
     buttons.forEach(b=>b.disabled=true); msg.className="msg ok";msg.style.display="block";msg.textContent="Running "+skill+(mode?" / "+mode:"")+" trial...";
-    const token=localStorage.getItem("engineering_ai_access_token");
-    if(!token){msg.className="msg err";msg.textContent="Session expired. Please sign in again.";buttons.forEach(b=>b.disabled=false);return;}
+    let token=localStorage.getItem("engineering_ai_access_token");
+    const refreshToken=localStorage.getItem("engineering_ai_refresh_token");
+    if(!token||!refreshToken){msg.className="msg err";msg.textContent="Session expired. Please sign in again.";buttons.forEach(b=>b.disabled=false);return;}
+    try{
+      const part=token.split(".")[1];
+      const payload=JSON.parse(atob(part.replace(/-/g,"+").replace(/_/g,"/")));
+      if(!payload.exp||Number(payload.exp)<=Math.floor(Date.now()/1000)+30) throw Error("expired");
+    }catch(_){
+      try{
+        const rr=await fetch("https://vaxerlbgwwlfamncevdg.supabase.co/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":"sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s","Content-Type":"application/json"},body:JSON.stringify({refresh_token:refreshToken})});
+        const rd=await rr.json();
+        if(!rr.ok||!rd.access_token) throw Error("refresh failed");
+        token=rd.access_token;localStorage.setItem("engineering_ai_access_token",token);
+        if(rd.refresh_token)localStorage.setItem("engineering_ai_refresh_token",rd.refresh_token);
+      }catch(_){msg.className="msg err";msg.textContent="Session expired. Please sign in again.";buttons.forEach(b=>b.disabled=false);return;}
+    }
     const input=JSON.parse(JSON.stringify(samples[skill]||{})); if(skill==="hvac_decarbonisation")input.mode=mode||"impact";
     const requests={hvac_decarbonisation:"Perform a complete HVAC energy saving, decarbonisation, asset-life and scenario assessment using the supplied plant data.",energy_payback:"Assess the energy, financial and lifecycle payback of the proposed equipment retrofit using the supplied plant data.",vfd_energy_savings:"Calculate VFD energy savings and economic impact for the supplied motor/system data."};
     const payload={message:requests[skill]||"Perform an energy engineering assessment using the supplied plant data.",requested_skill_id:skill,inputs:input};
@@ -150,8 +164,22 @@ button:disabled{opacity:.55;cursor:wait}
     const message=box.value.trim();
     if(!message){msg.className="msg err";msg.style.display="block";msg.textContent="Please enter an engineering request.";return;}
     btn.disabled=true;msg.className="msg ok";msg.style.display="block";msg.textContent="Submitting engineering request...";
-    const token=localStorage.getItem("engineering_ai_access_token");
-    if(!token){msg.className="msg err";msg.textContent="Session expired. Please sign in again.";btn.disabled=false;return;}
+    let token=localStorage.getItem("engineering_ai_access_token");
+    const refreshToken=localStorage.getItem("engineering_ai_refresh_token");
+    if(!token||!refreshToken){msg.className="msg err";msg.textContent="Session expired. Please sign in again.";btn.disabled=false;return;}
+    try{
+      const part=token.split(".")[1];
+      const payload=JSON.parse(atob(part.replace(/-/g,"+").replace(/_/g,"/")));
+      if(!payload.exp||Number(payload.exp)<=Math.floor(Date.now()/1000)+30) throw Error("expired");
+    }catch(_){
+      try{
+        const rr=await fetch("https://vaxerlbgwwlfamncevdg.supabase.co/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":"sb_publishable_X68FRNA50gzwKqH7SFbOGQ_OyemX0_s","Content-Type":"application/json"},body:JSON.stringify({refresh_token:refreshToken})});
+        const rd=await rr.json();
+        if(!rr.ok||!rd.access_token) throw Error("refresh failed");
+        token=rd.access_token;localStorage.setItem("engineering_ai_access_token",token);
+        if(rd.refresh_token)localStorage.setItem("engineering_ai_refresh_token",rd.refresh_token);
+      }catch(_){msg.className="msg err";msg.textContent="Session expired. Please sign in again.";btn.disabled=false;return;}
+    }
     const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),60000);
     try{
       const r=await fetch("/v1/intake",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({message}),signal:controller.signal});
