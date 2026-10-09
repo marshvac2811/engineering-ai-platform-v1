@@ -50,7 +50,7 @@ def interpret_building_source(
         facts["line_geometry"] = geometry
         facts["supported_line_geometry_count"] = len(geometry)
         facts["semantic_interpretation"] = False
-        warnings.append("DXF LINE geometry is registered, but walls, rooms, doors and services are not inferred from raw lines.")
+        warnings.append("DXF LINE geometry is registered, but architectural semantics (walls, rooms, doors and services) are not inferred from raw lines.")
         if not geometry:
             blockers.append("No supported DXF LINE geometry was extracted.")
     elif source_type == "cad_binary":

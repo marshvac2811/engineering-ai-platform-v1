@@ -42,4 +42,4 @@ def test_commercial_skills():
     r=execute(req("deviation_statement",{"rows":[{"clause":"A","specified":"100","offered":"100","status":"comply","remarks":""},{"clause":"B","specified":"200","offered":"180","status":"deviate","remarks":"Alternative"},{"clause":"C","specified":"-","offered":"-","status":"na","remarks":""}]})); assert r.engineering_result["deviate"]==1 and r.engineering_result["compliance_pct"]==50
 
 def test_registered_executable_count():
-    assert len(registered_skills())==22
+    assert len(registered_skills())==24

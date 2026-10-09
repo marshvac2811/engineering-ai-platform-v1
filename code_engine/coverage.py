@@ -64,6 +64,10 @@ _COVERAGE: Dict[str, Tuple[StandardsCandidate, ...]] = {
         StandardsCandidate("bis_nbc_2016", "Building automation/system-services reference.", ("jurisdiction", "building_type", "automation_scope")),
     ),
     "bms_cost_estimation": (),
+    # Input-governed preliminary calculators: no statutory demand, density or fixture-unit rules are
+    # implemented, so no standards candidate is asserted until a source/audit basis is established.
+    "fire_water_storage": (),
+    "plumbing_water_demand": (),
     "bms_alarm_evaluation": (
         StandardsCandidate("bis_nbc_2016", "Building automation/system-services reference.", ("jurisdiction", "building_type", "automation_scope")),
     ),

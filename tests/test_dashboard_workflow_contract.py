@@ -31,6 +31,7 @@ def test_api_serves_external_dashboard_file():
 
 def test_dashboard_awaiting_information_message_uses_precise_questions():
     html = APP.read_text(encoding="utf-8")
-    assert "const needs = d.job?.orchestration?.questions || d.job?.orchestration?.missing_inputs || [];" in html
-    assert "const needText = needs.length ? needs.join(\" \")" in html
-    assert 'd.job?.status==="awaiting_information" ? needText : "Request submitted successfully."' in html
+    assert "const needs=d.job?.orchestration?.questions||d.job?.orchestration?.missing_inputs||[];" in html
+    assert 'needs.length?needs.join(" ")' in html
+    assert 'The request is waiting for additional information.' in html
+    assert 'showMsg(msg,true,"Request submitted successfully.")' in html

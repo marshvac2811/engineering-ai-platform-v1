@@ -33,7 +33,7 @@ def test_drawing_package_links_job_and_remains_unissued():
     assert manifest["drawings"][0]["source_calculations"] == ["task-1"]
     assert manifest["drawing_artifact_id"]
     assert manifest["manifest_sha256"]
-    assert manifest["drawing_payloads"][0]["drawing_id"] == "HVAC-F1-001"
+    assert manifest["drawing_payloads"][0]["drawing_id"] == "HVAC-B1-F1-RA"
 
 
 def test_drawing_package_issue_requires_approved_job():
@@ -90,7 +90,10 @@ def test_controlled_drawing_dispatch_builds_watermarked_pdf_and_hashed_dxf_packa
     issued = authorize_drawing_package_issue(manifest, job)
     built = build_drawing_dispatch_package(manifest=issued, drawings=issued["drawing_payloads"])
     assert built["pdf"]["bytes"].startswith(b"%PDF")
-    assert b"PRELIMINARY" in built["pdf"]["bytes"]
+    import io
+    from pypdf import PdfReader
+    pdf_text = " ".join((p.extract_text() or "") for p in PdfReader(io.BytesIO(built["pdf"]["bytes"])).pages)
+    assert "PRELIMINARY" in pdf_text
     assert len(built["dxf_zip"]["bytes"]) > 100
     assert len(built["pdf"]["sha256"]) == 64
     assert len(built["dxf_zip"]["sha256"]) == 64

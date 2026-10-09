@@ -421,10 +421,10 @@ def extract_facts(text: str) -> Dict[str, Any]:
         "coc": [r"(?:coc|cycles?\s*of\s*concentration)\s*[:=]?\s*([\d,.]+)"],
         "drift_pct": [r"drift\s*(?:loss)?\s*[:=]?\s*([\d,.]+)\s*%"],
         "annual_hours": [r"([\d,.]+)\s*(?:annual\s*hours|hours\s*/\s*year|hr\s*/\s*yr)", r"([\d,.]+)\s*(?:operating\s*)?(?:hours|hrs|h)\s*(?:per|a|/)\s*(?:year|yr|annum)\b", r"(?:annual\s*(?:operating\s*)?hours|operating\s*hours(?:\s*per\s*year)?)\s*(?:is|of|=|:)?\s*([\d,.]+)"],
-        "motor_kw": [r"([\d,.]+)\s*kw\s*(?:motor|pump|fan|drive)\b", r"motor\s*(?:power|rating|size)?\s*(?:is|of|=|:)?\s*([\d,.]+)\s*kw\b"],
+        "motor_kw": [r"([\d,.]+)\s*kw\s+(?:[a-z-]+\s+){0,3}?(?:motor|pump|fan|drive|compressor|blower)\b", r"([\d,.]+)\s*kw\s*(?:motor|pump|fan|drive)\b", r"motor\s*(?:power|rating|size)?\s*(?:is|of|=|:)?\s*([\d,.]+)\s*kw\b"],
         "tariff_per_kwh": [r"(?:tariff|electricity\s*tariff|electricity\s*rate|energy\s*rate)\s*(?:is|of|=|:|at)?\s*(?:₹|rs\.?\s*|inr\s*)?([\d,.]+)\s*(?:/|per)\s*kwh", r"(?:tariff|electricity\s*tariff)\s*[:=]?\s*(?:â‚¹|rs\.?\s*)?([\d,.]+)\s*/?\s*kwh"],
         "load_factor_pct": [r"(?:load\s*factor)\s*[:=]?\s*([\d,.]+)\s*%"],
-        "speed_reduction_pct": [r"(?:speed\s*reduction)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:%|percent)", r"([\d,.]+)\s*(?:%|percent)\s*(?:speed\s*reduction|reduction\s*in\s*speed)"],
+        "speed_reduction_pct": [r"speed[^.;]{0,40}?\breduc\w*\s*(?:by|of|to|=|:)?\s*([\d,.]+)\s*(?:%|percent)", r"(?:speed\s*reduction)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:%|percent)", r"([\d,.]+)\s*(?:%|percent)\s*(?:speed\s*reduction|reduction\s*in\s*speed)"],
         "static_head_fraction": [r"(?:static[\s-]*head(?:\s*fraction)?)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:%|percent)", r"([\d,.]+)\s*(?:%|percent)\s*(?:static[\s-]*head(?:\s*fraction)?)"],
         "ambient_temp_c": [r"ambient\s*(?:temperature|temp)?\s*[:=]?\s*([\d,.]+)\s*(?:Â°?c|deg c)"],
         "altitude_m": [r"(?:site\s+)?altitude\s*[:=]?\s*([\d,.]+)\s*m\b", r"elevation\s+above\s+sea\s+level\s*[:=]?\s*([\d,.]+)\s*m\b"],
@@ -546,6 +546,25 @@ class RuleBasedIntentProvider:
         )
         for skill_id, markers, rationale in explicit_non_energy_routes:
             if any(marker in t for marker in markers):
+                return skill_id, [IntentCandidate(skill_id, 100, [rationale])], 0.99
+
+        # Phrasing-tolerant explicit objectives ("Size the BMS controllers", "Size a
+        # rectangular supply air duct", "Calculate the facade U-factor"). A sizing/
+        # calculation verb next to the specific equipment noun is an unambiguous
+        # objective and must not depend on one exact phrase.
+        regex_objective_routes = (
+            ("bms_controller_sizing", r"\b(?:size|sizing)\b[^.;]{0,25}\bbms\s+controllers?\b", None, "Explicit BMS controller-sizing objective."),
+            ("bms_points_generation", r"\b(?:generate|create|build|prepare)\b[^.;]{0,25}\bbms\s+points\b|\b(?:generate|create|build|prepare)\b[^.;]{0,25}\bpoints\s+list\b[^.;]{0,40}\bbms\b|\bbms\b[^.;]{0,40}\bgenerate\b[^.;]{0,20}\bpoints\b", None, "Explicit BMS points-generation objective."),
+            ("duct_sizing", r"\bduct\s+sizing\b|\b(?:size|sizing)\b[^.;]{0,40}\bducts?\b", "leakage", "Explicit duct-sizing objective."),
+            ("refrigerant_pipe_sizing", r"\b(?:size|sizing)\b[^.;]{0,30}\brefrigerant\s+(?:pipe|pipes|pipework|piping|lines?)\b|\b(?:size|sizing)\b[^.;]{0,20}\b(?:suction|liquid|discharge)\s+lines?\b", None, "Explicit refrigerant-piping sizing objective."),
+            ("facade_u_factor", r"\b(?:calculate|compute|determine|evaluate|check)\b[^.;]{0,25}\bu[- ]?(?:factor|value)\b", None, "Explicit facade U-factor calculation objective."),
+        )
+        for skill_id, pattern, exclude, rationale in regex_objective_routes:
+            if exclude and exclude in t:
+                continue
+            if skill_id == "facade_u_factor" and not any(w in t for w in ("facade", "façade", "curtain wall", "glazing", "fenestration", "wall assembly")):
+                continue
+            if re.search(pattern, t):
                 return skill_id, [IntentCandidate(skill_id, 100, [rationale])], 0.99
 
         # Explicit equipment-sizing/design objectives must beat broad energy-language

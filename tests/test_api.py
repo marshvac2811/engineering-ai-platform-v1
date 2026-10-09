@@ -57,13 +57,16 @@ def test_api_requires_tenant():
     assert result['status'].startswith('401') and 'Tenant-ID' in body['error']
 
 
-def test_api_returns_503_when_openai_provider_is_selected_without_key(monkeypatch):
+def test_api_intake_degrades_gracefully_when_openai_provider_has_no_key(monkeypatch):
     monkeypatch.setenv("ENGINEERING_AI_INTENT_PROVIDER", "openai")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
-    status, body=call(app,'POST','/v1/intake',{'message':'Size a round duct'})
-    assert status.startswith('503')
-    assert 'OPENAI_API_KEY' in body['error']
+    status, body=call(app,'POST','/v1/intake',{'message':'Please look into my building situation'})
+    # Intake must stay usable when the optional AI provider is unavailable (commits e3d3786, 98f78f9):
+    # it falls back to the audited deterministic router instead of returning 503, and never invents a skill.
+    assert status.startswith('201'), body
+    assert body['plan']['status'] == 'awaiting_information'
+    assert not body['plan'].get('selected_skill_id')
 
 def test_api_exposes_engineering_report_and_compliance():
     app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
