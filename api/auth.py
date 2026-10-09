@@ -282,21 +282,16 @@ class SupabaseJWTAuthenticator(Authenticator):
             raise AuthenticationError("Supabase JWT is empty")
 
         try:
-            # On Render, avoid making JWKS retrieval the critical path. Supabase Auth
-            # already validates the bearer access token; this is also resilient to
-            # transient JWKS/DNS failures that previously made every dashboard API
-            # request sit in Loading... for a long time.
-            user = self._validate_with_supabase_auth(token)
-            user_id = str(user.get("id") or "").strip()
-            if not user_id:
-                raise AuthenticationError("Supabase Auth returned no user id")
-            claims = {
-                "sub": user_id,
-                "tenant_id": "",
-                "app_role": str((user.get("app_metadata") or {}).get("app_role") or "member"),
-                "scopes": [],
-                "email": str(user.get("email") or ""),
-            }
+            signing_key = self._get_signing_key(token)
+
+            claims = jwt.decode(
+                token,
+                signing_key,
+                algorithms=["ES256", "RS256"],
+                audience="authenticated",
+                issuer=self.issuer,
+                options={"require": ["sub", "exp", "iss", "aud"]},
+            )
         except Exception as exc:
             # Some Vercel serverless invocations can fail outbound JWKS retrieval
             # even though Supabase Auth itself is reachable. In that case let
