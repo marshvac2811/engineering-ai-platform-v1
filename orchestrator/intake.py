@@ -669,8 +669,7 @@ def build_plan(
     provider: Optional[IntentProvider] = None,
     _compound: bool = True,
 ) -> OrchestrationPlan:
-    provider = provider or RuleBasedIntentProvider()
-    if _compound and not hasattr(provider, "classify_and_extract"):
+    # Normalize context arguments before any compound-request or retrieval path.\n    # Keep a concrete dict for the entire planning call so no downstream branch can\n    # observe an uninitialized project_context value.\n    project_context = dict(project_context or {})\n    standards_context = dict(standards_context or {})\n    assumptions_context = dict(assumptions_context or {})\n    provided_inputs = dict(provided_inputs or {})\n    provider = provider or RuleBasedIntentProvider()\n    if _compound and not hasattr(provider, "classify_and_extract"):
         clauses = [part.strip(" ;") for part in re.split(r";\s*|\s+also\s+", text.strip(), flags=re.IGNORECASE) if part.strip()]
         expanded: List[str] = []
         for clause in clauses:
@@ -706,10 +705,7 @@ def build_plan(
                     work_items=supported,
                     unsupported_scope=unsupported,
                 )
-    project_context = build_ai_project_context(text, project_context or {})
-    standards_context = standards_context or {}
-    assumptions_context = assumptions_context or {}
-    provided_inputs = dict(provided_inputs or {})
+    project_context = build_ai_project_context(text, project_context)
 
     provider_extracted: Dict[str, Any] = {}
     provider_rationale: List[str] = []
