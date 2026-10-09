@@ -209,3 +209,13 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Consolidated implementation is on final commit 969816cbf80624b36c86c6a883a12ddc16312b17.
 - Render deployment for that final commit succeeded at 2026-10-07 01:07:57Z. Runtime logs show application startup complete and the primary Render URL serving HTTP 200.
 - Local pytest execution was unavailable in this environment; the regression test was added, and Render build/deploy succeeded. Do not claim the new pytest file was executed unless a later CI run verifies it.
+
+## Latest implementation checkpoint — 2026-10-09 (production defect repair)
+
+- Root cause of the live "Submit Request / Run trial not working" failures: earlier commits had written literal `\n` text into Python source. In `api/app.py` (commit 98f78f9) this turned the `/v1/intake` setup code (`provider`, `project_context`) into a comment, so every intake raised an unbound-variable error. In `orchestrator/intake.py` (commit 24d61b1) it caused an IndentationError that failed the Render build.
+- Also fixed: `reports/artifacts.py` `build_evidence_xlsx` used `document_status` without defining it, so **Approve & Dispatch crashed** for every job. `orchestrator/intake.py` was missing the `ProviderUnavailableError` import.
+- Plain-language VFD requests now extract motor kW, speed reduction %, static-head fraction %, annual hours and tariff (previously only "label: value" forms worked, which sent typed requests to Information Needed).
+- Verified locally: free-text VFD request -> /v1/intake -> human_review -> approve+dispatch -> completed; result 130,233 kWh/yr. New tests in `tests/test_vfd_freetext_trial.py`.
+- Lesson: after any automated edit run `python -m compileall .` and `python -m pyflakes` (undefined names) before committing.
+- Known: 18 older tests still fail because they hard-code registry counts (22/23 skills) and lack standards-coverage entries for fire_water_storage / plumbing_water_demand. Not caused by these changes (they failed before).
+- Live Render verification of the new deploy is still pending.
