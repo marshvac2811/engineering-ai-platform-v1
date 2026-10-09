@@ -746,6 +746,46 @@ skills:
   - fire tank volume
   - fire reserve
   - fire water requirement
+- skill_id: hvac_design_package
+  version: 1.0.0
+  domain: HVAC
+  source_repository: internal-governed
+  source_path: skills/hvac/design_package
+  execution: deterministic_python
+  classification: preliminary
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: building_type
+    data_type: string
+    description: Building type used for the benchmark load.
+  - name: climate_zone
+    data_type: string
+    description: Project climate zone.
+  - name: rooms
+    data_type: array
+    description: Rooms with room_id, name, area_m2 and optional occupancy.
+  optional_inputs:
+  - name: cfm_per_tr
+    data_type: number
+    description: Airflow basis in CFM per TR (reported as an assumption; default 400).
+  - name: target_velocity_ms
+    data_type: number
+    description: Branch duct velocity in m/s (reported as an assumption; default 5).
+  - name: diversity_factor_pct
+    data_type: number
+    description: Block-load diversity percentage (default 100 = none).
+  - name: duct_material
+    data_type: string
+    description: Duct material key from the duct-sizing source (default gss).
+  conditional_inputs: []
+  implementation_binding: skills.hvac.design_package.adapter:HVACDesignPackageSkill
+  routing_terms:
+  - hvac design package
+  - room by room load
+  - equipment schedule
+  - design the hvac
+  - hvac design for
 - skill_id: plumbing_water_demand
   version: 1.0.0
   domain: PLUMBING

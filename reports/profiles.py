@@ -33,6 +33,7 @@ _PROFILES = {
     "bms_controller_sizing": ("bms_controller_sizing", "bms_controller_sizing_report", "BMS Controller Sizing Report", ("calculation_report",)),
     "bms_cost_estimation": ("bms_cost_estimation", "bms_cost_estimate", "BMS Cost Estimate", ("cost_estimate",)),
     "bms_alarm_evaluation": ("bms_alarm_evaluation", "bms_alarm_evaluation_report", "BMS Alarm Evaluation Report", ("assessment_report",)),
+    "hvac_design_package": ("hvac_design_package", "hvac_design_package_report", "HVAC Design Package (Preliminary)", ("calculation_report", "equipment_schedule")),
     "fire_water_storage": ("fire_water_storage", "fire_water_storage_report", "Fire Water Storage Report", ("calculation_report",)),
     "plumbing_water_demand": ("plumbing_water_demand", "plumbing_water_demand_report", "Plumbing Water Demand Report", ("calculation_report",)),
     "vfd_energy_savings": ("vfd_energy_savings", "vfd_energy_savings_report", "VFD Energy Savings Report", ("calculation_report",)),

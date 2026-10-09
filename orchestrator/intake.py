@@ -122,6 +122,7 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
     "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate", "hvac boq", "boq for", "boq covering", "boq outline"),
     "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance", "deviates on", "technical deviation"),
     "fire_water_storage": ("fire water storage", "fire tank volume", "fire reserve", "fire water requirement"),
+    "hvac_design_package": ("hvac design package", "room by room load", "equipment schedule", "design the hvac", "hvac design for", "room-by-room"),
     "plumbing_water_demand": ("plumbing water demand", "fixture demand", "domestic water demand", "plumbing flow"),
 }
 

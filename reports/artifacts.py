@@ -20,7 +20,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
 
 from reports.formatting import (
-    describe_item, flatten_rows, format_value, humanize, split_inputs_and_results, split_unit, trace_steps,
+    describe_item, extract_tables, flatten_rows, format_value, humanize, split_inputs_and_results, split_unit, trace_steps,
 )
 
 
@@ -86,9 +86,31 @@ def _task_inputs(task: Dict[str, Any], request_inputs: Dict[str, Any]) -> Dict[s
     return inputs if inputs else (request_inputs or {})
 
 
+# Narrative keys that have their own report sections (Assumptions / Points to note); showing them
+# again as result rows duplicates them.
+_NARRATIVE_KEYS = {"assumptions", "limitations", "warnings"}
+
+
+def _plain_results(task: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: v for k, v in (task.get("engineering_result") or {}).items() if k not in _NARRATIVE_KEYS}
+
+
 def _results_rows(task: Dict[str, Any], request_inputs: Dict[str, Any]):
-    inputs, results = split_inputs_and_results(_task_inputs(task, request_inputs), task.get("engineering_result") or {})
+    inputs, results = split_inputs_and_results(_task_inputs(task, request_inputs), _plain_results(task))
+    results, _tables = extract_tables(results)
+    inputs, _in_tables = extract_tables(inputs)
     return flatten_rows(inputs), flatten_rows(results)
+
+
+def _input_tables(task: Dict[str, Any], request_inputs: Dict[str, Any]):
+    inputs, _results = split_inputs_and_results(_task_inputs(task, request_inputs), _plain_results(task))
+    return extract_tables(inputs)[1]
+
+
+def _result_tables(task: Dict[str, Any], request_inputs: Dict[str, Any]):
+    """Schedules (lists of flat records) in the task result, shown as real tables."""
+    _inputs, results = split_inputs_and_results(_task_inputs(task, request_inputs), _plain_results(task))
+    return extract_tables(results)[1]
 
 
 def _has_money(rows) -> bool:
@@ -159,6 +181,19 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         t.setStyle(TableStyle(style))
         return t
 
+    def wide_table(header, rows, widths):
+        small_cell = ParagraphStyle("small_cell", parent=cell, fontSize=6.5, leading=8)
+        small_head = ParagraphStyle("small_head", parent=head_cell, fontSize=6.5, leading=8)
+        data = [[Paragraph(h, small_head) for h in header]]
+        for r in rows:
+            data.append([Paragraph(str(v if v not in (None, "") else "-").replace("&", "&amp;").replace("<", "&lt;"), small_cell) for v in r])
+        t = Table(data, colWidths=widths, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), _ACCENT), ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c2cf")),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ]))
+        return t
+
     def kv_table(rows):
         t = Table([[P(k, cell_b), P(v)] for k, v in rows], colWidths=[48 * mm, width - 48 * mm])
         t.setStyle(TableStyle([
@@ -193,13 +228,17 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
     shown_inputs = False
     for index, task in enumerate(tasks, 1):
         in_rows, _ = _results_rows(task, request_inputs)
-        if not in_rows:
+        if not in_rows and not _input_tables(task, request_inputs):
             continue
         shown_inputs = True
         if len(tasks) > 1:
             story.append(Paragraph(f"Task {index}: {P(humanize(task.get('capability_id')), body).text}", task_h))
         story.append(table(["Parameter", "Value", "Unit"], [(l, format_value(v), u) for l, v, u in in_rows],
                            [90 * mm, 50 * mm, 40 * mm], numeric_cols=(1,)))
+        for tbl in _input_tables(task, request_inputs):
+            story.append(Spacer(1, 4))
+            story.append(Paragraph(P(tbl["title"], body).text, task_h))
+            story.append(wide_table(tbl["headers"], tbl["rows"], [width / max(1, len(tbl["headers"]))] * len(tbl["headers"])))
         story.append(Spacer(1, 4))
     if not shown_inputs:
         story.append(Paragraph("No numeric inputs were recorded for this report.", body))
@@ -223,8 +262,16 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
             story.append(table(["Result", "Value", "Unit"], [(l, format_value(v), u) for l, v, u in res_rows],
                                [90 * mm, 50 * mm, 40 * mm], numeric_cols=(1,)))
             money_note = money_note or _has_money(res_rows)
-        else:
+        elif not _result_tables(task, request_inputs):
             story.append(Paragraph("No numeric results were produced for this task.", body))
+        for tbl in _result_tables(task, request_inputs):
+            skip = {i for i, h in enumerate(tbl["headers"]) if h.lower().startswith("source calculation")}
+            heads = [h for i, h in enumerate(tbl["headers"]) if i not in skip]
+            rows_ = [[v for i, v in enumerate(r) if i not in skip] for r in tbl["rows"]]
+            story.append(Paragraph(P(tbl["title"], body).text, task_h))
+            w_each = width / max(1, len(heads))
+            story.append(wide_table(heads, rows_, [w_each] * len(heads)))
+            story.append(Spacer(1, 4))
         steps = trace_steps(task.get("calculation_trace") or [])
         if steps:
             story.append(Paragraph("How the result was calculated", task_h))
@@ -383,6 +430,10 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
 
     styled(wb.create_sheet("Inputs"), ["Task", "Parameter", "Value", "Unit"], inputs_rows, [30, 40, 18, 16], number_cols=(2,))
     styled(wb.create_sheet("Results"), ["Task", "Result", "Value", "Unit"], results_rows, [30, 40, 18, 16], number_cols=(2,))
+    for index, t in enumerate(tasks, 1):
+        for tbl in _input_tables(t, request_inputs) + _result_tables(t, request_inputs):
+            sheet_name = f"{tbl['title']}"[:28] or "Schedule"
+            styled(wb.create_sheet(sheet_name), tbl["headers"], tbl["rows"], [max(14, min(30, len(h) + 4)) for h in tbl["headers"]])
     styled(wb.create_sheet("Calculation Steps"), ["Task", "Step", "Calculation step", "Detail"], step_rows, [30, 8, 50, 40])
     styled(wb.create_sheet("Assumptions & Notes"), ["Task", "Type", "Detail"], note_rows, [30, 16, 100])
     cands = [(c.get("title"), c.get("authority"), c.get("edition") or "-", "Candidate - not verified") for c in governance.get("candidate_sources") or []]

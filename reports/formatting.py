@@ -39,6 +39,12 @@ def _tokens(key: str) -> List[str]:
 # Currency is deliberately not assumed: values are in the currency of the tariff supplied.
 _DISPLAY_OVERRIDES: Dict[str, Tuple[str, str]] = {
     "motor_kw": ("Motor power", "kW"),
+    "block_load_tr": ("Block cooling load (after diversity)", "TR"),
+    "block_load_kw": ("Block cooling load (after diversity)", "kW"),
+    "sum_of_room_loads_tr": ("Sum of room loads (before diversity)", "TR"),
+    "total_area_m2": ("Total conditioned area", "m²"),
+    "total_supply_airflow_m3h": ("Total supply airflow", "m³/hr"),
+    "diversity_factor_pct": ("Diversity factor", "%"),
     "speed_reduction_pct": ("Speed reduction", "%"),
     "static_head_fraction": ("Static head fraction", "%"),
     "annual_hours": ("Annual operating hours", "hours"),
@@ -149,6 +155,32 @@ def flatten_rows(data: Dict[str, Any], prefix: str = "") -> List[Tuple[str, Any,
         else:
             rows.append((label, str(value), unit))
     return rows
+
+
+def extract_tables(results: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """Pull lists of flat dicts (schedules) out of a results dict so they render as real tables.
+
+    Returns ``(remaining_results, tables)``; each table is ``{"title", "headers", "rows"}`` with
+    values formatted for display. Nothing is dropped: only uniform lists of scalar-only dicts move.
+    """
+    rest: Dict[str, Any] = {}
+    tables: List[Dict[str, Any]] = []
+    for key, value in (results or {}).items():
+        if (isinstance(value, (list, tuple)) and value and all(isinstance(v, dict) and v and all(is_scalar(x) for x in v.values()) for v in value)):
+            columns: List[str] = []
+            for item in value:
+                for col in item:
+                    if col not in columns:
+                        columns.append(col)
+            headers = []
+            for col in columns:
+                label, unit = split_unit(col)
+                headers.append(f"{label} ({unit})" if unit and unit != "-" else label)
+            rows = [[format_value(item.get(col)) for col in columns] for item in value]
+            tables.append({"title": split_unit(key)[0], "headers": headers, "rows": rows})
+        else:
+            rest[key] = value
+    return rest, tables
 
 
 def split_inputs_and_results(inputs: Dict[str, Any], results: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:

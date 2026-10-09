@@ -66,6 +66,10 @@ _COVERAGE: Dict[str, Tuple[StandardsCandidate, ...]] = {
     "bms_cost_estimation": (),
     # Input-governed preliminary calculators: no statutory demand, density or fixture-unit rules are
     # implemented, so no standards candidate is asserted until a source/audit basis is established.
+    "hvac_design_package": (
+        StandardsCandidate("bee_ecbc_2017", "Energy-code context for commercial HVAC design where applicable.", ("jurisdiction", "building_type")),
+        StandardsCandidate("ashrae_90_1_2025", "Energy-performance reference where applicable.", ("jurisdiction", "contractual_standard")),
+    ),
     "fire_water_storage": (),
     "plumbing_water_demand": (),
     "bms_alarm_evaluation": (
