@@ -669,7 +669,14 @@ def build_plan(
     provider: Optional[IntentProvider] = None,
     _compound: bool = True,
 ) -> OrchestrationPlan:
-    # Normalize context arguments before any compound-request or retrieval path.\n    # Keep a concrete dict for the entire planning call so no downstream branch can\n    # observe an uninitialized project_context value.\n    project_context = dict(project_context or {})\n    standards_context = dict(standards_context or {})\n    assumptions_context = dict(assumptions_context or {})\n    provided_inputs = dict(provided_inputs or {})\n    provider = provider or RuleBasedIntentProvider()\n    if _compound and not hasattr(provider, "classify_and_extract"):
+    # Normalize context arguments before any compound-request or retrieval path so
+    # project_context is always a bound dict for the whole planning call.
+    project_context = dict(project_context or {})
+    standards_context = dict(standards_context or {})
+    assumptions_context = dict(assumptions_context or {})
+    provided_inputs = dict(provided_inputs or {})
+    provider = provider or RuleBasedIntentProvider()
+    if _compound and not hasattr(provider, "classify_and_extract"):
         clauses = [part.strip(" ;") for part in re.split(r";\s*|\s+also\s+", text.strip(), flags=re.IGNORECASE) if part.strip()]
         expanded: List[str] = []
         for clause in clauses:
