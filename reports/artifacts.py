@@ -362,7 +362,7 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         ("Evidence record SHA-256", manifest.get("bundle_sha256")), ("Evidence schema", manifest.get("schema_version")),
         ("Skill version", ", ".join(str(t.get("skill_version") or "-") for t in tasks) or "-"),
         ("Source revision", ", ".join(str(t.get("source_revision") or "-") for t in tasks) or "-"),
-        ("Limitations", "; ".join(str(x) for t in tasks for x in (t.get("limitations") or [])) or "-"),
+        ("Limitations", "; ".join(str(x) for t in tasks for x in ((t.get("limitations") or []) + (t.get("warnings") or []))) or "-"),
         ("Generated", _fmt_dt(datetime.now(timezone.utc).isoformat())),
     ]
     styled(ws, ["Item", "Detail"], summary_rows, [30, 100])

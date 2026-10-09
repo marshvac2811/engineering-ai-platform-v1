@@ -219,3 +219,9 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Lesson: after any automated edit run `python -m compileall .` and `python -m pyflakes` (undefined names) before committing.
 - Known: 18 older tests still fail because they hard-code registry counts (22/23 skills) and lack standards-coverage entries for fire_water_storage / plumbing_water_demand. Not caused by these changes (they failed before).
 - Live Render verification of the new deploy is still pending.
+
+## Checkpoint — 2026-10-09 (report presentation + live trial verified)
+- Live trial verified by the user: VFD Energy Savings trial (Job fe9e32bd) -> approve -> dispatch produced PDF + XLSX; numbers re-checked by hand (38.6% theoretical, 28.9% corrected, 130,233 kWh/yr, 1,106,979 cost at 8.5/kWh).
+- Report clarity fixes: VFD calculation steps now carry worked numbers (`detail`), explicit labels/units in `reports/formatting.py::_DISPLAY_OVERRIDES` (currency is NOT assumed: "currency"), Summary "Limitations" falls back to warnings. Calculation values unchanged. Tests: `tests/test_vfd_report_content.py`.
+- Dashboard JS syntax error (broke Jobs/Register "Loading...") fixed; `tests/test_dashboard_js_syntax.py` guards it with `node --check`.
+- Still open: 18 stale tests (hard-coded 22/23 skill counts, standards-coverage entries for fire_water_storage/plumbing_water_demand); reconcile held-back `building/` text-schedule module with `engineering/building`; decision on "42 skills"; live Gmail/Upwork credentials.

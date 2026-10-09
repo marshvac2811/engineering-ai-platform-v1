@@ -35,8 +35,30 @@ def _tokens(key: str) -> List[str]:
     return [t for t in str(key).replace("-", "_").replace(" ", "_").split("_") if t]
 
 
+# Explicit display overrides where the generic key->label rule is ambiguous or loses the unit.
+# Currency is deliberately not assumed: values are in the currency of the tariff supplied.
+_DISPLAY_OVERRIDES: Dict[str, Tuple[str, str]] = {
+    "motor_kw": ("Motor power", "kW"),
+    "speed_reduction_pct": ("Speed reduction", "%"),
+    "static_head_fraction": ("Static head fraction", "%"),
+    "annual_hours": ("Annual operating hours", "hours"),
+    "tariff_per_kwh": ("Electricity tariff", "currency per kWh"),
+    "speed_ratio": ("Speed ratio (new / rated)", "-"),
+    "savings_pct_pure": ("Energy saving - theoretical (affinity law)", "%"),
+    "savings_pct_corrected": ("Energy saving - after static-head correction", "%"),
+    "reduced_power_kw_pure": ("Power at reduced speed - theoretical", "kW"),
+    "reduced_power_kw_corrected": ("Power at reduced speed - after static-head correction", "kW"),
+    "annual_savings_kwh_pure": ("Annual energy saving - theoretical", "kWh"),
+    "annual_savings_kwh_corrected": ("Annual energy saving - after static-head correction", "kWh"),
+    "annual_savings_cost_pure": ("Annual cost saving - theoretical", "currency"),
+    "annual_savings_cost_corrected": ("Annual cost saving - after static-head correction", "currency"),
+}
+
+
 def split_unit(key: str) -> Tuple[str, str]:
     """Return ``(label, unit)`` for a result key, e.g. ``annual_savings_kwh`` -> (Annual Savings, kWh)."""
+    if str(key) in _DISPLAY_OVERRIDES:
+        return _DISPLAY_OVERRIDES[str(key)]
     tokens = _tokens(key)
     lowered = [t.lower() for t in tokens]
     unit = ""
@@ -146,8 +168,8 @@ def trace_steps(trace: Iterable[Any]) -> List[Dict[str, str]]:
         if isinstance(item, dict):
             number = item.get("step", n)
             operation = item.get("operation") or item.get("description") or item.get("name") or ""
-            extras = {k: v for k, v in item.items() if k not in {"step", "operation", "description", "name"} and is_scalar(v)}
-            detail = "; ".join(f"{split_unit(k)[0]}: {format_value(v)}" for k, v in extras.items())
+            extras = {k: v for k, v in item.items() if k not in {"step", "operation", "description", "name", "detail"} and is_scalar(v)}
+            detail = str(item.get("detail") or "") or "; ".join(f"{split_unit(k)[0]}: {format_value(v)}" for k, v in extras.items())
             steps.append({"step": str(number), "operation": humanize(operation), "detail": detail})
         else:
             steps.append({"step": str(n), "operation": str(item), "detail": ""})
