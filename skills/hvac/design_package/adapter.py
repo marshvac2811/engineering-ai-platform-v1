@@ -1,5 +1,6 @@
 from __future__ import annotations
 from skills.common import SkillRequest, SkillResult
+from engineering.building.schedule import extract_room_schedule
 from skills.hvac.design_package import design_package
 
 
@@ -8,15 +9,25 @@ class HVACDesignPackageSkill:
     version = "1.0.0"
     source_revision = "internal-governed-2026-10-10"
 
+    @staticmethod
+    def _rooms(i):
+        if isinstance(i.get("rooms"), list) and i["rooms"]:
+            return i["rooms"]
+        if str(i.get("rooms_text") or "").strip():
+            return [{"room_id": f"R{n}", "name": r["name"], "area_m2": r["area_m2"],
+                     **({"occupancy": r["occupancy"]} if r.get("occupancy") is not None else {})}
+                    for n, r in enumerate(extract_room_schedule(str(i["rooms_text"]))["rooms"], 1)]
+        return []
+
     def validate(self, request: SkillRequest) -> list[str]:
         i = request.inputs
         errors = []
         for key in ("building_type", "climate_zone"):
             if not i.get(key):
                 errors.append(f"Missing required input: {key}")
-        rooms = i.get("rooms")
-        if not isinstance(rooms, list) or not rooms:
-            errors.append("rooms must be a non-empty list of {room_id, name, area_m2[, occupancy]}")
+        rooms = self._rooms(i)
+        if not rooms:
+            errors.append("rooms must be a non-empty list of {room_id, name, area_m2[, occupancy]}, or rooms_text containing rows with a room name and an area with unit")
         for key in ("cfm_per_tr", "target_velocity_ms", "diversity_factor_pct", "fan_pressure_pa", "chw_delta_t_c", "outdoor_db_c", "outdoor_rh_pct", "room_db_c", "room_rh_pct"):
             if key in i and i[key] is not None:
                 try:
@@ -39,7 +50,7 @@ class HVACDesignPackageSkill:
             kwargs["duct_material"] = str(i["duct_material"])
         try:
             result = design_package(building_type=str(i["building_type"]), climate_zone=str(i["climate_zone"]),
-                                    rooms=i["rooms"], **kwargs)
+                                    rooms=self._rooms(i), **kwargs)
         except (ValueError, TypeError, KeyError) as exc:
             return SkillResult(skill_id=self.skill_id, status="calculation_failed", validation_errors=[str(exc)],
                                source_revision=self.source_revision, skill_version=self.version)

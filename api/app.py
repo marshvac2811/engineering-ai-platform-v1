@@ -1152,9 +1152,12 @@ class APIApp:
                 if not attachment:
                     raise KeyError(f"Unknown attachment: {attachment_id}")
                 raw_lines = None
+                candidate_rooms = None
                 if str(extraction.get("source_type") or "").lower() == "dxf":
                     from engineering.building.dxf import extract_lines
+                    from engineering.building.schedule import extract_dxf_candidate_rooms
                     raw = service.ingestion.store.get(attachment["storage_key"])
+                    candidate_rooms = extract_dxf_candidate_rooms(raw)["rooms"]
                     raw_lines = [
                         {"start": {"x_mm": line.start.x, "y_mm": line.start.y},
                          "end": {"x_mm": line.end.x, "y_mm": line.end.y},
@@ -1168,6 +1171,7 @@ class APIApp:
                     attachment_id=attachment_id,
                     filename=attachment.get("filename"),
                     line_geometry=raw_lines,
+                    candidate_rooms=candidate_rooms,
                 )
                 result = job.result if isinstance(job.result, dict) else {}
                 interpretations = dict(result.get("building_interpretations") or {})

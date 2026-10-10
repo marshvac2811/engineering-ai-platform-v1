@@ -762,10 +762,25 @@ skills:
   - name: climate_zone
     data_type: string
     description: Project climate zone.
+  optional_inputs:
   - name: rooms
     data_type: array
-    description: Rooms with room_id, name, area_m2 and optional occupancy.
-  optional_inputs:
+    description: Rooms with room_id, name, area_m2 and optional occupancy. Supply this or rooms_text (the skill rejects a request with neither).
+  - name: rooms_text
+    data_type: string
+    description: 'Room schedule as text, one room per line with an area and unit, for example Room - Open office | Area - 120 m2 | Occupancy - 20.'
+  - name: fan_pressure_pa
+    data_type: number
+    description: Assumed total fan pressure per room unit in Pa (default 500).
+  - name: chw_delta_t_c
+    data_type: number
+    description: Chilled-water temperature difference in K (default 5.5).
+  - name: outdoor_db_c
+    data_type: number
+    description: Outdoor design dry-bulb in deg C; with outdoor_rh_pct enables the ventilation-load estimate (not added to room loads).
+  - name: outdoor_rh_pct
+    data_type: number
+    description: Outdoor design relative humidity in percent.
   - name: cfm_per_tr
     data_type: number
     description: Airflow basis in CFM per TR (reported as an assumption; default 400).

@@ -107,6 +107,7 @@ button:disabled{opacity:.55;cursor:wait}
   </div>
 </div>
 <table style="width:100%;margin-top:12px"><thead><tr><th>Room name</th><th>Area (m&sup2;)</th><th>Occupants (optional)</th><th></th></tr></thead><tbody id="dpRooms"></tbody></table>
+<details style="margin-top:8px"><summary class="small">Or paste a room schedule as text (replaces the rows above)</summary><textarea id="dpText" rows="4" style="width:100%;margin-top:6px" placeholder="Room: Open office | Area: 120 m2 | Occupancy: 20&#10;Room: Meeting | Area: 30 m2"></textarea></details>
 <div style="margin-top:8px"><button type="button" class="secondary" id="dpAdd">+ Add room</button> <button type="button" id="dpRun">Run HVAC design</button></div>
 <div id="dpMsg" class="msg"></div>
 </section>
@@ -893,7 +894,8 @@ loadAccount();loadJobs();
   document.getElementById("dpAdd").addEventListener("click",()=>addRow("","",""));
   document.getElementById("dpRun").addEventListener("click",async()=>{
    const rooms=[];let n=0;
-   for(const tr of Array.from(body.children)){
+   const pasted=(document.getElementById("dpText")||{value:""}).value.trim();
+   for(const tr of (pasted?[]:Array.from(body.children))){
     n++;
     const name=tr.querySelector(".dp-name").value.trim()||("Room "+n);
     const area=parseFloat(tr.querySelector(".dp-area").value);
@@ -906,9 +908,10 @@ loadAccount();loadJobs();
    const div=parseFloat(document.getElementById("dpDiv").value),cfm=parseFloat(document.getElementById("dpCfm").value),vel=parseFloat(document.getElementById("dpVel").value);
    if(!(div>0&&div<=100)){say(false,"Diversity factor must be between 1 and 100.");return;}
    if(!(cfm>0)||!(vel>0)){say(false,"CFM per TR and duct velocity must be greater than zero.");return;}
-   const inputs={building_type:document.getElementById("dpType").value,climate_zone:document.getElementById("dpZone").value,rooms:rooms,diversity_factor_pct:div,cfm_per_tr:cfm,target_velocity_ms:vel};
+   const inputs={building_type:document.getElementById("dpType").value,climate_zone:document.getElementById("dpZone").value,diversity_factor_pct:div,cfm_per_tr:cfm,target_velocity_ms:vel};
+   if(pasted)inputs.rooms_text=pasted;else inputs.rooms=rooms;
    const pj=document.getElementById("reqProject"),cl=document.getElementById("reqClient");
-   const payload={message:"Prepare the preliminary HVAC design package for "+rooms.length+" room(s)",requested_skill_id:"hvac_design_package",inputs:inputs};
+   const payload={message:"Prepare the preliminary HVAC design package"+(pasted?"":" for "+rooms.length+" room(s)"),requested_skill_id:"hvac_design_package",inputs:inputs};
    if(pj&&pj.value.trim())payload.project=pj.value.trim();
    if(cl&&cl.value.trim())payload.client=cl.value.trim();
    const btn=document.getElementById("dpRun");btn.disabled=true;
