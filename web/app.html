@@ -90,6 +90,27 @@ button:disabled{opacity:.55;cursor:wait}
 <div id="gmailMsg" class="msg"></div>
 </section>
 
+<section class="card" id="designCard">
+<h2>HVAC Design Package <span class="small">(preliminary)</span></h2>
+<p class="muted">Enter the rooms. The platform estimates each room's cooling load, supply airflow, branch duct size and terminal equipment, plus the block load and a plant suggestion. Results are preliminary rule-of-thumb figures and go to human review.</p>
+<div class="trial-grid">
+  <div class="trial"><h3>Building</h3>
+   <label class="small">Building type</label>
+   <select id="dpType" style="width:100%"><option value="office">Office / Commercial</option><option value="retail">Retail / Showroom</option><option value="residential">Residential</option><option value="hospital">Hospital / Healthcare</option><option value="server_room">Server Room / Data Center</option><option value="restaurant">Restaurant / F&amp;B</option><option value="auditorium">Auditorium / Banquet Hall</option><option value="hotel">Hotel / Hospitality</option><option value="educational">Educational Institution</option></select>
+   <label class="small">Climate zone</label>
+   <select id="dpZone" style="width:100%"><option value="hot_dry">Hot &amp; Dry (Delhi NCR, Jaipur)</option><option value="warm_humid">Warm &amp; Humid (Mumbai, Chennai, Kolkata)</option><option value="composite">Composite (Lucknow, Bhopal)</option><option value="moderate">Moderate (Bengaluru, Pune)</option><option value="cold">Cold (Shimla, Srinagar)</option></select>
+   <label class="small">Diversity factor % (100 = none)</label><input id="dpDiv" type="number" min="1" max="100" value="100" style="width:100%">
+  </div>
+  <div class="trial"><h3>Assumptions (reported in the result)</h3>
+   <label class="small">Airflow basis, CFM per TR</label><input id="dpCfm" type="number" min="1" value="400" style="width:100%">
+   <label class="small">Branch duct velocity, m/s</label><input id="dpVel" type="number" min="1" step="0.5" value="5" style="width:100%">
+  </div>
+</div>
+<table style="width:100%;margin-top:12px"><thead><tr><th>Room name</th><th>Area (m&sup2;)</th><th>Occupants (optional)</th><th></th></tr></thead><tbody id="dpRooms"></tbody></table>
+<div style="margin-top:8px"><button type="button" class="secondary" id="dpAdd">+ Add room</button> <button type="button" id="dpRun">Run HVAC design</button></div>
+<div id="dpMsg" class="msg"></div>
+</section>
+
 <section class="card">
 <h2>Engineering Report Register</h2>
 <p class="muted">Historical controlled evidence archive. <strong>A new trial appears here only after approval/dispatch.</strong> For a trial that has just been submitted, use the Jobs queue below; this prevents older reports from being mistaken for the current run.</p>
@@ -827,6 +848,57 @@ loadAccount();loadJobs();
   });
   loadStatus();
  }catch(e){console.error("Gmail panel failed to initialise",e);}
+})();
+</script>
+<script>
+/* HVAC Design panel: isolated from the main dashboard script. */
+(function(){
+ try{
+  const body=document.getElementById("dpRooms"),msg=document.getElementById("dpMsg");
+  if(!body||!msg||typeof api!=="function")return;
+  const say=(ok,t)=>{msg.className="msg "+(ok?"ok":"err");msg.style.display="block";msg.textContent=t;};
+  function addRow(name,area,occ){
+   const tr=document.createElement("tr");
+   tr.innerHTML='<td><input type="text" class="dp-name" style="width:100%"></td><td><input type="number" min="0" step="0.1" class="dp-area" style="width:100%"></td><td><input type="number" min="0" step="1" class="dp-occ" style="width:100%"></td><td><button type="button" class="secondary dp-del">Remove</button></td>';
+   tr.querySelector(".dp-name").value=name||"";tr.querySelector(".dp-area").value=area||"";tr.querySelector(".dp-occ").value=occ||"";
+   tr.querySelector(".dp-del").addEventListener("click",()=>{if(body.children.length>1)tr.remove();});
+   body.appendChild(tr);
+  }
+  addRow("Open office",120,20);addRow("Meeting room",30,"");
+  document.getElementById("dpAdd").addEventListener("click",()=>addRow("","",""));
+  document.getElementById("dpRun").addEventListener("click",async()=>{
+   const rooms=[];let n=0;
+   for(const tr of Array.from(body.children)){
+    n++;
+    const name=tr.querySelector(".dp-name").value.trim()||("Room "+n);
+    const area=parseFloat(tr.querySelector(".dp-area").value);
+    const occRaw=tr.querySelector(".dp-occ").value.trim();
+    if(!(area>0)){say(false,"Row "+n+": enter an area in m2 greater than zero.");return;}
+    const room={room_id:"R"+n,name:name,area_m2:area};
+    if(occRaw!==""){const o=parseInt(occRaw,10);if(!(o>=0)){say(false,"Row "+n+": occupants must be 0 or more.");return;}room.occupancy=o;}
+    rooms.push(room);
+   }
+   const div=parseFloat(document.getElementById("dpDiv").value),cfm=parseFloat(document.getElementById("dpCfm").value),vel=parseFloat(document.getElementById("dpVel").value);
+   if(!(div>0&&div<=100)){say(false,"Diversity factor must be between 1 and 100.");return;}
+   if(!(cfm>0)||!(vel>0)){say(false,"CFM per TR and duct velocity must be greater than zero.");return;}
+   const inputs={building_type:document.getElementById("dpType").value,climate_zone:document.getElementById("dpZone").value,rooms:rooms,diversity_factor_pct:div,cfm_per_tr:cfm,target_velocity_ms:vel};
+   const pj=document.getElementById("reqProject"),cl=document.getElementById("reqClient");
+   const payload={message:"Prepare the preliminary HVAC design package for "+rooms.length+" room(s)",requested_skill_id:"hvac_design_package",inputs:inputs};
+   if(pj&&pj.value.trim())payload.project=pj.value.trim();
+   if(cl&&cl.value.trim())payload.client=cl.value.trim();
+   const btn=document.getElementById("dpRun");btn.disabled=true;
+   try{
+    say(true,"Running HVAC design...");
+    const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    let d={};try{d=await r.json();}catch(e){}
+    if(!r.ok)throw Error(d.error||("Request failed ("+r.status+")"));
+    const st=d.job&&d.job.status;
+    say(true,"Submitted - Job "+String((d.job&&d.job.job_id)||"").slice(0,8)+" is "+String(st||"created").replace(/_/g," ")+". Open it under Ready for Review in the Jobs list below to approve it.");
+    if(typeof loadJobs==="function")loadJobs();
+   }catch(e){say(false,e.message);}
+   finally{btn.disabled=false;}
+  });
+ }catch(e){console.error("HVAC design panel failed to initialise",e);}
 })();
 </script>
 </body>

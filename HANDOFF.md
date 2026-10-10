@@ -245,3 +245,7 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Secret scan of all 639 commits for common key patterns (OpenAI/GitHub/AWS/Google/Slack tokens, JWTs, service_role, DB URLs): no hits. Only the Supabase *publishable* key appears (api/auth.py, login.html, index.html) which is public by design; Row Level Security must keep protecting data. Still rotate any key you remember ever pasting anywhere.
 - Removed from the repo: 18 `*.py.*`/`*.yaml.*` manual backup copies, scratch files (bedrock/haiku/test JSON, app_page_test.js, auth_refresh_block.js, installed_packages_audit.txt). STEP*.txt audit dumps moved to docs/audit_archive/. `.gitignore` updated so they do not return.
 - Repo is still public on GitHub; making it private is the owner's switch (Settings > General > Danger zone).
+
+## Checkpoint 2026-10-10 — Dashboard HVAC Design form
+- `web/app.html`: "HVAC Design Package" card (`#designCard`): building type, climate zone, diversity, CFM/TR, duct velocity, editable room rows. Posts `/v1/intake` with `requested_skill_id: hvac_design_package`; job lands in Ready for Review.
+- Verified in headless Chromium with mocked API (validation, POST body, no page errors) and full suite (352 passed). NOT yet verified on live Render after deploy.
