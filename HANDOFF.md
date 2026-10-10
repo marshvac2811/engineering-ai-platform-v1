@@ -275,3 +275,8 @@ from work_types t join work_type_materials m on m.work_type_id = t.id
 order by t.name, m.material_name;
 ```
 Recipes imported this way are treated as company-validated (no "unvalidated" warning).
+
+## Checkpoint 2026-10-10 — Energy optimisation study (44 executable skills)
+- New skill `energy_optimisation_study` (`skills/energy/study/`): baseline kWh/tariff + list of measures (vfd via governed affinity-law calc, solar by kWp x yield, custom kWh) with investment/O&M -> ranked by simple payback, avoided tCO2e, combined saving capped at baseline, residual emissions. Interactions not modelled (stated in assumptions). Routing is deliberately narrow ("energy study", "energy optimisation study", ...) so plain "energy optimisation of existing plant" still goes to `hvac_decarbonisation`.
+- Hand-checked in `tests/test_energy_study.py`. Dashboard form not built yet; not verified live.
+- Still open: Gmail/Upwork/CRM live (credentials), CAD generation, semantic PDF/CAD reading, SiteTrack recipe CSV from user, dashboard BOQ upload form.

@@ -15,8 +15,8 @@ REGISTRY = ROOT / "skill_registry" / "registry.yaml"
 def test_authoritative_registry_loads_expected_inventory():
     registry = load_skill_registry(REGISTRY)
 
-    assert len(registry.skill_ids) == 44
-    assert len(registry.executable_ids) == 43
+    assert len(registry.skill_ids) == 45
+    assert len(registry.executable_ids) == 44
     assert registry.pending_ids == ["chiller_efficiency"]
     assert registry.skill_ids == sorted(registry.skill_ids)
 
@@ -86,7 +86,7 @@ def test_integrated_status_maps_to_executable():
         if entry.raw.get("integration_status") == "integrated"
     ]
 
-    assert len(integrated) == 43
+    assert len(integrated) == 44
     assert all(skill.executable for skill in integrated)
 
 

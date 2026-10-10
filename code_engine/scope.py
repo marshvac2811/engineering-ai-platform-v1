@@ -48,6 +48,7 @@ def scope_references_for_skill(skill_id: str) -> List[Dict[str, Any]]:
         "energy_payback": ["energy", "sustainability"],
         "hvac_design_package": ["hvac", "mechanical"],
         "hvac_boq": ["hvac", "mechanical", "construction"],
+        "energy_optimisation_study": ["hvac", "energy"],
         "deviation_statement": ["construction", "project_management"],
         "boq_takeoff": ["construction", "project_management"],
         "facade_u_factor": ["facade", "construction", "energy"],

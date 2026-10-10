@@ -1494,6 +1494,39 @@ skills:
   - "material takeoff"
   - "materials required for boq"
   - "boq material"
+- skill_id: energy_optimisation_study
+  domain: ENERGY
+  source_repository: engineering-ai-platform
+  source_path: skills/energy/study
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: annual_consumption_kwh
+    data_type: number
+    description: "Baseline annual electricity consumption, kWh."
+  - name: tariff_per_kwh
+    data_type: number
+    description: "Electricity tariff per kWh (any currency; costs reported in it)."
+  - name: measures
+    data_type: array
+    description: "Measures {name, type (vfd|solar|custom), investment, annual_om, plus type inputs: vfd -> motor_kw, speed_reduction_pct, static_head_fraction, annual_hours; solar -> capacity_kwp, specific_yield_kwh_kwp_yr; custom -> annual_savings_kwh}."
+  optional_inputs:
+  - name: grid_factor_kg_kwh
+    data_type: number
+    description: "Grid emission factor, kg CO2e/kWh (default 0.71)."
+  conditional_inputs: []
+  implementation_binding: skills.energy.study.adapter:EnergyStudySkill
+  routing_terms:
+  - "energy optimisation study"
+  - "energy optimization study"
+  - "energy study"
+  - "ranked energy measures"
+  - "energy saving measures"
+  - "decarbonisation roadmap"
+  - "decarbonization roadmap"
+  - "energy audit measures"
 crm_pipeline:
   domain: COMMERCIAL
   source: marshvac2811/pipeline/pipeline.html

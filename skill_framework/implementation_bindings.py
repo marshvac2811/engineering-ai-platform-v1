@@ -32,6 +32,7 @@ IMPLEMENTATION_BINDINGS: Tuple[ImplementationBinding, ...] = (
     ImplementationBinding("energy_payback", "skills.energy.payback.adapter", "EnergyPaybackSkill"),
     ImplementationBinding("hvac_boq", "skills.commercial.boq.adapter", "HVACBOQSkill"),
     ImplementationBinding("boq_takeoff", "skills.commercial.boq_takeoff.adapter", "BoqTakeoffSkill"),
+    ImplementationBinding("energy_optimisation_study", "skills.energy.study.adapter", "EnergyStudySkill"),
     ImplementationBinding("deviation_statement", "skills.commercial.deviation.adapter", "DeviationStatementSkill"),
     ImplementationBinding("facade_u_factor", "skills.hvac.facade_u_factor.adapter", "FacadeUFactorSkill"),
     ImplementationBinding("bms_alarm_evaluation", "skills.bms.alarm.adapter", "BMSAlarmEvaluationSkill"),

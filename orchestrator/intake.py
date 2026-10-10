@@ -121,6 +121,7 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
                        "energy retrofit", "retrofit economics"),
     "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate", "hvac boq", "boq for", "boq covering", "boq outline"),
     "boq_takeoff": ("boq takeoff", "quantity takeoff", "material takeoff", "materials required for boq", "boq material"),
+    "energy_optimisation_study": ("energy optimisation study", "energy optimization study", "energy study", "energy saving measures", "decarbonisation roadmap", "decarbonization roadmap", "energy audit measures", "ranked energy measures"),
     "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance", "deviates on", "technical deviation"),
     "fire_water_storage": ("fire water storage", "fire tank volume", "fire reserve", "fire water requirement"),
     "hvac_design_package": ("hvac design package", "room by room load", "equipment schedule", "design the hvac", "hvac design for", "room-by-room"),
@@ -582,6 +583,7 @@ class RuleBasedIntentProvider:
             ("pump_head", ("pump head", "calculate pump head", "calculate tdh", "total dynamic head", "pump duty"), "Explicit pump-head/duty objective."),
             ("cooling_tower", ("cooling tower sizing", "size a cooling tower", "cooling tower calculation"), "Explicit cooling-tower sizing objective."),
             ("refrigerant_pipe_sizing", ("refrigerant pipe sizing", "size refrigerant pipe", "sizing refrigerant pipe", "size the suction line", "size the liquid line"), "Explicit refrigerant-piping sizing objective."),
+            ("energy_optimisation_study", ("energy optimisation study", "energy optimization study", "energy study", "ranked energy measures", "energy saving measures"), "Explicit multi-measure energy study objective."),
             ("vrf_sizing", ("vrf sizing", "size the vrf", "size a vrf", "vrf calculation"), "Explicit VRF sizing objective."),
             ("facade_u_factor", ("u-factor calculation", "u factor calculation", "calculate facade u-factor", "calculate facade u factor"), "Explicit facade U-factor calculation objective."),
         )

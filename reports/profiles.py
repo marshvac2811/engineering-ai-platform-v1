@@ -43,6 +43,7 @@ _PROFILES = {
     "energy_payback": ("energy_payback", "energy_payback_report", "Energy Payback Report", ("financial_estimate",)),
     "hvac_boq": ("hvac_boq", "hvac_bill_of_quantities", "HVAC Bill of Quantities", ("boq",)),
     "boq_takeoff": ("boq_takeoff", "boq_takeoff_report", "BOQ Material Takeoff (Preliminary)", ("calculation_report",)),
+    "energy_optimisation_study": ("energy_optimisation_study", "energy_optimisation_study_report", "Energy Optimisation and Decarbonisation Study (Preliminary)", ("calculation_report",)),
     "deviation_statement": ("deviation_statement", "technical_deviation_statement", "Technical Deviation Statement", ("technical_statement",)),
     "facade_u_factor": ("facade_u_factor", "facade_thermal_performance", "Facade Thermal Performance Report", ("calculation_report", "compliance_assessment")),
     "psychrometric_properties": ("psychrometric_properties", "psychrometric_properties_report", "Psychrometric Properties Report", ("calculation_report",)),
