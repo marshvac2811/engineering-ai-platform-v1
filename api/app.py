@@ -1100,6 +1100,36 @@ class APIApp:
                     })
                 return self._json(start_response, "200 OK", link)
 
+            if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "design-dxf" and method == "GET":
+                job_id = parts[2]
+                ctx.require_scope("jobs:read")
+                try:
+                    job = service._get(job_id)
+                except KeyError:
+                    return self._json(start_response, "404 Not Found", {"error": "Job not found"})
+                if job.status.value not in {"dispatched", "completed"}:
+                    return self._json(start_response, "409 Conflict", {"error": "The design DXF is available after the job has been approved and dispatched."})
+                bundle = (job.result or {}).get("evidence_bundle") or {}
+                design = None
+                for task in bundle.get("tasks") or []:
+                    er = task.get("engineering_result") if isinstance(task, dict) else None
+                    if isinstance(er, dict) and er.get("room_schedule"):
+                        design = er
+                        break
+                if design is None:
+                    return self._json(start_response, "404 Not Found", {"error": "This job has no HVAC room schedule to draw."})
+                import base64
+                import hashlib
+                from engineering.drawing.design_schematic import build_design_schematic_dxf
+                pc = job.project_context or {}
+                data = build_design_schematic_dxf(design, reference=str(job.report_id or job.job_id), project=str(pc.get("project") or ""))
+                return self._json(start_response, "200 OK", {
+                    "job_id": job.job_id, "filename": f"hvac-design-schematic-{job.job_id}.dxf",
+                    "media_type": "application/dxf", "sha256": hashlib.sha256(data).hexdigest(),
+                    "content_base64": base64.b64encode(data).decode("ascii"),
+                    "governance": "Schematic only, not a floor plan; preliminary; engineer review required.",
+                })
+
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "evidence" and method == "GET":
                 job_id = parts[2]
                 ctx.require_scope("jobs:read")

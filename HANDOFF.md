@@ -296,3 +296,10 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - `interpret_building_source` now returns `design_rooms` (ready for `hvac_design_package`) and `design_rooms_need_confirmation`. API building-interpretation endpoint passes DXF candidates.
 - `hvac_design_package` accepts `rooms_text`; registry no longer lists `rooms` as required (same intake-stall bug as BOQ). Dashboard design form has a paste-schedule box.
 - Limits: no OCR/vision (image-only PDFs still blocked), no DWG, no wall/door/service recognition, only LWPOLYLINE rooms.
+
+## Checkpoint 2026-10-11 — CAD (DXF) generation for the HVAC design package
+- `engineering/drawing/design_schematic.py` (uses `ezdxf`, added to requirements.txt): R2010 DXF, $INSUNITS=mm, layers A-ROOM / A-ROOM-TEXT / M-DUCT-SCHEM / M-EQUIP-TEXT / G-TITLE / G-NOTE. Rooms = area-proportional boxes (3:2) in a grid, duct circles at the sized diameter, load/airflow/terminal labels, plant summary, title block, red notes. It is a SCHEMATIC, NOT a floor plan (positions are not known); stated on the sheet. Deterministic bytes (ezdxf write-time GUID/timestamp normalised).
+- `GET /v1/jobs/{id}/design-dxf` (jobs:read): only after dispatch (409 before), only if the job has a room schedule; returns JSON with base64 DXF + sha256. Generated on demand from the stored evidence bundle; nothing stored (no DB change).
+- Dashboard: "Download DXF (schematic)" button on dispatched hvac_design_package jobs.
+- Validated by reading back with ezdxf and `doc.audit()`; NOT opened in AutoCAD/BricsCAD/DWG TrueView by anyone yet.
+- Not done: DWG output; true plan geometry (needs explicit room coordinates from a drawing/building model - `engineering/design/routing.py` already requires explicit coordinates); fire/plumbing drawings; DXF in the dispatched artifact set / Gmail reply attachments.

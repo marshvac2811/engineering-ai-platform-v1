@@ -539,6 +539,21 @@ async function downloadArtifact(jobId,kind){
  }catch(e){if(msg)msg.textContent="Could not download: "+e.message;}
 }
 
+async function downloadDesignDxf(jobId){
+ const msg=document.getElementById("dlmsg-"+jobId)||document.getElementById("regMsg");
+ if(msg)msg.textContent="Preparing DXF...";
+ try{
+  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/design-dxf");
+  const d=await r.json();
+  if(!r.ok)throw Error(d.error||"DXF unavailable");
+  const bin=atob(d.content_base64),u8=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([u8],{type:"application/dxf"}));a.download=d.filename;
+  document.body.appendChild(a);a.click();a.remove();
+  if(msg)msg.textContent="";
+ }catch(e){if(msg)msg.textContent="Could not download DXF: "+e.message;}
+}
+
 async function approve(jobId,dispatchAfter){
  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/approve",{
   method:"POST",headers:{"Content-Type":"application/json"},
@@ -682,7 +697,7 @@ function jobHtml(j){
  if(["human_review","approved","dispatching","dispatched","completed"].includes(status)){
   const done=["dispatched","completed"].includes(status);
   html+='<div class="actions"><button onclick="viewArtifact(\''+id+'\',\'report\')">View Report</button><button onclick="viewArtifact(\''+id+'\',\'evidence\')">View Evidence</button>'+
-   (done?'<button onclick="downloadArtifact(\''+id+'\',\'pdf\')">Download PDF</button><button onclick="downloadArtifact(\''+id+'\',\'xlsx\')">Download Excel</button>':'')+'</div>'+
+   (done?'<button onclick="downloadArtifact(\''+id+'\',\'pdf\')">Download PDF</button><button onclick="downloadArtifact(\''+id+'\',\'xlsx\')">Download Excel</button>':'')+(done&&/hvac_design_package/.test(String(j.requested_skill_id||j.skill_id||""))?'<button onclick="downloadDesignDxf(\''+id+'\')">Download DXF (schematic)</button>':'')+'</div>'+
    (done?'':'<div class="small" style="margin-top:6px">The PDF report and Excel evidence workbook are created when you Approve and then Dispatch this job.</div>')+
    '<div id="art-'+id+'" class="small" style="display:none;margin-top:8px"></div><div id="dlmsg-'+id+'" class="small" style="margin-top:6px;color:#a12626"></div>';
  }
