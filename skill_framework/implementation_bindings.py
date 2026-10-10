@@ -37,6 +37,23 @@ IMPLEMENTATION_BINDINGS: Tuple[ImplementationBinding, ...] = (
     ImplementationBinding("fire_water_storage", "skills.fire.preliminary_water_storage.adapter", "FireWaterStorageSkill"),
     ImplementationBinding("hvac_design_package", "skills.hvac.design_package.adapter", "HVACDesignPackageSkill"),
     ImplementationBinding("plumbing_water_demand", "skills.plumbing.preliminary_water_demand.adapter", "PlumbingWaterDemandSkill"),
+    ImplementationBinding("psychrometric_properties", "skills.calculators.adapters", "PsychrometricPropertiesSkill"),
+    ImplementationBinding("cooling_coil_load", "skills.calculators.adapters", "CoolingCoilLoadSkill"),
+    ImplementationBinding("ventilation_rate", "skills.calculators.adapters", "VentilationRateSkill"),
+    ImplementationBinding("fan_power_sizing", "skills.calculators.adapters", "FanPowerSizingSkill"),
+    ImplementationBinding("water_pipe_sizing", "skills.calculators.adapters", "WaterPipeSizingSkill"),
+    ImplementationBinding("expansion_tank_sizing", "skills.calculators.adapters", "ExpansionTankSizingSkill"),
+    ImplementationBinding("hydronic_flow_rate", "skills.calculators.adapters", "HydronicFlowRateSkill"),
+    ImplementationBinding("heat_recovery_assessment", "skills.calculators.adapters", "HeatRecoveryAssessmentSkill"),
+    ImplementationBinding("chiller_iplv", "skills.calculators.adapters", "ChillerIPLVSkill"),
+    ImplementationBinding("duct_pressure_drop", "skills.calculators.adapters", "DuctPressureDropSkill"),
+    ImplementationBinding("insulation_condensation", "skills.calculators.adapters", "InsulationCondensationSkill"),
+    ImplementationBinding("cable_voltage_drop", "skills.calculators.adapters", "CableVoltageDropSkill"),
+    ImplementationBinding("sprinkler_demand", "skills.calculators.adapters", "SprinklerDemandSkill"),
+    ImplementationBinding("hot_water_heater_sizing", "skills.calculators.adapters", "HotWaterHeaterSizingSkill"),
+    ImplementationBinding("rainwater_drainage", "skills.calculators.adapters", "RainwaterDrainageSkill"),
+    ImplementationBinding("solar_pv_sizing", "skills.calculators.adapters", "SolarPVSizingSkill"),
+    ImplementationBinding("carbon_emissions", "skills.calculators.adapters", "CarbonEmissionsSkill"),
 )
 
 

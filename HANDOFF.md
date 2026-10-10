@@ -249,3 +249,9 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 ## Checkpoint 2026-10-10 — Dashboard HVAC Design form
 - `web/app.html`: "HVAC Design Package" card (`#designCard`): building type, climate zone, diversity, CFM/TR, duct velocity, editable room rows. Posts `/v1/intake` with `requested_skill_id: hvac_design_package`; job lands in Ready for Review.
 - Verified in headless Chromium with mocked API (validation, POST body, no page errors) and full suite (352 passed). NOT yet verified on live Render after deploy.
+
+## Checkpoint 2026-10-10 — 17 governed calculators (42 skills total)
+- `skills/calculators/` (catalogue + formulas): psychrometrics, cooling coil load, ventilation (62.1), fan power, water pipe sizing, expansion tank, hydronic flow, heat recovery, IPLV, duct pressure drop, insulation/condensation, cable voltage drop, sprinkler demand, hot-water heater, rainwater drainage, solar PV, carbon emissions. Registered in registry.yaml, bindings, profiles, coverage, scope, intake routing.
+- `tests/test_calculator_catalogue.py`: hand-checked values + missing-input rejection. 42 executable skills.
+- Defaults (grid factor, yields, NFPA-style densities, etc.) are listed as assumptions in each result; preliminary only, engineer must verify.
+- Not yet verified live on Render.

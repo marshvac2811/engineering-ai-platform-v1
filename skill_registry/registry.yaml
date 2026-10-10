@@ -845,6 +845,625 @@ skills:
   - fenestration u factor
   - thermal transmittance of facade
 
+- skill_id: psychrometric_properties
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: dry_bulb_c
+    data_type: number
+    description: "Dry-bulb temperature, deg C."
+  - name: rh_pct
+    data_type: number
+    description: "Relative humidity, %."
+  optional_inputs:
+  - name: altitude_m
+    data_type: number
+    description: "Site altitude in m (default 0)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:PsychrometricPropertiesSkill
+  routing_terms:
+  - "psychrometric"
+  - "dew point"
+  - "humidity ratio"
+  - "wet bulb from"
+  - "enthalpy of air"
+  - "moist air properties"
+- skill_id: cooling_coil_load
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: airflow_m3h
+    data_type: number
+    description: "Coil airflow, m3/h."
+  - name: entering_db_c
+    data_type: number
+    description: "Entering dry-bulb, deg C."
+  - name: entering_rh_pct
+    data_type: number
+    description: "Entering RH, %."
+  - name: leaving_db_c
+    data_type: number
+    description: "Leaving dry-bulb, deg C."
+  - name: leaving_rh_pct
+    data_type: number
+    description: "Leaving RH, %."
+  optional_inputs:
+  - name: altitude_m
+    data_type: number
+    description: "Site altitude in m (default 0)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:CoolingCoilLoadSkill
+  routing_terms:
+  - "cooling coil load"
+  - "coil load"
+  - "ahu coil"
+  - "sensible heat ratio"
+  - "shr of coil"
+  - "coil capacity"
+- skill_id: ventilation_rate
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: floor_area_m2
+    data_type: number
+    description: "Zone floor area, m2."
+  - name: occupants
+    data_type: number
+    description: "Number of occupants."
+  optional_inputs:
+  - name: space_type
+    data_type: string
+    description: "office, conference, lobby, retail, classroom, restaurant_dining, gym, hospital_patient_room."
+  - name: rp_l_s_person
+    data_type: number
+    description: "Outdoor air per person, L/s (overrides table)."
+  - name: ra_l_s_m2
+    data_type: number
+    description: "Outdoor air per m2, L/s (overrides table)."
+  - name: zone_air_distribution_effectiveness
+    data_type: number
+    description: "Ez, default 1.0."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:VentilationRateSkill
+  routing_terms:
+  - "ventilation rate"
+  - "fresh air requirement"
+  - "outdoor air requirement"
+  - "ashrae 62.1"
+  - "fresh air quantity"
+  - "ventilation requirement"
+- skill_id: fan_power_sizing
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: airflow_m3h
+    data_type: number
+    description: "Fan airflow, m3/h."
+  - name: total_static_pressure_pa
+    data_type: number
+    description: "Total fan pressure, Pa."
+  optional_inputs:
+  - name: fan_efficiency_pct
+    data_type: number
+    description: "Fan total efficiency, % (default 65)."
+  - name: drive_efficiency_pct
+    data_type: number
+    description: "Drive efficiency, % (default 95)."
+  - name: motor_efficiency_pct
+    data_type: number
+    description: "Motor efficiency, % (default 92)."
+  - name: motor_margin_pct
+    data_type: number
+    description: "Motor margin, % (default 15)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:FanPowerSizingSkill
+  routing_terms:
+  - "fan power"
+  - "fan motor"
+  - "fan kw"
+  - "specific fan power"
+  - "fan sizing"
+- skill_id: water_pipe_sizing
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: flow_m3h
+    data_type: number
+    description: "Water flow, m3/h."
+  optional_inputs:
+  - name: target_velocity_ms
+    data_type: number
+    description: "Target velocity m/s (default 2.0)."
+  - name: length_m
+    data_type: number
+    description: "Straight length, m (default 100)."
+  - name: water_temp_c
+    data_type: number
+    description: "Water temperature, deg C (default 20)."
+  - name: roughness_mm
+    data_type: number
+    description: "Pipe roughness, mm (default 0.045)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:WaterPipeSizingSkill
+  routing_terms:
+  - "water pipe sizing"
+  - "size the water pipe"
+  - "chilled water pipe"
+  - "pipe size for"
+  - "pipe diameter for"
+  - "hydronic pipe"
+- skill_id: expansion_tank_sizing
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: system_volume_l
+    data_type: number
+    description: "Total system water volume, L."
+  - name: max_temp_c
+    data_type: number
+    description: "Maximum water temperature, deg C."
+  - name: fill_pressure_bar_g
+    data_type: number
+    description: "Fill/precharge pressure, bar(g)."
+  - name: max_pressure_bar_g
+    data_type: number
+    description: "Maximum allowed pressure, bar(g)."
+  optional_inputs:
+  - name: min_temp_c
+    data_type: number
+    description: "Minimum (fill) water temperature, deg C (default 10)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:ExpansionTankSizingSkill
+  routing_terms:
+  - "expansion tank"
+  - "expansion vessel"
+  - "expansion volume"
+- skill_id: hydronic_flow_rate
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: load
+    data_type: number
+    description: "Cooling/heating load."
+  optional_inputs:
+  - name: load_unit
+    data_type: string
+    description: "kw or tr (default kw)."
+  - name: delta_t_c
+    data_type: number
+    description: "Water temperature difference, deg C (default 5.5)."
+  - name: chiller_cop
+    data_type: number
+    description: "Chiller COP, to also get condenser heat rejection."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:HydronicFlowRateSkill
+  routing_terms:
+  - "chilled water flow"
+  - "water flow rate"
+  - "gpm per tr"
+  - "hydronic flow"
+  - "flow rate for chiller"
+  - "flow for tr"
+- skill_id: heat_recovery_assessment
+  domain: ENERGY
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: outdoor_air_m3h
+    data_type: number
+    description: "Outdoor airflow through the recovery device, m3/h."
+  - name: effectiveness_pct
+    data_type: number
+    description: "Device effectiveness, %."
+  - name: outdoor_db_c
+    data_type: number
+    description: "Outdoor dry-bulb, deg C."
+  - name: outdoor_rh_pct
+    data_type: number
+    description: "Outdoor RH, %."
+  - name: exhaust_db_c
+    data_type: number
+    description: "Exhaust/return dry-bulb, deg C."
+  - name: exhaust_rh_pct
+    data_type: number
+    description: "Exhaust/return RH, %."
+  optional_inputs:
+  - name: recovery_type
+    data_type: string
+    description: "sensible or total (default total)."
+  - name: altitude_m
+    data_type: number
+    description: "Altitude, m."
+  - name: annual_hours
+    data_type: number
+    description: "Operating hours per year."
+  - name: load_factor_pct
+    data_type: number
+    description: "Average load factor of the design recovery, %."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:HeatRecoveryAssessmentSkill
+  routing_terms:
+  - "heat recovery"
+  - "energy recovery wheel"
+  - "enthalpy wheel"
+  - "energy recovery ventilator"
+  - "heat recovery wheel"
+  - "exhaust air heat recovery"
+- skill_id: chiller_iplv
+  domain: ENERGY
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: cop_100
+    data_type: number
+    description: "COP at 100% load."
+  - name: cop_75
+    data_type: number
+    description: "COP at 75% load."
+  - name: cop_50
+    data_type: number
+    description: "COP at 50% load."
+  - name: cop_25
+    data_type: number
+    description: "COP at 25% load."
+  optional_inputs: []
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:ChillerIPLVSkill
+  routing_terms:
+  - "iplv"
+  - "part load value"
+  - "part-load efficiency"
+  - "ahri 550"
+  - "integrated part load"
+- skill_id: duct_pressure_drop
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: airflow_m3h
+    data_type: number
+    description: "Airflow, m3/h."
+  - name: length_m
+    data_type: number
+    description: "Straight duct length, m."
+  optional_inputs:
+  - name: diameter_mm
+    data_type: number
+    description: "Round duct diameter, mm."
+  - name: width_mm
+    data_type: number
+    description: "Rectangular width, mm."
+  - name: height_mm
+    data_type: number
+    description: "Rectangular height, mm."
+  - name: roughness_mm
+    data_type: number
+    description: "Roughness, mm (default 0.09)."
+  - name: fittings
+    data_type: array
+    description: "List of {name, k, quantity}."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:DuctPressureDropSkill
+  routing_terms:
+  - "duct pressure drop"
+  - "duct static pressure"
+  - "duct friction loss"
+  - "duct pressure loss"
+  - "pressure drop in duct"
+- skill_id: insulation_condensation
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: fluid_temp_c
+    data_type: number
+    description: "Fluid temperature, deg C."
+  - name: ambient_db_c
+    data_type: number
+    description: "Ambient dry-bulb, deg C."
+  - name: ambient_rh_pct
+    data_type: number
+    description: "Ambient RH, %."
+  - name: pipe_outer_diameter_mm
+    data_type: number
+    description: "Bare pipe outer diameter, mm."
+  optional_inputs:
+  - name: insulation_k_w_mk
+    data_type: number
+    description: "Insulation conductivity, W/m.K (default 0.035)."
+  - name: surface_coeff_w_m2k
+    data_type: number
+    description: "Outside surface coefficient, W/m2.K (default 8)."
+  - name: dew_point_margin_c
+    data_type: number
+    description: "Margin above dew point, deg C (default 1)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:InsulationCondensationSkill
+  routing_terms:
+  - "insulation thickness"
+  - "condensation control"
+  - "pipe condensation"
+  - "pipe insulation"
+  - "sweating pipe"
+  - "dew point insulation"
+- skill_id: cable_voltage_drop
+  domain: ELECTRICAL
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: load_kw
+    data_type: number
+    description: "Electrical load, kW."
+  - name: length_m
+    data_type: number
+    description: "Cable route length, m."
+  optional_inputs:
+  - name: voltage_v
+    data_type: number
+    description: "Line voltage, V (default 415)."
+  - name: power_factor
+    data_type: number
+    description: "Power factor (default 0.85)."
+  - name: efficiency_pct
+    data_type: number
+    description: "Motor efficiency, % (default 100)."
+  - name: conductor
+    data_type: string
+    description: "copper or aluminium."
+  - name: cross_section_mm2
+    data_type: number
+    description: "Cable size to check, mm2."
+  - name: parallel_runs
+    data_type: number
+    description: "Parallel cables per phase."
+  - name: limit_pct
+    data_type: number
+    description: "Voltage-drop limit, % (default 5)."
+  - name: reactance_ohm_km
+    data_type: number
+    description: "Cable reactance, ohm/km (default 0.08)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:CableVoltageDropSkill
+  routing_terms:
+  - "voltage drop"
+  - "cable sizing"
+  - "cable size for"
+  - "motor current"
+  - "full load current"
+- skill_id: sprinkler_demand
+  domain: FIRE
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: hazard_class
+    data_type: string
+    description: "light, ordinary_1, ordinary_2, extra_1 or extra_2."
+  optional_inputs:
+  - name: design_density_l_min_m2
+    data_type: number
+    description: "Override density, L/min/m2."
+  - name: design_area_m2
+    data_type: number
+    description: "Override design area, m2."
+  - name: hose_allowance_l_min
+    data_type: number
+    description: "Override hose allowance, L/min."
+  - name: duration_min
+    data_type: number
+    description: "Override duration, min."
+  - name: pump_head_bar
+    data_type: number
+    description: "Pump head, bar, to compute pump kW."
+  - name: pump_efficiency_pct
+    data_type: number
+    description: "Pump efficiency, % (default 65)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:SprinklerDemandSkill
+  routing_terms:
+  - "sprinkler demand"
+  - "sprinkler design"
+  - "sprinkler flow"
+  - "hazard class"
+  - "sprinkler density"
+  - "fire pump power"
+- skill_id: hot_water_heater_sizing
+  domain: PLUMBING
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: storage_volume_l
+    data_type: number
+    description: "Storage volume, L."
+  optional_inputs:
+  - name: cold_water_c
+    data_type: number
+    description: "Cold water temperature, deg C (default 25)."
+  - name: hot_water_c
+    data_type: number
+    description: "Delivery temperature, deg C (default 55)."
+  - name: heat_up_time_h
+    data_type: number
+    description: "Heat-up time, h (default 2)."
+  - name: heater_efficiency_pct
+    data_type: number
+    description: "Efficiency or COP in %, default 95."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:HotWaterHeaterSizingSkill
+  routing_terms:
+  - "water heater"
+  - "geyser"
+  - "hot water heater"
+  - "hot water storage"
+  - "heat pump water heater"
+- skill_id: rainwater_drainage
+  domain: PLUMBING
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: catchment_area_m2
+    data_type: number
+    description: "Roof/paved catchment area, m2."
+  - name: rainfall_intensity_mm_h
+    data_type: number
+    description: "Design rainfall intensity, mm/h."
+  optional_inputs:
+  - name: runoff_coefficient
+    data_type: number
+    description: "Runoff coefficient (default 0.9)."
+  - name: pipe_slope
+    data_type: number
+    description: "Pipe slope, m/m (default 0.01)."
+  - name: manning_n
+    data_type: number
+    description: "Manning n (default 0.013)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:RainwaterDrainageSkill
+  routing_terms:
+  - "rainwater"
+  - "storm water"
+  - "stormwater"
+  - "roof drain"
+  - "rainfall drainage"
+  - "rain water pipe"
+- skill_id: solar_pv_sizing
+  domain: ENERGY
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: annual_consumption_kwh
+    data_type: number
+    description: "Annual electricity consumption, kWh."
+  optional_inputs:
+  - name: offset_pct
+    data_type: number
+    description: "Share of consumption to offset, % (default 100)."
+  - name: specific_yield_kwh_kwp_yr
+    data_type: number
+    description: "Specific yield, kWh/kWp/year (default 1500)."
+  - name: area_per_kwp_m2
+    data_type: number
+    description: "Roof area per kWp, m2 (default 6)."
+  - name: available_area_m2
+    data_type: number
+    description: "Available roof area, m2."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:SolarPVSizingSkill
+  routing_terms:
+  - "solar pv"
+  - "rooftop solar"
+  - "kwp of solar"
+  - "solar plant size"
+  - "solar sizing"
+  - "solar capacity"
+- skill_id: carbon_emissions
+  domain: ENERGY
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: annual_consumption_kwh
+    data_type: number
+    description: "Annual electricity consumption, kWh."
+  optional_inputs:
+  - name: grid_factor_kg_kwh
+    data_type: number
+    description: "Grid emission factor, kg CO2e/kWh."
+  - name: reduction_kwh
+    data_type: number
+    description: "Annual kWh saving to convert to avoided CO2e."
+  - name: refrigerant_charge_kg
+    data_type: number
+    description: "Refrigerant charge, kg."
+  - name: leak_rate_pct
+    data_type: number
+    description: "Annual leak rate, %."
+  - name: refrigerant_gwp
+    data_type: number
+    description: "Refrigerant GWP."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:CarbonEmissionsSkill
+  routing_terms:
+  - "carbon emissions"
+  - "co2 emissions"
+  - "tco2e"
+  - "scope 2"
+  - "carbon footprint"
+  - "emission factor"
+
 crm_pipeline:
   domain: COMMERCIAL
   source: marshvac2811/pipeline/pipeline.html

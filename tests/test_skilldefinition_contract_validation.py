@@ -64,7 +64,7 @@ def build_contract_report():
 def test_all_registry_skills_load_as_skill_definitions():
     registry, rows = build_contract_report()
 
-    assert len(rows) == 26
+    assert len(rows) == 43
     assert all(row["skill_id"] for row in rows)
     assert all(row["name"] for row in rows)
     assert all(row["domain"] for row in rows)
@@ -77,7 +77,7 @@ def test_registry_executable_boundary_is_preserved():
     executable = [row for row in rows if row["executable"]]
     pending = [row for row in rows if not row["executable"]]
 
-    assert len(executable) == 25
+    assert len(executable) == 42
     assert len(pending) == 1
     assert pending[0]["skill_id"] == "chiller_efficiency"
 

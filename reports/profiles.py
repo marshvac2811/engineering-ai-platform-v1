@@ -44,6 +44,23 @@ _PROFILES = {
     "hvac_boq": ("hvac_boq", "hvac_bill_of_quantities", "HVAC Bill of Quantities", ("boq",)),
     "deviation_statement": ("deviation_statement", "technical_deviation_statement", "Technical Deviation Statement", ("technical_statement",)),
     "facade_u_factor": ("facade_u_factor", "facade_thermal_performance", "Facade Thermal Performance Report", ("calculation_report", "compliance_assessment")),
+    "psychrometric_properties": ("psychrometric_properties", "psychrometric_properties_report", "Psychrometric Properties Report", ("calculation_report",)),
+    "cooling_coil_load": ("cooling_coil_load", "cooling_coil_load_report", "Cooling Coil Load Report", ("calculation_report",)),
+    "ventilation_rate": ("ventilation_rate", "ventilation_rate_report", "Ventilation Outdoor-Air Rate Report", ("calculation_report",)),
+    "fan_power_sizing": ("fan_power_sizing", "fan_power_sizing_report", "Fan Power and Motor Sizing Report", ("calculation_report",)),
+    "water_pipe_sizing": ("water_pipe_sizing", "water_pipe_sizing_report", "Water Pipe Sizing Report", ("calculation_report",)),
+    "expansion_tank_sizing": ("expansion_tank_sizing", "expansion_tank_sizing_report", "Expansion Tank Sizing Report", ("calculation_report",)),
+    "hydronic_flow_rate": ("hydronic_flow_rate", "hydronic_flow_rate_report", "Hydronic Flow Rate Report", ("calculation_report",)),
+    "heat_recovery_assessment": ("heat_recovery_assessment", "heat_recovery_assessment_report", "Heat Recovery Assessment Report", ("calculation_report",)),
+    "chiller_iplv": ("chiller_iplv", "chiller_iplv_report", "Chiller IPLV Report", ("calculation_report",)),
+    "duct_pressure_drop": ("duct_pressure_drop", "duct_pressure_drop_report", "Duct Pressure Drop Report", ("calculation_report",)),
+    "insulation_condensation": ("insulation_condensation", "insulation_condensation_report", "Insulation for Condensation Control Report", ("calculation_report",)),
+    "cable_voltage_drop": ("cable_voltage_drop", "cable_voltage_drop_report", "Cable Current and Voltage Drop Report", ("calculation_report",)),
+    "sprinkler_demand": ("sprinkler_demand", "sprinkler_demand_report", "Sprinkler Water Demand Report", ("calculation_report",)),
+    "hot_water_heater_sizing": ("hot_water_heater_sizing", "hot_water_heater_sizing_report", "Hot Water Heater Sizing Report", ("calculation_report",)),
+    "rainwater_drainage": ("rainwater_drainage", "rainwater_drainage_report", "Rainwater Drainage Sizing Report", ("calculation_report",)),
+    "solar_pv_sizing": ("solar_pv_sizing", "solar_pv_sizing_report", "Solar PV Sizing Report", ("calculation_report",)),
+    "carbon_emissions": ("carbon_emissions", "carbon_emissions_report", "Carbon Emissions Estimate Report", ("calculation_report",)),
 }
 
 

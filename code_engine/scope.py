@@ -50,6 +50,23 @@ def scope_references_for_skill(skill_id: str) -> List[Dict[str, Any]]:
         "hvac_boq": ["hvac", "mechanical", "construction"],
         "deviation_statement": ["construction", "project_management"],
         "facade_u_factor": ["facade", "construction", "energy"],
+        "psychrometric_properties": ["hvac", "mechanical"],
+        "cooling_coil_load": ["hvac", "mechanical"],
+        "ventilation_rate": ["hvac", "mechanical"],
+        "fan_power_sizing": ["hvac", "mechanical"],
+        "water_pipe_sizing": ["hvac", "mechanical"],
+        "expansion_tank_sizing": ["hvac", "mechanical"],
+        "hydronic_flow_rate": ["hvac", "mechanical"],
+        "heat_recovery_assessment": ["hvac", "energy"],
+        "chiller_iplv": ["hvac", "energy"],
+        "duct_pressure_drop": ["hvac", "mechanical"],
+        "insulation_condensation": ["hvac", "mechanical"],
+        "cable_voltage_drop": ["electrical"],
+        "sprinkler_demand": ["fire"],
+        "hot_water_heater_sizing": ["plumbing"],
+        "rainwater_drainage": ["plumbing"],
+        "solar_pv_sizing": ["hvac", "energy"],
+        "carbon_emissions": ["hvac", "energy"],
     }
     disciplines = discipline_map.get(skill_id, [])
     registry = load_scope_registry()

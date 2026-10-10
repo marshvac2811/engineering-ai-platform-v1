@@ -126,6 +126,11 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
     "plumbing_water_demand": ("plumbing water demand", "fixture demand", "domestic water demand", "plumbing flow"),
 }
 
+# Governed calculator catalogue: routing vocabulary lives next to the calculator definitions.
+from skills.calculators.catalogue import CALCULATORS as _CALCULATORS  # noqa: E402
+for _calc in _CALCULATORS:
+    ROUTING_RULES.setdefault(_calc.skill_id, tuple(_calc.routing))
+
 FIELD_QUESTIONS = {
     "components": "Provide facade/fenestration components as JSON with name, area_m2 and u_factor for each component.",
     "airflow": "What is the airflow in CFM?",
