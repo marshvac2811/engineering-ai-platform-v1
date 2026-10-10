@@ -1,8 +1,0 @@
-{
-    "metadata":  {
-                     "purpose":  "supabase_persistence_test"
-                 },
-    "content_base64":  "RW5naW5lZXJpbmcgQUkgUGxhdGZvcm0gU3VwYWJhc2UgcGVyc2lzdGVuY2UgdGVzdC4KQWlyZmxvdzogNDUwMCBDRk0uCkR1Y3Qgc2l6ZTogNjAwIHggNDAwIG1tLg==",
-    "filename":  "test-attachment.txt",
-    "mime_type":  "text/plain"
-}

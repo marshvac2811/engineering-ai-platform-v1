@@ -45,3 +45,15 @@ htmlcov/
 # Local temporary artifacts
 tmp/
 temp/
+
+# Scratch / audit output kept out of the repo root
+/STEP*_*.txt
+/*-test.json
+/test-*.json
+/installed_packages_audit.txt
+
+# Editor/manual backups
+*.py.*
+*.yaml.*
+*.bak
+*.orig
