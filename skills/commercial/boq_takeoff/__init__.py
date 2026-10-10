@@ -48,6 +48,30 @@ def parse_boq_csv(text: str) -> List[Dict[str, Any]]:
     return out
 
 
+def parse_recipes_csv(text: str) -> List[Dict[str, Any]]:
+    """SiteTrack work library export: one row per material.
+
+    Columns: work_type, work_unit, material_name, unit, consumption_per_unit, wastage_percent
+    (see HANDOFF for the Supabase query that produces it). Recipes built this way are company-validated.
+    """
+    recipes: Dict[str, Dict[str, Any]] = {}
+    for n, row in enumerate(csv.DictReader(io.StringIO(text.strip())), 2):
+        low = {str(k).strip().lower(): (v or "").strip() for k, v in row.items() if k}
+        name, unit = low.get("work_type") or low.get("name"), low.get("work_unit") or low.get("base_unit")
+        if not name or not unit or not low.get("material_name"):
+            raise ValueError(f"Recipe CSV row {n}: work_type, work_unit and material_name are required")
+        try:
+            cons = float(low.get("consumption_per_unit") or 0)
+            waste = float(low.get("wastage_percent") or 0)
+        except ValueError:
+            raise ValueError(f"Recipe CSV row {n}: consumption_per_unit and wastage_percent must be numeric")
+        rid = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+        rec = recipes.setdefault(rid, {"id": rid, "name": name, "base_unit": unit, "aliases": [], "materials": []})
+        rec["materials"].append({"name": low["material_name"], "unit": low.get("unit") or "nos",
+                                 "consumption_per_unit": cons, "wastage_percent": waste})
+    return list(recipes.values())
+
+
 def _recipes(custom: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
     base = list(_catalog().get("recipes", []))
     ids = {r["id"] for r in (custom or [])}

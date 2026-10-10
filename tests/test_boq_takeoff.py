@@ -57,3 +57,20 @@ def test_csv_input_and_skill_warnings():
 
 def test_requires_boq():
     assert run().status == "input_validation_failed"
+
+
+def test_sitetrack_recipe_csv_import_end_to_end():
+    recipes_csv = ("work_type,work_unit,material_name,unit,consumption_per_unit,wastage_percent\n"
+                   "Gypsum Wall Partition,sqft,Gypsum Board 12mm,sqft,2.1,5\n"
+                   "Gypsum Wall Partition,sqft,Screws,nos,4,5\n")
+    res = run(boq_items=[{"item_no": "1", "description": "Gypsum Wall Partition L2", "unit": "sqft", "quantity": 1000}],
+              recipes_csv=recipes_csv)
+    board = next(m for m in res.engineering_result["material_totals"] if m["material_name"] == "Gypsum Board 12mm")
+    assert board["quantity"] == pytest.approx(2205.0)
+    assert res.engineering_result["unvalidated_recipes_used"] == []
+
+
+def test_recipe_csv_rejects_bad_rows():
+    from skills.commercial.boq_takeoff import parse_recipes_csv
+    with pytest.raises(ValueError):
+        parse_recipes_csv("work_type,work_unit,material_name,unit,consumption_per_unit,wastage_percent\nX,sqft,,nos,1,0\n")

@@ -265,3 +265,13 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - Fixed `scope_engine` bug: doubled backslashes in regexes meant "1200 sqft" was never extracted.
 - Recipes in `scope_engine/catalog.yaml` are marked `validated: false` (gypsum, tile, GI duct, duct insulation): consumption/wastage are DEFAULTS and the report warns. Replace/extend with the SiteTrack recipes (pass in `recipes` or edit the catalog).
 - Not done: BOQ file upload (xlsx) in the dashboard; HVAC recipes beyond duct sheet/insulation; live verification.
+
+### SiteTrack recipe import (2026-10-10)
+The sitetrack GitHub repo holds only the schema (tables `work_types`, `work_type_materials`); the real recipes live in the user's Supabase DB. `boq_takeoff` accepts them via `recipes_csv`. Export with this SQL (Supabase SQL editor -> download CSV):
+```sql
+select t.name as work_type, t.unit as work_unit, m.material_name, m.unit,
+       m.consumption_per_unit, m.wastage_percent
+from work_types t join work_type_materials m on m.work_type_id = t.id
+order by t.name, m.material_name;
+```
+Recipes imported this way are treated as company-validated (no "unvalidated" warning).

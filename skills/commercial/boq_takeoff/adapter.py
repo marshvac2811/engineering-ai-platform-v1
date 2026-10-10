@@ -1,6 +1,6 @@
 from __future__ import annotations
 from skills.common import SkillRequest, SkillResult
-from skills.commercial.boq_takeoff import takeoff, parse_boq_csv
+from skills.commercial.boq_takeoff import takeoff, parse_boq_csv, parse_recipes_csv
 
 
 class BoqTakeoffSkill:
@@ -30,7 +30,10 @@ class BoqTakeoffSkill:
             return SkillResult(skill_id=self.skill_id, status="input_validation_failed", validation_errors=errors,
                                source_revision=self.source_revision, skill_version=self.version)
         try:
-            res = takeoff(self._lines(request.inputs), request.inputs.get("recipes"))
+            custom = list(request.inputs.get("recipes") or [])
+            if str(request.inputs.get("recipes_csv") or "").strip():
+                custom += parse_recipes_csv(str(request.inputs["recipes_csv"]))
+            res = takeoff(self._lines(request.inputs), custom or None)
         except (ValueError, TypeError, KeyError) as exc:
             return SkillResult(skill_id=self.skill_id, status="calculation_failed", validation_errors=[str(exc)],
                                source_revision=self.source_revision, skill_version=self.version)

@@ -1483,6 +1483,9 @@ skills:
   - name: recipes
     data_type: array
     description: "Company recipes {id, name, base_unit, aliases, materials[{name, unit, consumption_per_unit, wastage_percent}]} that override or extend the catalogue."
+  - name: recipes_csv
+    data_type: string
+    description: "SiteTrack work-library export as CSV (work_type, work_unit, material_name, unit, consumption_per_unit, wastage_percent)."
   conditional_inputs: []
   implementation_binding: skills.commercial.boq_takeoff.adapter:BoqTakeoffSkill
   routing_terms:
