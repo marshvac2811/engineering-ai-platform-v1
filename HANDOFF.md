@@ -285,3 +285,8 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - `web/app.html`: `#boqCard` (CSV paste/file, optional recipes CSV) and `#energyCard` (baseline + measure rows). Isolated script; posts `/v1/intake` with requested_skill_id. Verified in headless Chromium (mocked API) and via `tests/test_dashboard_forms_api.py` (real intake -> approve -> dispatch).
 - Fixed: `boq_takeoff` registry listed `boq_items` as required, which blocked CSV-only requests at intake (awaiting_information); both inputs are now optional, adapter requires one.
 - Not verified on live Render.
+
+## Checkpoint 2026-10-10 — Supabase/Render connectors used
+- Applied migration `013_integration_tokens` to Supabase project `engineering-ai-platform` (vaxerlbgwwlfamncevdg). Security advisor: integration_tokens "RLS enabled, no policy" is intentional (service role only). Pre-existing WARN: `public.resolve_current_tenant_membership()` SECURITY DEFINER is executable by anon/authenticated; review whether anon execute is needed. Leaked-password protection is off in Supabase Auth.
+- Render service `engineering-ai-platform-v1` (srv-daujn4e7bikc73at4om0) live on 0503466. Set env: GMAIL_TOKEN_ENCRYPTION_KEY, GMAIL_SCHEDULER_SECRET, GMAIL_SCHEDULER_TENANT_ID (default tenant 00000000-0000-0000-0000-000000000001), GMAIL_SYNC_QUERY, GMAIL_REDIRECT_URI. Still needed from the user (Google Cloud OAuth client): GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET. Cron job not created yet (paid Render plan; useless until OAuth is connected).
+- SiteTrack Supabase project (senhystjytormmekmtwo) was paused; restored. Its public schema is EMPTY (work-library tables were never created), so there are no recipes to import; recipes must come from the user.
