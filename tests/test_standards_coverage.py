@@ -14,7 +14,7 @@ def test_every_executable_skill_has_a_standards_coverage_entry():
     profiles = registered_report_profiles()
     assert set(registry.executable_ids) == set(profiles)
     for skill_id in registry.executable_ids:
-        assert skill_id in {"bms_cost_estimation", "deviation_statement", "fire_water_storage", "plumbing_water_demand"} or skill_id in {c.skill_id for c in CALCULATORS} or standards_candidates(skill_id)
+        assert skill_id in {"bms_cost_estimation", "boq_takeoff", "deviation_statement", "fire_water_storage", "plumbing_water_demand"} or skill_id in {c.skill_id for c in CALCULATORS} or standards_candidates(skill_id)
 
 
 def test_missing_context_blocks_claim_of_applicability():

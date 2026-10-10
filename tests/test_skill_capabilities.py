@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "skill_registry" / "registry.yaml"
 def test_catalog_matches_registry_and_bindings():
     registry = load_skill_registry(REGISTRY); bindings = binding_map()
-    assert len(registry.executable_ids) == 42
+    assert len(registry.executable_ids) == 43
     assert set(CAPABILITY_CATALOG) == set(registry.executable_ids)
     assert set(CAPABILITY_CATALOG) == set(bindings)
     assert "chiller_efficiency" not in CAPABILITY_CATALOG

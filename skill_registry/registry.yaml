@@ -1464,6 +1464,33 @@ skills:
   - "carbon footprint"
   - "emission factor"
 
+- skill_id: boq_takeoff
+  domain: COMMERCIAL
+  source_repository: engineering-ai-platform
+  source_path: skills/commercial/boq_takeoff
+  execution: deterministic_python
+  classification: commercial
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: boq_items
+    data_type: array
+    description: "BOQ lines as {item_no, description, unit, quantity}. Alternatively supply boq_csv."
+  optional_inputs:
+  - name: boq_csv
+    data_type: string
+    description: "BOQ as CSV text with a header row (item_no, description, unit, quantity)."
+  - name: recipes
+    data_type: array
+    description: "Company recipes {id, name, base_unit, aliases, materials[{name, unit, consumption_per_unit, wastage_percent}]} that override or extend the catalogue."
+  conditional_inputs: []
+  implementation_binding: skills.commercial.boq_takeoff.adapter:BoqTakeoffSkill
+  routing_terms:
+  - "boq takeoff"
+  - "quantity takeoff"
+  - "material takeoff"
+  - "materials required for boq"
+  - "boq material"
 crm_pipeline:
   domain: COMMERCIAL
   source: marshvac2811/pipeline/pipeline.html

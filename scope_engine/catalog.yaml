@@ -53,10 +53,11 @@ recipes:
   - id: gypsum_wall_partition
     name: Gypsum Wall Partition
     verticals: [interiors]
+    validated: false
     base_unit: sqft
     aliases: [gypsum partition, gypsum wall, drywall partition, gypsum board partition]
     quantity_patterns:
-      - '(\\d[\\d,.]*)\\s*(?:sq\\.?\\s*ft|sqft|square\\s*feet)'
+      - '(\d[\d,.]*)\s*(?:sq\.?\s*ft|sqft|square\s*feet)'
     materials:
       - {name: Gypsum Board 12mm, unit: sqft, consumption_per_unit: 2.1, wastage_percent: 5}
       - {name: Floor/Ceiling Track, unit: rft, consumption_per_unit: 0.22, wastage_percent: 5}
@@ -68,10 +69,11 @@ recipes:
   - id: vitrified_tile_flooring
     name: Vitrified Tile Flooring
     verticals: [interiors]
+    validated: false
     base_unit: sqft
     aliases: [vitrified tile, tile flooring, floor tiling, vitrified flooring]
     quantity_patterns:
-      - '(\\d[\\d,.]*)\\s*(?:sq\\.?\\s*ft|sqft|square\\s*feet)'
+      - '(\d[\d,.]*)\s*(?:sq\.?\s*ft|sqft|square\s*feet)'
     materials:
       - {name: Vitrified Tiles, unit: sqft, consumption_per_unit: 1.05, wastage_percent: 5}
       - {name: Cement, unit: kg, consumption_per_unit: 4, wastage_percent: 5}
@@ -79,3 +81,23 @@ recipes:
       - {name: Tile Adhesive, unit: kg, consumption_per_unit: 3, wastage_percent: 5}
       - {name: Grout, unit: kg, consumption_per_unit: 0.3, wastage_percent: 0}
       - {name: Spacers, unit: nos, consumption_per_unit: 4, wastage_percent: 0}
+  - id: gi_duct_fabrication
+    name: GI Duct Fabrication
+    verticals: [hvac]
+    validated: false
+    base_unit: sqm
+    aliases: [gi duct, galvanised duct, galvanized duct, gi sheet metal duct, rectangular duct, sheet metal duct]
+    quantity_patterns:
+      - '(\d[\d,.]*)\s*(?:sqm|sq\.?\s*m|m2)'
+    materials:
+      - {name: GI Sheet (duct surface area), unit: sqm, consumption_per_unit: 1.0, wastage_percent: 8}
+  - id: duct_thermal_insulation
+    name: Duct Thermal Insulation
+    verticals: [hvac]
+    validated: false
+    base_unit: sqm
+    aliases: [duct insulation, thermal insulation of duct, duct lagging, duct thermal insulation]
+    quantity_patterns:
+      - '(\d[\d,.]*)\s*(?:sqm|sq\.?\s*m|m2)'
+    materials:
+      - {name: Insulation Material (surface area), unit: sqm, consumption_per_unit: 1.0, wastage_percent: 5}

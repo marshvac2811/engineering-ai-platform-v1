@@ -76,7 +76,7 @@ def test_api_intake_full_request_can_be_queued_and_processed():
 
 
 def test_registered_skill_count_matches_expected_executable_batch():
-    assert len(registered_skills())==42
+    assert len(registered_skills())==43
 
 
 def test_natural_language_missing_engineering_input_is_asked():

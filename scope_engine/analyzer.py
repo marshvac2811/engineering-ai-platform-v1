@@ -43,9 +43,9 @@ def _quantity_for_recipe(text: str, recipe: dict) -> float | None:
             candidates.append(match.start())
     if candidates:
         area_patterns = [
-            r"(\\d[\\d,.]*)\\s*(?:sq\\.?\\s*ft|sqft|square\\s*feet)",
-            r"(\\d[\\d,.]*)\\s*(?:m2|m\\s*2|square\\s*met(?:er|re)s)",
-            r"(\\d[\\d,.]*)\\s*(?:rft|rm|m|nos|units?)",
+            r"(\d[\d,.]*)\s*(?:sq\.?\s*ft|sqft|square\s*feet)",
+            r"(\d[\d,.]*)\s*(?:m2|m\s*2|square\s*met(?:er|re)s)",
+            r"(\d[\d,.]*)\s*(?:rft|rm|m|nos|units?)",
         ]
         matches = []
         for pattern in area_patterns:

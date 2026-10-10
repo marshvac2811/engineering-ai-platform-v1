@@ -113,6 +113,7 @@ _COVERAGE: Dict[str, Tuple[StandardsCandidate, ...]] = {
         StandardsCandidate("bis_nbc_2016", "Building-services scope reference; BOQ quantities remain project-specific.", ("jurisdiction", "building_type")),
     ),
     "deviation_statement": (),
+    "boq_takeoff": (),
     "facade_u_factor": (
         StandardsCandidate("bis_nbc_2016", "NBC Part 6 Section 8 covers glass and glazing.", ("jurisdiction", "building_type", "component")),
         StandardsCandidate("bee_ecbc_2017", "Commercial building-envelope energy reference where applicable.", ("jurisdiction", "building_type", "component", "connected_load_kw")),

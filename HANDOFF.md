@@ -259,3 +259,9 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 ## Checkpoint 2026-10-10 — Design package: ventilation, fans, chilled-water header
 - `hvac_design_package` now also returns per-room outdoor air (ASHRAE 62.1 ref rates), fan motor kW, and a `plant_summary` (chilled-water flow, header DN, total fan kW). Optional inputs: `fan_pressure_pa`, `chw_delta_t_c`, `outdoor_db_c`+`outdoor_rh_pct` (adds ventilation load kW, reported but NOT added to room loads, to avoid double counting the benchmark). Dashboard form does not expose these optional fields yet.
 - Still open: envelope/orientation/glazing loads, equipment model selection, link room schedule to drawing routing.
+
+## Checkpoint 2026-10-10 — BOQ takeoff skill (43 executable skills)
+- New skill `boq_takeoff` (`skills/commercial/boq_takeoff/`): input `boq_items` or `boq_csv`, optional company `recipes`; outputs line takeoff, per-line materials, consolidated procurement totals, unmatched lines. Unit conversion sqm/sqft, m/rft. Registered everywhere; PDF/Excel render tables.
+- Fixed `scope_engine` bug: doubled backslashes in regexes meant "1200 sqft" was never extracted.
+- Recipes in `scope_engine/catalog.yaml` are marked `validated: false` (gypsum, tile, GI duct, duct insulation): consumption/wastage are DEFAULTS and the report warns. Replace/extend with the SiteTrack recipes (pass in `recipes` or edit the catalog).
+- Not done: BOQ file upload (xlsx) in the dashboard; HVAC recipes beyond duct sheet/insulation; live verification.

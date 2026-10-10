@@ -120,6 +120,7 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
     "energy_payback": ("payback", "energy savings", "energy cost saving", "roi", "retrofit payback", "retrofit payback",
                        "energy retrofit", "retrofit economics"),
     "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate", "hvac boq", "boq for", "boq covering", "boq outline"),
+    "boq_takeoff": ("boq takeoff", "quantity takeoff", "material takeoff", "materials required for boq", "boq material"),
     "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance", "deviates on", "technical deviation"),
     "fire_water_storage": ("fire water storage", "fire tank volume", "fire reserve", "fire water requirement"),
     "hvac_design_package": ("hvac design package", "room by room load", "equipment schedule", "design the hvac", "hvac design for", "room-by-room"),
