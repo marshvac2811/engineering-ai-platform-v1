@@ -66,6 +66,7 @@ def test_report_shows_schedule_as_table_in_pdf_and_excel():
               "workflow": {"status": "completed", "blockers": []}, "result": {"status": "completed"}, "review": {"events": []}}
     text = " ".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(build_approved_pdf(job=job, evidence_bundle=bundle))).pages)
     assert "Room Schedule" in text and "Open office" in text and "Meeting room" in text and "Server room" in text
+    assert "Chilled-water header size" in text
     wb = openpyxl.load_workbook(io.BytesIO(build_evidence_xlsx(job=job, evidence_bundle=bundle)))
     assert "Room Schedule" in wb.sheetnames
     rows = list(wb["Room Schedule"].iter_rows(values_only=True))
@@ -94,3 +95,24 @@ def test_api_intake_review_approve_dispatch_for_design_package():
     assert s.startswith("201") and j["job"]["status"] == "human_review", j
     s, j = call("POST", f"/v1/jobs/{j['job']['job_id']}/approve", {"comment": "ok", "dispatch": True})
     assert s.startswith("200") and j["status"] in ("dispatched", "completed")
+
+
+def test_plant_summary_ventilation_and_fans_hand_checked():
+    rooms = [{"room_id": "A", "name": "Open", "area_m2": 120, "occupancy": 20}, {"room_id": "B", "name": "Meet", "area_m2": 30}]
+    r = design_package(building_type="office", climate_zone="hot_dry", rooms=rooms, outdoor_db_c=43, outdoor_rh_pct=30)
+    a, b = r["room_schedule"]
+    assert a["outdoor_air_l_s"] == 86.0            # 2.5 x 20 + 0.3 x 120
+    assert b["outdoor_air_l_s"] == 9.0             # area component only, no occupancy given
+    assert "only the area component" in b["outdoor_air_basis"]
+    assert 3.2 < a["ventilation_load_kw"] < 3.9    # 0.086 m3/s x ~1.07 kg/m3 x ~38 kJ/kg
+    ps = r["plant_summary"]
+    kw = r["block_load_kw"]
+    assert ps["chilled_water_flow_m3h"] == pytest.approx(kw / (4.18 * 5.5) * 3.6, rel=0.03)
+    assert ps["chilled_water_header_dn"] >= 20
+    assert ps["total_ventilation_load_kw_not_included"] > 0
+    assert r["block_load_tr"] == pytest.approx(r["sum_of_room_loads_tr"], abs=0.01)  # ventilation not added
+
+
+def test_ventilation_load_needs_both_outdoor_conditions():
+    with pytest.raises(ValueError):
+        design_package(building_type="office", climate_zone="hot_dry", rooms=[{"area_m2": 50}], outdoor_db_c=40)

@@ -58,6 +58,15 @@ _DISPLAY_OVERRIDES: Dict[str, Tuple[str, str]] = {
     "annual_savings_kwh_corrected": ("Annual energy saving - after static-head correction", "kWh"),
     "annual_savings_cost_pure": ("Annual cost saving - theoretical", "currency"),
     "annual_savings_cost_corrected": ("Annual cost saving - after static-head correction", "currency"),
+    "plant_summary_chilled_water_flow_m3h": ("Chilled-water flow (block)", "m³/hr"),
+    "plant_summary_chilled_water_flow_usgpm": ("Chilled-water flow (block)", "US gpm"),
+    "plant_summary_chilled_water_delta_t_c": ("Chilled-water temperature difference", "K"),
+    "plant_summary_chilled_water_header_dn": ("Chilled-water header size", "DN"),
+    "plant_summary_chilled_water_header_velocity_ms": ("Header velocity", "m/s"),
+    "plant_summary_chilled_water_header_friction_pa_per_m": ("Header friction", "Pa/m"),
+    "plant_summary_total_fan_motor_kw": ("Total fan motor rating (room units)", "kW"),
+    "plant_summary_total_outdoor_air_l_s": ("Total outdoor air (ASHRAE 62.1)", "L/s"),
+    "plant_summary_total_ventilation_load_kw_not_included": ("Ventilation load - NOT included in room loads", "kW"),
 }
 
 

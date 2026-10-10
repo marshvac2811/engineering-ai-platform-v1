@@ -17,7 +17,7 @@ class HVACDesignPackageSkill:
         rooms = i.get("rooms")
         if not isinstance(rooms, list) or not rooms:
             errors.append("rooms must be a non-empty list of {room_id, name, area_m2[, occupancy]}")
-        for key in ("cfm_per_tr", "target_velocity_ms", "diversity_factor_pct"):
+        for key in ("cfm_per_tr", "target_velocity_ms", "diversity_factor_pct", "fan_pressure_pa", "chw_delta_t_c", "outdoor_db_c", "outdoor_rh_pct", "room_db_c", "room_rh_pct"):
             if key in i and i[key] is not None:
                 try:
                     float(i[key])
@@ -32,7 +32,7 @@ class HVACDesignPackageSkill:
                                source_revision=self.source_revision, skill_version=self.version)
         i = request.inputs
         kwargs = {}
-        for key in ("cfm_per_tr", "target_velocity_ms", "diversity_factor_pct"):
+        for key in ("cfm_per_tr", "target_velocity_ms", "diversity_factor_pct", "fan_pressure_pa", "chw_delta_t_c", "outdoor_db_c", "outdoor_rh_pct", "room_db_c", "room_rh_pct"):
             if i.get(key) is not None:
                 kwargs[key] = float(i[key])
         if i.get("duct_material"):
@@ -50,6 +50,7 @@ class HVACDesignPackageSkill:
             {"step": 3, "operation": "derive_supply_airflow", "detail": "Room load (TR) x airflow basis (CFM/TR) converted to m3/h; total " + f"{result['total_supply_airflow_m3h']:,.0f} m3/h"},
             {"step": 4, "operation": "size_room_branch_ducts", "detail": "Round duct by velocity method per room using the governed duct-sizing calculator"},
             {"step": 5, "operation": "assemble_equipment_schedule", "detail": f"Terminal class per room and plant suggestion: {result['plant_equipment_suggestion']}"},
+            {"step": 6, "operation": "plant_summary", "detail": f"Block load {result['block_load_kw']} kW -> chilled water {result['plant_summary']['chilled_water_flow_m3h']} m3/h, header DN{result['plant_summary']['chilled_water_header_dn']}; fan motors total {result['plant_summary']['total_fan_motor_kw']} kW"},
         ]
         return SkillResult(skill_id=self.skill_id, status="draft_ready", engineering_result=result,
                            assumptions=result["assumptions"], warnings=result["limitations"], calculation_trace=trace,

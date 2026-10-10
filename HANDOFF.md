@@ -255,3 +255,7 @@ Last updated: 2026-10-05, after CI recovery and drawing-foundation audit.
 - `tests/test_calculator_catalogue.py`: hand-checked values + missing-input rejection. 42 executable skills.
 - Defaults (grid factor, yields, NFPA-style densities, etc.) are listed as assumptions in each result; preliminary only, engineer must verify.
 - Not yet verified live on Render.
+
+## Checkpoint 2026-10-10 — Design package: ventilation, fans, chilled-water header
+- `hvac_design_package` now also returns per-room outdoor air (ASHRAE 62.1 ref rates), fan motor kW, and a `plant_summary` (chilled-water flow, header DN, total fan kW). Optional inputs: `fan_pressure_pa`, `chw_delta_t_c`, `outdoor_db_c`+`outdoor_rh_pct` (adds ventilation load kW, reported but NOT added to room loads, to avoid double counting the benchmark). Dashboard form does not expose these optional fields yet.
+- Still open: envelope/orientation/glazing loads, equipment model selection, link room schedule to drawing routing.
