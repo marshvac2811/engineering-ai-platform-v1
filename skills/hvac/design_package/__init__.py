@@ -22,6 +22,17 @@ DEFAULT_VELOCITY_MS = 5.0        # main/branch comfort duct velocity; reported a
 DEFAULT_MATERIAL = "gss"
 DEFAULT_FAN_PRESSURE_PA = 500.0  # assumed total fan pressure per room unit; reported as an assumption
 DEFAULT_CHW_DELTA_T = 5.5
+# Generic nominal capacity series (TR) used only to round loads up to a commonly available size band.
+# These are NOT vendor models; final selection needs manufacturer data.
+_SPLIT_TR = (0.75, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0)
+_PACKAGE_TR = (7.5, 10.0, 12.5, 15.0, 17.5, 20.0)
+_CHILLER_TR = (20, 30, 40, 50, 60, 80, 100, 120, 150, 200, 250, 300, 400, 500, 600, 800, 1000)
+
+
+def _next_size(value: float, series) -> float | None:
+    return next((x for x in series if x >= value - 1e-9), None)
+
+
 _SPACE_TYPE_BY_BUILDING = {"office": "office", "retail": "retail", "hospital": "hospital_patient_room"}
 
 
@@ -89,6 +100,10 @@ def design_package(*, building_type: str, climate_zone: str, rooms: List[Dict[st
             if oa_h_diff is not None:
                 dh, rho = oa_h_diff
                 entry_extra["ventilation_load_kw"] = round(max(0.0, vent["zone_outdoor_air_l_s"] / 1000.0 * rho * dh), 2)
+        series = _SPLIT_TR if tr <= 5 else (_PACKAGE_TR if tr <= 20 else None)
+        nominal = _next_size(tr, series) if series else None
+        if nominal is not None:
+            entry_extra["nominal_unit_size_tr"] = nominal
         fan, _, _, _ = F.fan_power({"airflow_m3h": flow_m3h, "total_static_pressure_pa": fan_pressure_pa})
         entry_extra["fan_motor_kw"] = fan["standard_motor_kw"]
         schedule.append({
@@ -114,6 +129,11 @@ def design_package(*, building_type: str, climate_zone: str, rooms: List[Dict[st
         "chilled_water_header_friction_pa_per_m": header["friction_pa_per_m"],
         "total_fan_motor_kw": round(sum(r.get("fan_motor_kw") or 0 for r in schedule), 1),
     }
+    plant_series = _CHILLER_TR if block_tr > 20 else (_PACKAGE_TR if block_tr > 5 else _SPLIT_TR)
+    single = _next_size(block_tr, plant_series)
+    half = _next_size(block_tr / 2.0, plant_series)
+    plant_summary["plant_option_single_tr"] = single
+    plant_summary["plant_option_two_equal_units_tr"] = half
     vent_rows = [r for r in schedule if "outdoor_air_l_s" in r]
     if vent_rows:
         plant_summary["total_outdoor_air_l_s"] = round(sum(r["outdoor_air_l_s"] for r in vent_rows), 2)
@@ -138,7 +158,7 @@ def design_package(*, building_type: str, climate_zone: str, rooms: List[Dict[st
             "Preliminary/budgetary rule-of-thumb loads; not a Manual J, CLTD or HAP calculation.",
             "Room loads use the building-type/climate benchmark per area; envelope, orientation and glazing are not modelled. Outdoor air is reported per ASHRAE 62.1 reference rates but its load is NOT added to the room loads (the benchmark may already include fresh air); the engineer must decide.",
             "Chilled-water header size covers the block load only; sub-mains, fittings and equipment pressure drops are not sized.",
-            "Equipment entries are classes, not selected models; final selection needs a qualified engineer and manufacturer data.",
+            "Equipment entries are classes and generic nominal-capacity bands (split up to 5 TR, package up to 20 TR, chiller above 20 TR), not selected models; final selection needs a qualified engineer and manufacturer data. Plant options are a single unit or two equal units, each rounded up to the next nominal size; redundancy is not assumed.",
             "Duct sizing is branch-level by velocity only; no network pressure balance or fittings loss is included.",
         ],
     }

@@ -64,6 +64,8 @@ _DISPLAY_OVERRIDES: Dict[str, Tuple[str, str]] = {
     "plant_summary_chilled_water_header_dn": ("Chilled-water header size", "DN"),
     "plant_summary_chilled_water_header_velocity_ms": ("Header velocity", "m/s"),
     "plant_summary_chilled_water_header_friction_pa_per_m": ("Header friction", "Pa/m"),
+    "plant_summary_plant_option_single_tr": ("Plant option A: one unit, nominal size", "TR"),
+    "plant_summary_plant_option_two_equal_units_tr": ("Plant option B: two equal units, nominal size each", "TR"),
     "plant_summary_total_fan_motor_kw": ("Total fan motor rating (room units)", "kW"),
     "plant_summary_total_outdoor_air_l_s": ("Total outdoor air (ASHRAE 62.1)", "L/s"),
     "plant_summary_total_ventilation_load_kw_not_included": ("Ventilation load - NOT included in room loads", "kW"),

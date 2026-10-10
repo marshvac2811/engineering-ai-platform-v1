@@ -116,3 +116,16 @@ def test_plant_summary_ventilation_and_fans_hand_checked():
 def test_ventilation_load_needs_both_outdoor_conditions():
     with pytest.raises(ValueError):
         design_package(building_type="office", climate_zone="hot_dry", rooms=[{"area_m2": 50}], outdoor_db_c=40)
+
+
+def test_nominal_size_bands_hand_checked():
+    r = design_package(building_type="office", climate_zone="hot_dry",
+                       rooms=[{"room_id": "A", "name": "Big", "area_m2": 400}, {"room_id": "B", "name": "Small", "area_m2": 15}])
+    for row in r["room_schedule"]:
+        tr = row["cooling_load_tr"]
+        if "nominal_unit_size_tr" in row:
+            assert row["nominal_unit_size_tr"] >= tr - 0.01
+    block = r["block_load_tr"]
+    ps = r["plant_summary"]
+    assert ps["plant_option_single_tr"] >= block and (ps["plant_option_two_equal_units_tr"] * 2) >= block - 0.01
+    assert ps["plant_option_two_equal_units_tr"] <= ps["plant_option_single_tr"]

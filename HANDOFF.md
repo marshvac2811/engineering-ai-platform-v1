@@ -303,3 +303,8 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - Dashboard: "Download DXF (schematic)" button on dispatched hvac_design_package jobs.
 - Validated by reading back with ezdxf and `doc.audit()`; NOT opened in AutoCAD/BricsCAD/DWG TrueView by anyone yet.
 - Not done: DWG output; true plan geometry (needs explicit room coordinates from a drawing/building model - `engineering/design/routing.py` already requires explicit coordinates); fire/plumbing drawings; DXF in the dispatched artifact set / Gmail reply attachments.
+
+## Checkpoint 2026-10-11 — Audits and nominal sizing
+- Secret scan of repo + full git history (sk-, AIza, ghp_, JWT, private keys, committed .env): nothing found; `.env.example` holds placeholders only. Repo can be switched to private safely from a secrets point of view (rotate nothing).
+- Live DB check: all 14 `engineering_report_artifacts` rows are version 1; multi-revision history has NEVER been exercised live. Schema supports it (UNIQUE(job_id, version), version > 0). `tests/test_report_versions.py` proves with an ordering-aware fake that rework -> version 2, same content -> no new version, approved v1 untouched. A real live rework run is still the final proof.
+- `hvac_design_package`: nominal capacity bands per room (split <=5 TR, package <=20 TR) and plant options (one unit / two equal units, rounded to the next nominal size; chiller series above 20 TR). Generic series, NOT vendor models; stated in limitations.
