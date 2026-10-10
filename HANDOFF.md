@@ -280,3 +280,8 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - New skill `energy_optimisation_study` (`skills/energy/study/`): baseline kWh/tariff + list of measures (vfd via governed affinity-law calc, solar by kWp x yield, custom kWh) with investment/O&M -> ranked by simple payback, avoided tCO2e, combined saving capped at baseline, residual emissions. Interactions not modelled (stated in assumptions). Routing is deliberately narrow ("energy study", "energy optimisation study", ...) so plain "energy optimisation of existing plant" still goes to `hvac_decarbonisation`.
 - Hand-checked in `tests/test_energy_study.py`. Dashboard form not built yet; not verified live.
 - Still open: Gmail/Upwork/CRM live (credentials), CAD generation, semantic PDF/CAD reading, SiteTrack recipe CSV from user, dashboard BOQ upload form.
+
+## Checkpoint 2026-10-10 — Dashboard forms for BOQ takeoff and energy study
+- `web/app.html`: `#boqCard` (CSV paste/file, optional recipes CSV) and `#energyCard` (baseline + measure rows). Isolated script; posts `/v1/intake` with requested_skill_id. Verified in headless Chromium (mocked API) and via `tests/test_dashboard_forms_api.py` (real intake -> approve -> dispatch).
+- Fixed: `boq_takeoff` registry listed `boq_items` as required, which blocked CSV-only requests at intake (awaiting_information); both inputs are now optional, adapter requires one.
+- Not verified on live Render.

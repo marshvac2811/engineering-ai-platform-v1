@@ -1472,11 +1472,11 @@ skills:
   classification: commercial
   integration_status: integrated
   human_review_required: true
-  required_inputs:
+  required_inputs: []
+  optional_inputs:
   - name: boq_items
     data_type: array
-    description: "BOQ lines as {item_no, description, unit, quantity}. Alternatively supply boq_csv."
-  optional_inputs:
+    description: "BOQ lines as {item_no, description, unit, quantity}. Supply this or boq_csv (the skill rejects a request with neither)."
   - name: boq_csv
     data_type: string
     description: "BOQ as CSV text with a header row (item_no, description, unit, quantity)."

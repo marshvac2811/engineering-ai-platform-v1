@@ -111,6 +111,31 @@ button:disabled{opacity:.55;cursor:wait}
 <div id="dpMsg" class="msg"></div>
 </section>
 
+<section class="card" id="boqCard">
+<h2>BOQ Material Takeoff <span class="small">(preliminary)</span></h2>
+<p class="muted">Paste the BOQ as CSV (header: item_no, description, unit, quantity) or choose a .csv file. Each line is matched to a recipe and the materials needed are calculated with wastage. Lines with no recipe are listed, never guessed.</p>
+<input type="file" id="boqFile" accept=".csv,text/csv" style="width:100%">
+<textarea id="boqCsv" rows="6" style="width:100%;margin-top:8px" placeholder="item_no,description,unit,quantity&#10;1,Gypsum wall partition,sqm,100&#10;2,Vitrified tile flooring,sqft,500"></textarea>
+<details style="margin-top:8px"><summary class="small">Use my own recipes (SiteTrack work-library export, optional)</summary>
+<textarea id="boqRecipes" rows="4" style="width:100%;margin-top:6px" placeholder="work_type,work_unit,material_name,unit,consumption_per_unit,wastage_percent"></textarea></details>
+<div style="margin-top:8px"><button type="button" id="boqRun">Run BOQ takeoff</button></div>
+<div id="boqMsg" class="msg"></div>
+</section>
+
+<section class="card" id="energyCard">
+<h2>Energy Optimisation Study <span class="small">(preliminary)</span></h2>
+<p class="muted">Baseline consumption plus a list of measures. Each measure is ranked by payback with avoided CO&#8322;. Interactions between measures are not modelled.</p>
+<div class="trial-grid"><div class="trial">
+<label class="small">Annual consumption, kWh</label><input id="enKwh" type="number" min="1" style="width:100%">
+<label class="small">Tariff per kWh</label><input id="enTariff" type="number" min="0" step="0.01" style="width:100%">
+<label class="small">Grid factor, kg CO2e/kWh (blank = 0.71 default)</label><input id="enGrid" type="number" min="0" step="0.01" style="width:100%">
+</div></div>
+<table style="width:100%;margin-top:12px"><thead><tr><th>Measure</th><th>Type</th><th>Investment</th><th>O&amp;M / yr</th><th id="enH1">Motor kW</th><th id="enH2">Speed reduction %</th><th id="enH3">Static head %</th><th id="enH4">Hours / yr</th><th></th></tr></thead><tbody id="enRows"></tbody></table>
+<div style="margin-top:8px"><button type="button" class="secondary" id="enAdd">+ Add measure</button> <button type="button" id="enRun">Run energy study</button></div>
+<div id="enMsg" class="msg"></div>
+</section>
+
+
 <section class="card">
 <h2>Engineering Report Register</h2>
 <p class="muted">Historical controlled evidence archive. <strong>A new trial appears here only after approval/dispatch.</strong> For a trial that has just been submitted, use the Jobs queue below; this prevents older reports from being mistaken for the current run.</p>
@@ -899,6 +924,86 @@ loadAccount();loadJobs();
    finally{btn.disabled=false;}
   });
  }catch(e){console.error("HVAC design panel failed to initialise",e);}
+})();
+</script>
+<script>
+/* BOQ takeoff + Energy study panels: isolated from the main dashboard script. */
+(function(){
+ try{
+  if(typeof api!=="function")return;
+  const submit=async(msg,btn,payload)=>{
+   const say=(ok,t)=>{msg.className="msg "+(ok?"ok":"err");msg.style.display="block";msg.textContent=t;};
+   const pj=document.getElementById("reqProject"),cl=document.getElementById("reqClient");
+   if(pj&&pj.value.trim())payload.project=pj.value.trim();
+   if(cl&&cl.value.trim())payload.client=cl.value.trim();
+   btn.disabled=true;
+   try{
+    say(true,"Submitting...");
+    const r=await api("/v1/intake",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    let d={};try{d=await r.json();}catch(e){}
+    if(!r.ok)throw Error(d.error||("Request failed ("+r.status+")"));
+    const st=d.job&&d.job.status;
+    say(true,"Submitted - Job "+String((d.job&&d.job.job_id)||"").slice(0,8)+" is "+String(st||"created").replace(/_/g," ")+". Open it under Ready for Review in the Jobs list below to approve it.");
+    if(typeof loadJobs==="function")loadJobs();
+   }catch(e){say(false,e.message);}
+   finally{btn.disabled=false;}
+  };
+  const fail=(msg,t)=>{msg.className="msg err";msg.style.display="block";msg.textContent=t;};
+  /* ---- BOQ ---- */
+  const csv=document.getElementById("boqCsv"),file=document.getElementById("boqFile"),bm=document.getElementById("boqMsg");
+  if(csv&&file&&bm){
+   file.addEventListener("change",()=>{const f=file.files&&file.files[0];if(!f)return;if(f.size>1000000){fail(bm,"File is too large (max 1 MB).");return;}const rd=new FileReader();rd.onload=()=>{csv.value=String(rd.result||"");};rd.readAsText(f);});
+   document.getElementById("boqRun").addEventListener("click",()=>{
+    const text=csv.value.trim();
+    if(text.split(/\r?\n/).length<2){fail(bm,"Add a header row and at least one BOQ line.");return;}
+    const inputs={boq_csv:text};
+    const rc=document.getElementById("boqRecipes").value.trim();if(rc)inputs.recipes_csv=rc;
+    submit(bm,document.getElementById("boqRun"),{message:"Prepare the preliminary BOQ material takeoff",requested_skill_id:"boq_takeoff",inputs:inputs});
+   });
+  }
+  /* ---- Energy ---- */
+  const body=document.getElementById("enRows"),em=document.getElementById("enMsg");
+  if(body&&em){
+   const LABELS={vfd:["Motor kW","Speed reduction %","Static head %","Hours / yr"],solar:["Capacity kWp","Yield kWh/kWp/yr (opt.)","",""],custom:["Annual saving kWh","","",""]};
+   const KEYS={vfd:["motor_kw","speed_reduction_pct","static_head_fraction","annual_hours"],solar:["capacity_kwp","specific_yield_kwh_kwp_yr"],custom:["annual_savings_kwh"]};
+   function sync(tr){
+    const t=tr.querySelector(".en-type").value,ls=LABELS[t];
+    tr.querySelectorAll(".en-p").forEach((el,k)=>{el.placeholder=ls[k]||"";el.disabled=!ls[k];if(!ls[k])el.value="";});
+   }
+   function addRow(name,type){
+    const tr=document.createElement("tr");
+    tr.innerHTML='<td><input type="text" class="en-name" style="width:100%"></td><td><select class="en-type"><option value="vfd">VFD</option><option value="solar">Solar PV</option><option value="custom">Custom saving</option></select></td><td><input type="number" min="0" class="en-inv" style="width:100%"></td><td><input type="number" min="0" class="en-om" style="width:100%"></td>'+[0,1,2,3].map(()=>'<td><input type="number" min="0" step="any" class="en-p" style="width:100%"></td>').join("")+'<td><button type="button" class="secondary en-del">&times;</button></td>';
+    tr.querySelector(".en-name").value=name||"";tr.querySelector(".en-type").value=type||"vfd";
+    tr.querySelector(".en-type").addEventListener("change",()=>sync(tr));
+    tr.querySelector(".en-del").addEventListener("click",()=>{if(body.children.length>1)tr.remove();});
+    body.appendChild(tr);sync(tr);
+   }
+   addRow("Pump VFD","vfd");
+   document.getElementById("enAdd").addEventListener("click",()=>addRow("","vfd"));
+   document.getElementById("enRun").addEventListener("click",()=>{
+    const kwh=parseFloat(document.getElementById("enKwh").value),tar=parseFloat(document.getElementById("enTariff").value),gf=document.getElementById("enGrid").value.trim();
+    if(!(kwh>0)||!(tar>0)){fail(em,"Enter annual consumption and tariff greater than zero.");return;}
+    const measures=[];let n=0;
+    for(const tr of Array.from(body.children)){
+     n++;
+     const type=tr.querySelector(".en-type").value,m={name:tr.querySelector(".en-name").value.trim()||("Measure "+n),type:type};
+     const inv=parseFloat(tr.querySelector(".en-inv").value);
+     if(!(inv>=0)){fail(em,"Row "+n+": enter the investment cost (0 or more).");return;}
+     m.investment=inv;const om=tr.querySelector(".en-om").value.trim();if(om!=="")m.annual_om=parseFloat(om);
+     const ps=Array.from(tr.querySelectorAll(".en-p")),ks=KEYS[type];
+     for(let k=0;k<ks.length;k++){
+      const v=ps[k].value.trim();
+      if(v===""){if(type==="solar"&&k===1)continue;fail(em,"Row "+n+": fill in "+LABELS[type][k]+".");return;}
+      m[ks[k]]=parseFloat(v);
+     }
+     measures.push(m);
+    }
+    const inputs={annual_consumption_kwh:kwh,tariff_per_kwh:tar,measures:measures};
+    if(gf!=="")inputs.grid_factor_kg_kwh=parseFloat(gf);
+    submit(em,document.getElementById("enRun"),{message:"Prepare the preliminary energy optimisation study for "+measures.length+" measure(s)",requested_skill_id:"energy_optimisation_study",inputs:inputs});
+   });
+  }
+ }catch(e){console.error("BOQ/Energy panels failed to initialise",e);}
 })();
 </script>
 </body>
