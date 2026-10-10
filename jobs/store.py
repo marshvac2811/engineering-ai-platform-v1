@@ -34,6 +34,12 @@ class InMemoryJobStore(JobStore):
     def list(self, *, tenant_id: Optional[str] = None) -> Iterable[Job]:
         return tuple(j for j in self._jobs.values() if tenant_id is None or j.tenant_id == tenant_id)
 
+    def get_artifact_bytes(self, job_id: str, kind: str, *, tenant_id: Optional[str] = None) -> Optional[bytes]:
+        if kind not in {"pdf", "xlsx"}:
+            raise ValueError("kind must be 'pdf' or 'xlsx'")
+        data = (self._artifacts.get(job_id) or {}).get(kind)
+        return data if isinstance(data, (bytes, bytearray)) else None
+
     def create_dispatch_artifacts(self, job: Job) -> Dict[str, object]:
         evidence = (job.result or {}).get("evidence_bundle")
         if not evidence:

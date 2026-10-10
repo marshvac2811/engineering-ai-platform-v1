@@ -79,6 +79,17 @@ button:disabled{opacity:.55;cursor:wait}
 <div id="trialMsg" class="msg"></div>
 </section>
 
+<section class="card" id="gmailCard">
+<h2>Gmail Intake</h2>
+<p class="muted">Client emails become reviewable engineering jobs. Only messages matching the filter below are read; nothing is sent automatically. Approved results are saved as a Gmail <strong>draft</strong> reply for you to check and send.</p>
+<div class="trial-grid">
+  <div class="trial"><h3>1. Connect</h3><p id="gmailStatus" class="small">Checking connection...</p><button type="button" class="secondary" id="gmailConnect">Connect Gmail</button></div>
+  <div class="trial"><h3>2. Sync inbox</h3><p class="small">Gmail search filter</p><input id="gmailQuery" type="text" value="label:engineering-requests is:unread" style="width:100%"><button type="button" class="secondary" id="gmailSync" style="margin-top:8px">Sync now</button></div>
+  <div class="trial"><h3>3. Draft reply</h3><p class="small">Job ID of an approved Gmail job</p><input id="gmailJobId" type="text" placeholder="full job id" style="width:100%"><button type="button" class="secondary" id="gmailDraft" style="margin-top:8px">Create Gmail draft</button></div>
+</div>
+<div id="gmailMsg" class="msg"></div>
+</section>
+
 <section class="card">
 <h2>Engineering Report Register</h2>
 <p class="muted">Historical controlled evidence archive. <strong>A new trial appears here only after approval/dispatch.</strong> For a trial that has just been submitted, use the Jobs queue below; this prevents older reports from being mistaken for the current run.</p>
@@ -774,6 +785,49 @@ async function loadJobs(){
 }
 
 loadAccount();loadJobs();
+</script>
+<script>
+/* Gmail Intake panel: isolated so a failure here can never break the main dashboard script. */
+(function(){
+ try{
+  const msg=document.getElementById("gmailMsg"),statusEl=document.getElementById("gmailStatus");
+  if(!msg||typeof api!=="function")return;
+  const say=(ok,t)=>{msg.className="msg "+(ok?"ok":"err");msg.style.display="block";msg.textContent=t;};
+  async function call(url,opt){const r=await api(url,opt);let d={};try{d=await r.json();}catch(e){}if(!r.ok)throw Error(d.error||("Request failed ("+r.status+")"));return d;}
+  async function loadStatus(){
+   try{
+    const d=await call("/v1/integrations");
+    const list=Array.isArray(d)?d:(d.integrations||d.connections||[]);
+    const g=list.find(x=>x.provider==="gmail");
+    statusEl.textContent=g?("Status: "+g.status+(g.external_account_id?" - "+g.external_account_id:"")):"Not connected yet.";
+   }catch(e){statusEl.textContent="Status unavailable: "+e.message;}
+  }
+  document.getElementById("gmailConnect").addEventListener("click",async()=>{
+   try{const d=await call("/v1/integrations/gmail/oauth/start?scope=compose");window.open(d.authorization_url,"_blank","noopener");say(true,"Google sign-in opened in a new tab. After approving, come back and refresh this page.");}
+   catch(e){say(false,e.message);}
+  });
+  document.getElementById("gmailSync").addEventListener("click",async()=>{
+   const q=document.getElementById("gmailQuery").value.trim();
+   if(!q){say(false,"Enter a Gmail search filter first (for example label:engineering-requests is:unread).");return;}
+   try{
+    say(true,"Syncing...");
+    const d=await call("/v1/integrations/gmail/sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({q:q,max_results:20})});
+    const made=(d.results||[]).filter(x=>x.job_created).length;
+    say(true,"Messages seen: "+d.messages_seen+". New jobs created: "+made+". Review them in the Jobs list below.");
+    if(typeof loadJobs==="function")loadJobs();
+   }catch(e){say(false,e.message);}
+  });
+  document.getElementById("gmailDraft").addEventListener("click",async()=>{
+   const id=document.getElementById("gmailJobId").value.trim();
+   if(!id){say(false,"Paste the full Job ID first.");return;}
+   try{
+    const d=await call("/v1/jobs/"+encodeURIComponent(id)+"/gmail-reply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"draft"})});
+    say(true,"Draft created in your Gmail (Drafts folder). Review and send it from Gmail."+(d.draft_id?" Draft id: "+d.draft_id:""));
+   }catch(e){say(false,e.message);}
+  });
+  loadStatus();
+ }catch(e){console.error("Gmail panel failed to initialise",e);}
+})();
 </script>
 </body>
 </html>

@@ -11,6 +11,8 @@ import os
 import secrets
 import stat
 import time
+from email.message import EmailMessage
+from email.utils import getaddresses, parseaddr
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 from urllib.error import HTTPError, URLError
@@ -24,6 +26,8 @@ GMAIL_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1"
 GMAIL_READ_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 GMAIL_SEND_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+# Drafts and sending both need compose; keep readonly so the same grant can still sync the inbox.
+GMAIL_COMPOSE_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.compose"]
 
 
 class GmailProviderError(RuntimeError):
@@ -115,9 +119,12 @@ def authorization_url(*, client_id: str, redirect_uri: str, state: str,
 
 
 def _http_json(url: str, *, method: str = "GET", headers: dict[str, str] | None = None,
-               data: dict[str, Any] | None = None) -> dict[str, Any]:
+               data: dict[str, Any] | None = None, json_body: Any = None) -> dict[str, Any]:
     payload = None
     request_headers = {"Accept": "application/json", **(headers or {})}
+    if json_body is not None:
+        payload = json.dumps(json_body).encode("utf-8")
+        request_headers["Content-Type"] = "application/json"
     if data is not None:
         payload = urlencode({k: v for k, v in data.items() if v is not None}).encode("utf-8")
         request_headers["Content-Type"] = "application/x-www-form-urlencoded"
@@ -208,6 +215,25 @@ class GmailAPIClient:
             query={"format": "full"},
         )
 
+    def _post(self, tenant_id: str, path: str, body: dict[str, Any]) -> dict[str, Any]:
+        return _http_json(
+            f"{GMAIL_API_BASE}{path}", method="POST",
+            headers={"Authorization": f"Bearer {self._access_token(tenant_id)}"},
+            json_body=body,
+        )
+
+    def create_draft(self, tenant_id: str, *, raw_b64url: str, thread_id: str | None = None) -> dict[str, Any]:
+        message: dict[str, Any] = {"raw": raw_b64url}
+        if thread_id:
+            message["threadId"] = thread_id
+        return self._post(tenant_id, "/users/me/drafts", {"message": message})
+
+    def send_message(self, tenant_id: str, *, raw_b64url: str, thread_id: str | None = None) -> dict[str, Any]:
+        body: dict[str, Any] = {"raw": raw_b64url}
+        if thread_id:
+            body["threadId"] = thread_id
+        return self._post(tenant_id, "/users/me/messages/send", body)
+
     def get_attachment(self, tenant_id: str, message_id: str, attachment_id: str) -> bytes:
         result = _authorized_request(
             access_token=self._access_token(tenant_id),
@@ -215,6 +241,33 @@ class GmailAPIClient:
         )
         data = str(result.get("data", ""))
         return decode_b64url(data)
+
+
+def build_reply_message(*, to: str, subject: str, body_text: str, in_reply_to: str | None = None,
+                        attachments: Iterable[tuple[str, str, bytes]] = ()) -> str:
+    """Build an RFC 822 reply and return it base64url-encoded for the Gmail API.
+
+    ``attachments`` are ``(filename, mime_type, data)``. The recipient is reduced to the single bare
+    address from the original sender so a display-name header cannot smuggle extra recipients.
+    """
+    _name, address = parseaddr(to)
+    if not address or "@" not in address or len(getaddresses([to])) != 1:
+        raise ValueError("A single valid reply address is required")
+    clean_subject = " ".join(str(subject or "").split())
+    if not clean_subject.lower().startswith("re:"):
+        clean_subject = f"Re: {clean_subject}".strip()
+    msg = EmailMessage()
+    msg["To"] = address
+    msg["Subject"] = clean_subject
+    if in_reply_to:
+        ref = " ".join(str(in_reply_to).split())
+        msg["In-Reply-To"] = ref
+        msg["References"] = ref
+    msg.set_content(body_text)
+    for filename, mime_type, data in attachments:
+        maintype, _, subtype = (mime_type or "application/octet-stream").partition("/")
+        msg.add_attachment(data, maintype=maintype or "application", subtype=subtype or "octet-stream", filename=filename)
+    return base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii")
 
 
 def _walk_parts(part: dict[str, Any]) -> Iterable[dict[str, Any]]:
@@ -257,6 +310,8 @@ def normalize_message(*, tenant_id: str, message: Dict[str, Any]) -> Dict[str, A
             "body_text": "\n".join(x for x in body_parts if x).strip(),
             "attachments": attachments,
             "thread_id": message.get("threadId"),
+            "message_id_header": headers.get("message-id", ""),
+            "reply_to": headers.get("reply-to") or headers.get("from", ""),
             "label_ids": message.get("labelIds", []),
         },
         "source_message": str(message.get("id") or ""),

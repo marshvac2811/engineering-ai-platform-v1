@@ -32,6 +32,7 @@ from crm.service import CRMService
 from crm.store import InMemoryCRMStore
 from crm.supabase_store import build_supabase_crm_store_from_env, SupabaseCRMStore
 from integrations.service import IntegrationService, InMemoryIntegrationStore
+from integrations.token_store import build_gmail_token_store
 from integrations.supabase_store import build_supabase_integration_store_from_env, SupabaseIntegrationStore
 from workflow.service import WorkflowTaskService
 from workflow.store import InMemoryWorkflowTaskStore
@@ -51,6 +52,8 @@ from integrations.providers.gmail import (
     GmailOAuthStateStore,
     TrialGmailTokenStore,
     authorization_url as gmail_authorization_url,
+    build_reply_message as gmail_build_reply_message,
+    GMAIL_COMPOSE_SCOPES,
     exchange_code as gmail_exchange_code,
     normalize_message as normalize_gmail_message,
     GmailProviderError,
@@ -97,7 +100,7 @@ class APIApp:
         self.report_store = report_store or InMemoryReportStore()
         self.upwork_state_store = UpworkOAuthStateStore()
         self.upwork_token_store = TrialUpworkTokenStore()
-        self.gmail_token_store = gmail_token_store or TrialGmailTokenStore()
+        self.gmail_token_store = gmail_token_store or build_gmail_token_store(supabase_client)
         self.gmail_state_store = gmail_state_store or GmailOAuthStateStore()
         self.gmail_client = gmail_client or GmailAPIClient(
             client_id=os.getenv("GMAIL_CLIENT_ID", ""),
@@ -171,6 +174,70 @@ class APIApp:
         if not isinstance(data, dict):
             raise ValueError("JSON body must be an object")
         return data
+
+    @staticmethod
+    def _scheduler_authorized(environ, path: str, method: str) -> bool:
+        import hmac
+        if path != "/v1/integrations/gmail/sync-scheduled" or method != "POST":
+            return False
+        configured = os.getenv("GMAIL_SCHEDULER_SECRET", "")
+        supplied = environ.get("HTTP_X_SCHEDULER_SECRET", "")
+        return bool(configured) and len(configured) >= 24 and hmac.compare_digest(configured.encode(), supplied.encode())
+
+    def _gmail_sync(self, service, tenant_id: str, *, q: str, max_results: int, download_attachments: bool) -> dict:
+        """Poll Gmail, de-duplicate, and create one reviewable engineering job per new message."""
+        ids = self.gmail_client.list_message_ids(tenant_id, q=q, max_results=max_results)
+        results = []
+        for item in ids:
+            message_id = str(item.get("id", ""))
+            if not message_id:
+                continue
+            raw = self.gmail_client.get_message(tenant_id, message_id)
+            normalized = normalize_gmail_message(tenant_id=tenant_id, message=raw)
+            payload = normalized["payload"]
+            integrations = IntegrationService(self.integration_store, tenant_id=tenant_id)
+            event, created = integrations.ingest(
+                provider="gmail",
+                event_type=normalized["event_type"],
+                external_event_id=normalized["external_event_id"],
+                payload=payload,
+                source_message=normalized.get("source_message"),
+            )
+            result = {"message_id": message_id, "created": created, "job_created": False}
+            if created:
+                subject = str(payload.get("subject", ""))
+                message_text = str(payload.get("body_text", ""))
+                intake_message = (subject + "\n" + message_text).strip()
+                if intake_message:
+                    provider = build_intent_provider()
+                    plan = build_plan(
+                        intake_message,
+                        project_context={"source_provider": "gmail", "external_event_id": message_id, "from": payload.get("from", ""),
+                                         "reply_to": payload.get("reply_to") or payload.get("from", ""), "thread_id": payload.get("thread_id"),
+                                         "subject": subject, "message_id_header": payload.get("message_id_header", "")},
+                        provider=provider,
+                    )
+                    job = service.create_from_plan(plan)
+                    result.update({"job_created": True, "job_id": job.job_id, "job_status": job.status.value, "selected_skill_id": plan.selected_skill_id})
+                    if download_attachments:
+                        downloaded = []
+                        for attachment in payload.get("attachments", []):
+                            attachment_id = attachment.get("attachment_id")
+                            filename = str(attachment.get("filename") or "attachment.bin")
+                            if not attachment_id:
+                                continue
+                            data = self.gmail_client.get_attachment(tenant_id, message_id, str(attachment_id))
+                            registered = service.register_attachment(
+                                job.job_id,
+                                filename=filename,
+                                mime_type=attachment.get("mime_type"),
+                                data=data,
+                                metadata={"source_provider": "gmail", "source_message_id": message_id},
+                            )
+                            downloaded.append({"filename": filename, "attachment_id": registered.attachments[-1].get("attachment_id")})
+                        result["attachments_downloaded"] = downloaded
+            results.append(result)
+        return {"provider": "gmail", "query": q, "messages_seen": len(ids), "results": results}
 
     def _gmail_oauth_callback(self, environ, start_response):
         query = parse_qs(environ.get("QUERY_STRING", ""), keep_blank_values=True)
@@ -345,6 +412,11 @@ class APIApp:
                 if not tenant_id:
                     raise AuthenticationError("No default tenant is configured for integration webhooks")
                 ctx = AuthContext(tenant_id=tenant_id, user_id="integration-webhook", role="member", scopes={"integrations:write"}, auth_method="webhook")
+            elif self._scheduler_authorized(environ, path, method):
+                tenant_id = str(os.getenv("GMAIL_SCHEDULER_TENANT_ID") or os.getenv("SUPABASE_DEFAULT_TENANT_ID") or os.getenv("DEFAULT_TENANT_ID") or "").strip()
+                if not tenant_id:
+                    raise AuthenticationError("GMAIL_SCHEDULER_TENANT_ID is not configured")
+                ctx = AuthContext(tenant_id=tenant_id, user_id="gmail-scheduler", role="member", scopes=frozenset({"integrations:write", "jobs:write"}), auth_method="scheduler")
             else:
                 ctx = self._authenticate(environ)
                 self._meter(ctx, "api_request", metadata={"method": method, "path": path})
@@ -613,17 +685,19 @@ class APIApp:
                     raise ValueError("GMAIL_CLIENT_ID and GMAIL_REDIRECT_URI must be configured")
                 state = self.gmail_state_store.create(tenant_id)
                 login_hint = (query.get("login_hint") or [None])[0]
+                want_compose = (query.get("scope") or [""])[0].lower() == "compose"
                 auth_url = gmail_authorization_url(
                     client_id=client_id,
                     redirect_uri=redirect_uri,
                     state=state,
                     login_hint=login_hint,
+                    scopes=GMAIL_COMPOSE_SCOPES if want_compose else None,
                 )
                 return self._json(start_response, "200 OK", {
                     "provider": "gmail",
                     "authorization_url": auth_url,
                     "state": state,
-                    "scope": "https://www.googleapis.com/auth/gmail.readonly",
+                    "scope": " ".join(GMAIL_COMPOSE_SCOPES) if want_compose else "https://www.googleapis.com/auth/gmail.readonly",
                 })
 
             if parts == ["v1", "integrations", "gmail", "sync"] and method == "POST":
@@ -631,56 +705,78 @@ class APIApp:
                 q = str(body.get("q") or os.getenv("GMAIL_SYNC_QUERY", "is:unread")).strip()
                 max_results = min(max(1, int(body.get("max_results", 20) or 20)), 100)
                 download_attachments = bool(body.get("download_attachments", True))
-                ids = self.gmail_client.list_message_ids(tenant_id, q=q, max_results=max_results)
-                results = []
-                for item in ids:
-                    message_id = str(item.get("id", ""))
-                    if not message_id:
-                        continue
-                    raw = self.gmail_client.get_message(tenant_id, message_id)
-                    normalized = normalize_gmail_message(tenant_id=tenant_id, message=raw)
-                    payload = normalized["payload"]
-                    integrations = IntegrationService(self.integration_store, tenant_id=tenant_id)
-                    event, created = integrations.ingest(
-                        provider="gmail",
-                        event_type=normalized["event_type"],
-                        external_event_id=normalized["external_event_id"],
-                        payload=payload,
-                        source_message=normalized.get("source_message"),
-                    )
-                    result = {"message_id": message_id, "created": created, "job_created": False}
-                    if created:
-                        subject = str(payload.get("subject", ""))
-                        message_text = str(payload.get("body_text", ""))
-                        intake_message = (subject + "\n" + message_text).strip()
-                        if intake_message:
-                            provider = build_intent_provider()
-                            plan = build_plan(
-                                intake_message,
-                                project_context={"source_provider": "gmail", "external_event_id": message_id, "from": payload.get("from", "")},
-                                provider=provider,
-                            )
-                            job = service.create_from_plan(plan)
-                            result.update({"job_created": True, "job_id": job.job_id, "job_status": job.status.value, "selected_skill_id": plan.selected_skill_id})
-                            if download_attachments:
-                                downloaded = []
-                                for attachment in payload.get("attachments", []):
-                                    attachment_id = attachment.get("attachment_id")
-                                    filename = str(attachment.get("filename") or "attachment.bin")
-                                    if not attachment_id:
-                                        continue
-                                    data = self.gmail_client.get_attachment(tenant_id, message_id, str(attachment_id))
-                                    registered = service.register_attachment(
-                                        job.job_id,
-                                        filename=filename,
-                                        mime_type=attachment.get("mime_type"),
-                                        data=data,
-                                        metadata={"source_provider": "gmail", "source_message_id": message_id},
-                                    )
-                                    downloaded.append({"filename": filename, "attachment_id": registered.attachments[-1].get("attachment_id")})
-                                result["attachments_downloaded"] = downloaded
-                    results.append(result)
-                return self._json(start_response, "200 OK", {"provider": "gmail", "query": q, "messages_seen": len(ids), "results": results})
+                return self._json(start_response, "200 OK", self._gmail_sync(service, tenant_id, q=q, max_results=max_results, download_attachments=download_attachments))
+
+            # Scheduled sync (Render cron / external scheduler). Authenticated by a shared secret only.
+            # Fails closed: GMAIL_SYNC_QUERY must be set explicitly so an unfiltered inbox is never ingested.
+            if parts == ["v1", "integrations", "gmail", "sync-scheduled"] and method == "POST":
+                ctx.require_scope("integrations:write")
+                if ctx.auth_method != "scheduler":
+                    raise AuthenticationError("The scheduled sync endpoint requires the scheduler secret")
+                q = os.getenv("GMAIL_SYNC_QUERY", "").strip()
+                if not q:
+                    raise ValueError("GMAIL_SYNC_QUERY must be configured (e.g. 'label:engineering-requests is:unread') before scheduled sync can run")
+                max_results = min(max(1, int(os.getenv("GMAIL_SYNC_MAX_RESULTS", "20") or 20)), 50)
+                return self._json(start_response, "200 OK", self._gmail_sync(service, tenant_id, q=q, max_results=max_results, download_attachments=True))
+
+            # Reply to the originating Gmail message with the approved report (draft by default).
+            if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "gmail-reply" and method == "POST":
+                job_id = parts[2]
+                ctx.require_scope("jobs:write")
+                ctx.require_scope_role("dispatch")
+                mode = str(body.get("mode", "draft")).strip().lower()
+                if mode not in {"draft", "send"}:
+                    raise ValueError("mode must be 'draft' or 'send'")
+                if mode == "send":
+                    ctx.require_scope("integrations:write")
+                job = service._get(job_id)
+                if job.status.value not in {"dispatched", "completed"}:
+                    raise ValueError("A reply is only available after the job has been approved and dispatched")
+                pc = job.project_context or {}
+                if pc.get("source_provider") != "gmail" or not pc.get("reply_to"):
+                    raise ValueError("This job did not originate from a Gmail message, so there is no sender to reply to")
+                getter = getattr(service.store, "get_artifact_bytes", None)
+                pdf = getter(job_id, "pdf", tenant_id=service.tenant_id) if getter else None
+                xlsx = getter(job_id, "xlsx", tenant_id=service.tenant_id) if getter else None
+                if not pdf or not xlsx:
+                    raise ValueError("The approved PDF and Excel files are not available for this job")
+                artifacts = (job.dispatch_result or {}).get("artifacts") or {}
+                pdf_meta, xlsx_meta = artifacts.get("pdf") or {}, artifacts.get("evidence_workbook") or {}
+                note = str(body.get("note") or "").strip()
+                text = "\n".join(filter(None, [
+                    "Dear Sir/Madam," if not body.get("greeting") else str(body.get("greeting")).strip(),
+                    "",
+                    "Please find attached the engineering report (PDF) and the supporting evidence workbook (Excel) for your request.",
+                    "The results are preliminary engineering outputs that have been reviewed and approved by our engineer before issue.",
+                    "",
+                    note,
+                    "" if note else None,
+                    f"Report reference: {job.report_id or job.job_id}",
+                    f"PDF SHA-256: {pdf_meta.get('sha256')}" if pdf_meta.get("sha256") else None,
+                    f"Workbook SHA-256: {xlsx_meta.get('sha256')}" if xlsx_meta.get("sha256") else None,
+                    "",
+                    str(body.get("signature") or "Regards").strip(),
+                ]))
+                raw = gmail_build_reply_message(
+                    to=str(pc["reply_to"]), subject=str(pc.get("subject") or "Engineering request"), body_text=text,
+                    in_reply_to=pc.get("message_id_header") or None,
+                    attachments=[
+                        (pdf_meta.get("filename") or f"engineering-report-{job.job_id}.pdf", "application/pdf", pdf),
+                        (xlsx_meta.get("filename") or f"engineering-evidence-{job.job_id}.xlsx",
+                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx),
+                    ],
+                )
+                thread_id = pc.get("thread_id") or None
+                if mode == "send":
+                    sent = self.gmail_client.send_message(tenant_id, raw_b64url=raw, thread_id=thread_id)
+                    ref = {"message_id": sent.get("id")}
+                else:
+                    drafted = self.gmail_client.create_draft(tenant_id, raw_b64url=raw, thread_id=thread_id)
+                    ref = {"draft_id": drafted.get("id")}
+                job.add_event(f"gmail_reply_{mode}", f"Gmail reply {'sent' if mode == 'send' else 'drafted'} to the original sender with the approved PDF and Excel.",
+                              actor=ctx.user_id, **ref)
+                service.store.save(job)
+                return self._json(start_response, "200 OK", {"job_id": job.job_id, "mode": mode, "thread_id": thread_id, **ref})
 
             # External integrations / normalized inbound events
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "integrations" and method == "GET":

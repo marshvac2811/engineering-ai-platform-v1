@@ -441,6 +441,17 @@ class SupabaseJobStore(JobStore):
                 })
         return rows_from_artifacts(artifacts, jobs)
 
+    def get_artifact_bytes(self, job_id: str, kind: str, *, tenant_id: Optional[str] = None) -> Optional[bytes]:
+        """The exact stored PDF/XLSX bytes (so an emailed copy matches the recorded SHA-256)."""
+        if kind not in {"pdf", "xlsx"}:
+            raise ValueError("kind must be 'pdf' or 'xlsx'")
+        artifact = self.get_report_artifact(job_id, tenant_id=tenant_id)
+        path = (artifact or {}).get(f"{kind}_storage_path")
+        if not path:
+            return None
+        data = self.client.storage.from_("engineering-artifacts").download(path)
+        return bytes(data) if data else None
+
     def get_artifact_download(self, job_id: str, kind: str, *, tenant_id: Optional[str] = None,
                               expires_in: int = 600) -> Optional[Dict[str, Any]]:
         """Return a fresh short-lived signed download link for the dispatched PDF or XLSX.
