@@ -29,6 +29,55 @@ _PACKAGE_TR = (7.5, 10.0, 12.5, 15.0, 17.5, 20.0)
 _CHILLER_TR = (20, 30, 40, 50, 60, 80, 100, 120, 150, 200, 250, 300, 400, 500, 600, 800, 1000)
 
 
+DEFAULT_PERSON_SENSIBLE_W = 75.0   # typical seated-office values; reported as assumptions when used
+DEFAULT_PERSON_LATENT_W = 55.0
+
+
+def component_load_kw(env: Dict[str, Any], area_m2: float, occupancy: int | None, room_id: str) -> Dict[str, Any]:
+    """Steady-state component heat-gain summation for one room (kW), from explicit user inputs.
+
+    Walls/roof: U x A x dT.  Glazing: U x A x dT plus A x SHGC x solar irradiance.  People: sensible + latent per
+    person.  Lighting and equipment: W/m2 x floor area.  A safety margin is applied to the total. No CLTD tables,
+    thermal storage or orientation data are built in: every coefficient comes from the caller.
+    """
+    if not isinstance(env, dict):
+        raise ValueError(f"Room {room_id}: envelope must be an object")
+
+    def num(d: Dict[str, Any], key: str, where: str, minimum: float = 0.0) -> float:
+        try:
+            v = float(d[key])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError(f"Room {room_id}: {where} requires numeric {key}")
+        if v < minimum:
+            raise ValueError(f"Room {room_id}: {where} {key} must be >= {minimum:g}")
+        return v
+
+    parts: Dict[str, float] = {}
+    walls = 0.0
+    for k, w in enumerate(env.get("walls") or [], 1):
+        walls += num(w, "area_m2", f"wall {k}") * num(w, "u_value", f"wall {k}") * num(w, "delta_t_c", f"wall {k}", -50)
+    glass_cond = glass_solar = 0.0
+    for k, g in enumerate(env.get("glazing") or [], 1):
+        a = num(g, "area_m2", f"glazing {k}")
+        glass_cond += a * num(g, "u_value", f"glazing {k}") * num(g, "delta_t_c", f"glazing {k}", -50)
+        glass_solar += a * num(g, "shgc", f"glazing {k}") * num(g, "solar_w_m2", f"glazing {k}")
+    people = (occupancy or 0) * (float(env.get("person_sensible_w", DEFAULT_PERSON_SENSIBLE_W)) + float(env.get("person_latent_w", DEFAULT_PERSON_LATENT_W)))
+    lighting = float(env.get("lighting_w_m2", 0.0)) * area_m2
+    equipment = float(env.get("equipment_w_m2", 0.0)) * area_m2
+    if min(lighting, equipment) < 0:
+        raise ValueError(f"Room {room_id}: lighting_w_m2 and equipment_w_m2 must be >= 0")
+    margin = float(env.get("safety_margin_pct", 10.0))
+    if not (0 <= margin <= 50):
+        raise ValueError(f"Room {room_id}: safety_margin_pct must be between 0 and 50")
+    parts = {"walls_w": walls, "glazing_conduction_w": glass_cond, "glazing_solar_w": glass_solar,
+             "people_w": people, "lighting_w": lighting, "equipment_w": equipment}
+    subtotal = sum(parts.values())
+    total_w = max(subtotal, 0.0) * (1 + margin / 100.0)
+    return {"components_w": {k: round(v, 1) for k, v in parts.items()}, "subtotal_w": round(subtotal, 1),
+            "safety_margin_pct": margin, "total_kw": total_w / 1000.0, "total_tr": total_w / 1000.0 / KW_PER_TR,
+            "people_defaults_used": "person_sensible_w" not in env and bool(occupancy)}
+
+
 def _next_size(value: float, series) -> float | None:
     return next((x for x in series if x >= value - 1e-9), None)
 
@@ -71,6 +120,8 @@ def design_package(*, building_type: str, climate_zone: str, rooms: List[Dict[st
         oa_h_diff = (oa["enthalpy_kj_kg"] - ra["enthalpy_kj_kg"], oa["density_kg_m3"])
 
     seen = set()
+    people_defaults_used = False
+    component_rooms = 0
     schedule: List[Dict[str, Any]] = []
     total_tr = 0.0
     total_area = 0.0
@@ -86,8 +137,19 @@ def design_package(*, building_type: str, climate_zone: str, rooms: List[Dict[st
         if area_m2 <= 0:
             raise ValueError(f"Room {rid}: area_m2 must be greater than zero")
         occ = room.get("occupancy")
-        est = load.estimate_load(building_type, area_m2 * SQM_TO_SQFT, climate_zone, None if occ is None else int(occ))
-        tr = float(est["total_tonnage_raw"])
+        load_extra: Dict[str, Any] = {}
+        if room.get("envelope") is not None:
+            comp = component_load_kw(room["envelope"], area_m2, None if occ is None else int(occ), rid)
+            tr = comp["total_tr"]
+            load_extra = {"load_method": "component summation", "components_w": comp["components_w"],
+                          "safety_margin_pct": comp["safety_margin_pct"]}
+            if comp["people_defaults_used"]:
+                people_defaults_used = True
+            component_rooms += 1
+        else:
+            est = load.estimate_load(building_type, area_m2 * SQM_TO_SQFT, climate_zone, None if occ is None else int(occ))
+            tr = float(est["total_tonnage_raw"])
+            load_extra = {"load_method": "benchmark"}
         cfm = tr * cfm_per_tr
         flow_m3h = cfm * M3H_PER_CFM
         sized = duct.size_duct_velocity_method(flow_m3h, target_velocity_ms, roughness)
@@ -112,7 +174,7 @@ def design_package(*, building_type: str, climate_zone: str, rooms: List[Dict[st
             "supply_airflow_cfm": round(cfm, 0), "supply_airflow_m3h": round(flow_m3h, 0),
             "duct_diameter_mm": sized["recommended_diameter_mm"], "duct_velocity_ms": sized["actual_velocity_ms"],
             "duct_friction_pa_per_m": sized["actual_friction_pa_per_m"], "terminal_equipment": _terminal_class(tr),
-            "source_calculation": f"room:{rid}", **entry_extra,
+            "source_calculation": f"room:{rid}", **load_extra, **entry_extra,
         })
         total_tr += tr
         total_area += area_m2
@@ -153,10 +215,13 @@ def design_package(*, building_type: str, climate_zone: str, rooms: List[Dict[st
             {"name": "diversity_factor_pct", "value": diversity_factor_pct, "basis": "100 means no diversity applied."},
             {"name": "fan_pressure_pa", "value": fan_pressure_pa, "basis": "Assumed total fan pressure per room unit for motor sizing; replace with the real duct and coil pressure drop."},
             {"name": "chw_delta_t_c", "value": chw_delta_t_c, "basis": "Chilled-water temperature difference for header flow and pipe size (default 5.5 K)."},
-        ],
+        ] + ([{"name": "component_load_method", "value": f"{component_rooms} room(s)",
+               "basis": "Rooms with an envelope input use steady-state component summation (U x A x dT, glazing solar = A x SHGC x irradiance, people, lighting, equipment, plus safety margin). All coefficients are supplied by the caller; no CLTD or thermal-storage effects."}] if component_rooms else [])
+          + ([{"name": "person_heat_gain_w", "value": f"{DEFAULT_PERSON_SENSIBLE_W:g} sensible + {DEFAULT_PERSON_LATENT_W:g} latent",
+               "basis": "Typical seated-office values used where the envelope input did not give person_sensible_w/person_latent_w; replace for the actual activity level."}] if people_defaults_used else []),
         "limitations": [
             "Preliminary/budgetary rule-of-thumb loads; not a Manual J, CLTD or HAP calculation.",
-            "Room loads use the building-type/climate benchmark per area; envelope, orientation and glazing are not modelled. Outdoor air is reported per ASHRAE 62.1 reference rates but its load is NOT added to the room loads (the benchmark may already include fresh air); the engineer must decide.",
+            "Rooms without an envelope input use the building-type/climate benchmark per area, in which envelope, orientation and glazing are not modelled. Outdoor air is reported per ASHRAE 62.1 reference rates but its load is NOT added to the room loads (the benchmark may already include fresh air); the engineer must decide.",
             "Chilled-water header size covers the block load only; sub-mains, fittings and equipment pressure drops are not sized.",
             "Equipment entries are classes and generic nominal-capacity bands (split up to 5 TR, package up to 20 TR, chiller above 20 TR), not selected models; final selection needs a qualified engineer and manufacturer data. Plant options are a single unit or two equal units, each rounded up to the next nominal size; redundancy is not assumed.",
             "Duct sizing is branch-level by velocity only; no network pressure balance or fittings loss is included.",

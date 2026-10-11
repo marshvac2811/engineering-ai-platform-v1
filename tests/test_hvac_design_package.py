@@ -129,3 +129,28 @@ def test_nominal_size_bands_hand_checked():
     ps = r["plant_summary"]
     assert ps["plant_option_single_tr"] >= block and (ps["plant_option_two_equal_units_tr"] * 2) >= block - 0.01
     assert ps["plant_option_two_equal_units_tr"] <= ps["plant_option_single_tr"]
+
+
+def test_component_load_summation_hand_checked():
+    env = {"walls": [{"area_m2": 20, "u_value": 0.5, "delta_t_c": 10}],                       # 100 W
+           "glazing": [{"area_m2": 10, "u_value": 2.8, "delta_t_c": 10, "shgc": 0.4, "solar_w_m2": 500}],  # 280 + 2000 W
+           "lighting_w_m2": 10, "equipment_w_m2": 15, "safety_margin_pct": 10}                # 500 + 750 W (50 m2)
+    r = design_package(building_type="office", climate_zone="hot_dry",
+                       rooms=[{"room_id": "A", "name": "Perimeter", "area_m2": 50, "occupancy": 10, "envelope": env}])
+    row = r["room_schedule"][0]
+    # people: 10 x (75 + 55) = 1300 W  ->  subtotal 100+280+2000+1300+500+750 = 4930 W, x1.10 = 5423 W
+    assert row["load_method"] == "component summation"
+    assert row["components_w"]["glazing_solar_w"] == 2000 and row["components_w"]["people_w"] == 1300
+    assert row["cooling_load_kw"] == pytest.approx(5.42, abs=0.01)
+    assert row["cooling_load_tr"] == pytest.approx(5.423 / 3.5168525, abs=0.01)
+    assert any(a["name"] == "person_heat_gain_w" for a in r["assumptions"])
+    assert any(a["name"] == "component_load_method" for a in r["assumptions"])
+
+
+def test_component_load_rejects_missing_coefficients_and_mixes_with_benchmark():
+    with pytest.raises(ValueError):
+        design_package(building_type="office", climate_zone="hot_dry",
+                       rooms=[{"area_m2": 20, "envelope": {"glazing": [{"area_m2": 5, "u_value": 2.8, "delta_t_c": 10}]}}])  # no shgc
+    r = design_package(building_type="office", climate_zone="hot_dry",
+                       rooms=[{"room_id": "A", "area_m2": 20, "envelope": {"lighting_w_m2": 10}}, {"room_id": "B", "area_m2": 20}])
+    assert [x["load_method"] for x in r["room_schedule"]] == ["component summation", "benchmark"]
