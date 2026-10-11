@@ -342,3 +342,8 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - The DELETE of the trial data was blocked/cancelled by the tooling when run from the assistant; the user must run the 4 DELETE statements in the Supabase SQL editor (data is already archived).
 - Serial shown on job card, PDF, XLSX Summary, Gmail reply text, register (first column), register Excel (Master Register sheet, autofilter on all sheets). Reports tab = Master Register (dispatched), search by serial/report/job/project/client/skill/reviewer. Job id lookup (Gmail draft) accepts serial no.
 - skills/calculators/prose.py: plain-sentence extraction for fan, coil, heat recovery, water pipe, ventilation, psychrometric, cable and duct pressure drop; extra routing phrases.
+
+## Checkpoint 2026-10-12 (serial numbers live in DB; cleanup pending confirmation)
+- Applied migration 014 to live Supabase: automation_jobs.serial_no, job_serial_seq (untouched, next = 00001), next_job_serial() (service_role only). Format YYYYMMDDHHMM (IST) + 5 digits.
+- Archive copy of all current trial data taken in schema archive_20261012 (jobs 40, events 236, reports 16, usage_events 341). Live tables NOT yet cleared: delete call was cancelled by the user's permission prompt. Storage objects (32 files) also not deleted. Needs explicit user confirmation before retrying.
+- Gmail connection (integration_connections/tokens) deliberately kept.
