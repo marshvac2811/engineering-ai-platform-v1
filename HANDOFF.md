@@ -336,3 +336,9 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - PDFs: branded header, faint monogram + diagonal "MARS ENGINEERING SOLUTIONS / APPROVED CONTROLLED DOCUMENT" watermark, address footer on every page. XLSX: print header/footer on every sheet, brand row on Summary, tab colours.
 - Address is a placeholder "Delhi NCR, India" until the exact registered address is set in Render (MARS_ADDRESS). Phone/email taken from user's profile.
 - Not done: Excel image watermark (openpyxl cannot place header images simply).
+
+## Checkpoint 2026-10-11 (serial numbers, master register, layman catalogue intake)
+- Migration 014a applied live: archive_20261011 schema (backup copy of 40 jobs, 236 events, 16 report rows, 4 integration events), automation_jobs.serial_no (unique), sequence public.job_serial_seq, function public.next_job_serial() (service_role only). Serial = YYYYMMDDHHMM (IST) + 5-digit counter, e.g. 20261010201000001. jobs/serials.py is the local fallback; Supabase store calls rpc next_job_serial on first save.
+- The DELETE of the trial data was blocked/cancelled by the tooling when run from the assistant; the user must run the 4 DELETE statements in the Supabase SQL editor (data is already archived).
+- Serial shown on job card, PDF, XLSX Summary, Gmail reply text, register (first column), register Excel (Master Register sheet, autofilter on all sheets). Reports tab = Master Register (dispatched), search by serial/report/job/project/client/skill/reviewer. Job id lookup (Gmail draft) accepts serial no.
+- skills/calculators/prose.py: plain-sentence extraction for fan, coil, heat recovery, water pipe, ventilation, psychrometric, cable and duct pressure drop; extra routing phrases.

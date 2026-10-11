@@ -25,9 +25,26 @@ class SupabaseJobStore(JobStore):
         self.jobs_table = jobs_table
         self.events_table = events_table
 
+    def _allocate_serial(self) -> str:
+        try:
+            data = self.client.rpc("next_job_serial").execute().data
+            if isinstance(data, list):
+                data = data[0] if data else None
+            if isinstance(data, dict):
+                data = next(iter(data.values()), None)
+            if data:
+                return str(data)
+        except Exception:
+            pass
+        from .serials import local_serial  # database sequence unavailable: never block job creation
+        return local_serial()
+
     def save(self, job: Job) -> Job:
+        if not job.serial_no:
+            job.serial_no = self._allocate_serial()
         payload = job.to_dict()
         row = {
+            "serial_no": job.serial_no,
             "job_id": job.job_id,
             "tenant_id": job.tenant_id,
             "source": job.source,
@@ -514,7 +531,7 @@ class SupabaseJobStore(JobStore):
         return tuple(self._hydrate(row) for row in (getattr(response, "data", None) or []))
 
     def list_summaries(self, *, tenant_id: Optional[str] = None) -> Iterable[Dict[str, Any]]:
-        columns = "job_id,tenant_id,source,requested_skill_id,status,skill_id,report_id,attempt,created_at,updated_at"
+        columns = "job_id,serial_no,tenant_id,source,requested_skill_id,status,skill_id,report_id,attempt,created_at,updated_at"
         query = self.client.table(self.jobs_table).select(columns)
         if tenant_id:
             query = query.eq("tenant_id", tenant_id)
@@ -564,6 +581,7 @@ class SupabaseJobStore(JobStore):
             warnings=row.get("warnings") or [],
             attachments=row.get("attachments") or [],
             attempt=int(row.get("attempt") or 0),
+            serial_no=row.get("serial_no"),
             created_at=row.get("created_at") or "",
             updated_at=row.get("updated_at") or "",
         )

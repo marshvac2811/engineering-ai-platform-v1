@@ -128,6 +128,7 @@ class Job:
     attachments: List[Dict[str, Any]] = field(default_factory=list)
     events: List[JobEvent] = field(default_factory=list)
     attempt: int = 0
+    serial_no: Optional[str] = None
     created_at: str = field(default_factory=now_iso)
     updated_at: str = field(default_factory=now_iso)
 

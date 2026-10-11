@@ -175,11 +175,11 @@ details.more>.body{padding:0 12px 12px}
 
 
 <section class="card">
-<h2>Engineering Report Register</h2>
-<p class="muted">Historical controlled evidence archive. <strong>A new trial appears here only after approval/dispatch.</strong> For a trial that has just been submitted, use the Jobs queue below; this prevents older reports from being mistaken for the current run.</p>
+<h2>Master Report Register</h2>
+<p class="muted">Every report appears here after approval and dispatch, with its serial number. Search by serial no., project, client, skill or reviewer, and export the whole register to Excel. Reports still awaiting review are in <strong>Review &amp; Jobs</strong>.</p>
 <div id="regTabs" class="actions" style="flex-wrap:wrap"></div>
 <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
- <input id="regSearch" placeholder="Search report ID, job ID, skill, reviewer or request" oninput="regSearchChanged()" style="flex:1;min-width:220px">
+ <input id="regSearch" placeholder="Search serial no., report ID, job ID, project, client, skill, reviewer or request" oninput="regSearchChanged()" style="flex:1;min-width:220px">
  <select id="regSkill" onchange="loadRegister()" style="border:1px solid #ccd3df;border-radius:9px;padding:10px;font:inherit"><option value="">All skills</option></select>
  <button onclick="exportRegister()">Export to Excel</button>
 </div>
@@ -211,7 +211,7 @@ details.more>.body{padding:0 12px 12px}
 <div class="trial-grid">
   <div class="trial"><h3>1. Connect</h3><p id="gmailStatus" class="small">Checking connection...</p><button type="button" class="secondary" id="gmailConnect">Connect Gmail</button></div>
   <div class="trial"><h3>2. Sync inbox</h3><p class="small">Gmail search filter</p><input id="gmailQuery" type="text" value="label:engineering-requests is:unread" style="width:100%"><button type="button" class="secondary" id="gmailSync" style="margin-top:8px">Sync now</button></div>
-  <div class="trial"><h3>3. Draft reply</h3><p class="small">Job ID of an approved Gmail job</p><input id="gmailJobId" type="text" placeholder="full job id" style="width:100%"><button type="button" class="secondary" id="gmailDraft" style="margin-top:8px">Create Gmail draft</button></div>
+  <div class="trial"><h3>3. Draft reply</h3><p class="small">Serial no. (or job ID) of an approved Gmail job</p><input id="gmailJobId" type="text" placeholder="serial no. or job id" style="width:100%"><button type="button" class="secondary" id="gmailDraft" style="margin-top:8px">Create Gmail draft</button></div>
 </div>
 <div id="gmailMsg" class="msg"></div>
 </section>
@@ -693,7 +693,7 @@ function jobHtml(j){
  const skillText=String(j.requested_skill_id||j.skill_id||"").trim();
  const project=String(j.project_context?.project||"").trim();
  const client=String(j.project_context?.client||"").trim();
- let html='<div class="job '+(review?"review":"")+'" style="'+(isLatestTrial?"border:2px solid #1769e0;box-shadow:0 0 0 2px rgba(23,105,224,.08);":"")+'"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>Engineering Request'+(isLatestTrial?' <span style="font-size:11px;color:#1769e0">CURRENT TRIAL</span>':"")+'</strong><span class="small">Job '+esc(rawId.slice(0,8))+'</span></div>'+
+ let html='<div class="job '+(review?"review":"")+'" style="'+(isLatestTrial?"border:2px solid #1769e0;box-shadow:0 0 0 2px rgba(23,105,224,.08);":"")+'"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>Engineering Request'+(isLatestTrial?' <span style="font-size:11px;color:#1769e0">CURRENT TRIAL</span>':"")+'</strong><span class="small">'+(j.serial_no?'<strong>Serial '+esc(j.serial_no)+'</strong> &middot; ':'')+'Job '+esc(rawId.slice(0,8))+'</span></div>'+
   '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>'+
   (skillText?'<div class="small" style="margin-top:5px"><strong>Capability:</strong> '+esc(skillText)+'</div>':"")+
   (project?'<div class="small" style="margin-top:5px"><strong>Project:</strong> '+esc(project)+'</div>':"")+
@@ -760,8 +760,8 @@ function jobHtml(j){
  html+='</div>';return html;
 }
 
-window.regView="all";window.regShown=50;
-const REG_TABS=[["all","All Reports"],["pending_review","Pending Review"],["approved","Approved"],["dispatched","Dispatched"],["evidence","Evidence"],["revision_history","Revision History"],["failed","Failed / Rework"]];
+window.regView="dispatched";window.regShown=50;
+const REG_TABS=[["dispatched","Master Register"],["pending_review","Pending Review"],["approved","Approved"],["all","All Reports"],["evidence","Evidence"],["revision_history","Revision History"],["failed","Failed / Rework"]];
 let regTimer;
 const ACRONYMS={vfd:"VFD",hvac:"HVAC",bms:"BMS",vrf:"VRF",boq:"BOQ",cop:"COP",ach:"ACH"};
 function niceText(v){const t=String(v==null?"":v).replace(/_/g," ").trim().split(" ").map(w=>ACRONYMS[w.toLowerCase()]||w).join(" ");return t?t.charAt(0).toUpperCase()+t.slice(1):"-";}
@@ -816,10 +816,10 @@ async function loadRegister(){
   if(!d.reports.length){box.innerHTML='<div class="empty">No reports match this view yet.</div>';return;}
   const btn=(label,fn)=>'<button class="secondary" style="padding:5px 9px;font-size:12px" onclick="'+fn+'">'+label+'</button>';
   box.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'+
-   (window.regView==="evidence"?["Date","Report","Revision","Status","Evidence SHA-256","PDF SHA-256","Excel SHA-256","Drawing Manifest SHA-256","Drawing PDF SHA-256","Drawing DXF SHA-256","Open"]:window.regView==="revision_history"?["Date","Report","Revision","Status","Superseded","Parent Report","Reviewed by","Approved","Dispatched","Open"]:["Date","Report","Skill / request","Status","Rev","Reviewed by","Approved","Dispatched","Open"]).map(h=>'<th style="text-align:left;border-bottom:2px solid #e1e5eb;padding:7px;white-space:nowrap">'+h+'</th>').join("")+'</tr></thead><tbody>'+
+   (window.regView==="evidence"?["Date","Serial No.","Revision","Status","Evidence SHA-256","PDF SHA-256","Excel SHA-256","Drawing Manifest SHA-256","Drawing PDF SHA-256","Drawing DXF SHA-256","Open"]:window.regView==="revision_history"?["Date","Serial No.","Revision","Status","Superseded","Parent Report","Reviewed by","Approved","Dispatched","Open"]:["Date","Serial No.","Skill / request","Status","Rev","Reviewed by","Approved","Dispatched","Open"]).map(h=>'<th style="text-align:left;border-bottom:2px solid #e1e5eb;padding:7px;white-space:nowrap">'+h+'</th>').join("")+'</tr></thead><tbody>'+
    d.reports.map(x=>{const act=(fn,kind)=>fn+"('"+x.job_id+"','"+kind+"')";return '<tr style="border-bottom:1px solid #edf0f4;vertical-align:top">'+
     '<td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.created_at))+'</td>'+
-    '<td style="padding:7px" title="Report '+esc(x.report_id)+' / Job '+esc(x.job_id)+'">'+esc(String(x.report_id||"").slice(0,8))+'<div class="small">job '+esc(String(x.job_id||"").slice(0,8))+'</div></td>'+
+    '<td style="padding:7px;white-space:nowrap" title="Serial '+esc(x.serial_no||"")+' / Report '+esc(x.report_id)+' / Job '+esc(x.job_id)+'"><strong>'+esc(x.serial_no||String(x.report_id||"").slice(0,8))+'</strong><div class="small">report '+esc(String(x.report_id||"").slice(0,8))+' &middot; job '+esc(String(x.job_id||"").slice(0,8))+'</div></td>'+
     (window.regView==="evidence"?'<td style="padding:7px">V'+esc(x.revision)+'</td><td style="padding:7px;font-weight:700">'+esc(niceText(x.status))+'</td><td style="padding:7px;max-width:180px;word-break:break-all">'+esc(x.evidence_sha256||"-")+'</td><td style="padding:7px;max-width:180px;word-break:break-all">'+esc(x.pdf_sha256||"-")+'</td><td style="padding:7px;max-width:180px;word-break:break-all">'+esc(x.xlsx_sha256||"-")+'</td>':
      window.regView==="revision_history"?'<td style="padding:7px">V'+esc(x.revision)+'</td><td style="padding:7px;font-weight:700">'+esc(niceText(x.status))+'</td><td style="padding:7px">'+(x.superseded?"Yes":"No")+'</td><td style="padding:7px">'+esc(x.supersedes_report_id||"-")+'</td><td style="padding:7px">'+esc(x.reviewed_by||"-")+'</td><td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.approved_at))+'</td><td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.dispatched_at))+'</td>':
      '<td style="padding:7px;min-width:160px"><strong>'+esc(niceText(x.skill_id))+'</strong>'+(x.request?'<div class="small">'+esc(String(x.request).slice(0,110))+'</div>':"")+'</td><td style="padding:7px;font-weight:700">'+esc(niceText(x.status))+'</td><td style="padding:7px">V'+esc(x.revision)+(x.superseded?' <span class="small">(superseded)</span>':'')+'</td><td style="padding:7px">'+esc(x.reviewed_by||"-")+'</td><td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.approved_at))+'</td><td style="padding:7px;white-space:nowrap">'+esc(fmtDate(x.dispatched_at))+'</td>')+

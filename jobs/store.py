@@ -25,6 +25,9 @@ class InMemoryJobStore(JobStore):
         self._artifacts: Dict[str, Dict[str, object]] = {}
 
     def save(self, job: Job) -> Job:
+        if not job.serial_no:
+            from .serials import local_serial
+            job.serial_no = local_serial()
         self._jobs[job.job_id] = job
         return job
 

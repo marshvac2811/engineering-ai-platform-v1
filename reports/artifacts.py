@@ -248,7 +248,7 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
     if project_context.get("client"):
         header_rows.append(("Client", project_context.get("client")))
     header_rows += [
-        ("Report ID", job.report_id),
+        ("Serial No.", getattr(job, "serial_no", None) or "-"), ("Report ID", job.report_id),
         ("Scope of work", capabilities),
         ("Request", orch.get("normalized_request") or (tasks[0].get("objective") if tasks else None)),
         ("Approved by", f"{approval['by']} on {approval['at']}"),
@@ -366,7 +366,7 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
     story.append(Paragraph("These identifiers allow the report to be matched to the stored engineering evidence record.", small))
     story.append(Spacer(1, 3))
     story.append(kv_table([
-        ("Job ID", job.job_id), ("Report ID", job.report_id),
+        ("Serial No.", getattr(job, "serial_no", None) or "-"), ("Job ID", job.job_id), ("Report ID", job.report_id),
         ("Evidence record SHA-256", manifest.get("bundle_sha256")), ("Inputs SHA-256", manifest.get("input_hash")),
         ("Evidence schema", manifest.get("schema_version")),
     ]))
@@ -438,7 +438,7 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
     if project_context.get("client"):
         summary_rows.append(("Client", project_context.get("client")))
     summary_rows += [
-        ("Job ID", job.job_id), ("Report ID", job.report_id), ("Status", document_status),
+        ("Serial No.", getattr(job, "serial_no", None) or ""), ("Job ID", job.job_id), ("Report ID", job.report_id), ("Status", document_status),
         ("Scope of work", ", ".join(humanize(t.get("capability_id")) for t in tasks if t.get("capability_id")) or humanize(job.requested_skill_id or job.skill_id)),
         ("Request", (request.get("orchestration") or {}).get("normalized_request")),
         ("Approved by", approval["by"]), ("Approval date", approval["at"]),

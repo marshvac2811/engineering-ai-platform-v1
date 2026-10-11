@@ -133,6 +133,18 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
 from skills.calculators.catalogue import CALCULATORS as _CALCULATORS  # noqa: E402
 for _calc in _CALCULATORS:
     ROUTING_RULES.setdefault(_calc.skill_id, tuple(_calc.routing))
+_EXTRA_ROUTING = {
+    "fan_power_sizing": ("select a fan", "size a fan", "size the fan", "fan for", "fan selection", "fan motor size"),
+    "cooling_coil_load": ("cooling coil", "size a coil", "coil for"),
+    "heat_recovery_assessment": ("heat recovery", "energy recovery", "heat wheel", "recovery ventilator"),
+    "psychrometric_properties": ("psychrometric", "humidity ratio", "dew point"),
+    "ventilation_rate": ("fresh air for", "ventilation for", "outdoor air for"),
+    "water_pipe_sizing": ("size a pipe", "pipe size", "water pipe"),
+    "duct_pressure_drop": ("duct pressure drop", "duct friction loss", "pressure drop in duct"),
+    "cable_voltage_drop": ("voltage drop", "cable size", "cable sizing"),
+}
+for _sid, _terms in _EXTRA_ROUTING.items():
+    ROUTING_RULES[_sid] = tuple(dict.fromkeys(tuple(ROUTING_RULES.get(_sid, ())) + _terms))
 
 FIELD_QUESTIONS = {
     "components": "Provide facade/fenestration components as JSON with name, area_m2 and u_factor for each component.",
@@ -934,6 +946,10 @@ def build_plan(
             rt = rooms_text_from_prose(text)
             if rt and extract_room_schedule(rt)["rooms"]:
                 merged = {**merged, "rooms_text": rt}
+    from skills.calculators.prose import extract_catalogue_inputs
+    prose_inputs = extract_catalogue_inputs(skill_id, text) if skill_id else {}
+    if prose_inputs:
+        merged = {**prose_inputs, **merged}
     assumption_resolved, input_assumptions, assumption_blockers = resolve_input_assumptions(
         skill_id,
         merged,

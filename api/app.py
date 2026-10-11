@@ -764,6 +764,7 @@ class APIApp:
                     "",
                     note,
                     "" if note else None,
+                    f"Report serial no.: {job.serial_no}" if getattr(job, "serial_no", None) else None,
                     f"Report reference: {job.report_id or job.job_id}",
                     f"PDF SHA-256: {pdf_meta.get('sha256')}" if pdf_meta.get("sha256") else None,
                     f"Workbook SHA-256: {xlsx_meta.get('sha256')}" if xlsx_meta.get("sha256") else None,

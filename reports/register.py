@@ -29,6 +29,7 @@ def register_row(artifact: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any
     """Merge one report-artifact row with its job summary into a register row."""
     job_status = _s(job.get("status")) or _s(artifact.get("status"))
     return {
+        "serial_no": job.get("serial_no") or artifact.get("serial_no"),
         "report_id": artifact.get("report_id"),
         "job_id": artifact.get("job_id") or job.get("job_id"),
         "revision": artifact.get("version") or 1,
@@ -78,8 +79,11 @@ def rows_from_jobs(jobs: Iterable[Any]) -> List[Dict[str, Any]]:
     """Fallback for stores without a report-artifact table (in-memory/local)."""
     rows = []
     for job in jobs:
-        if not getattr(job, "report_id", None):
+        status_value = job.status.value if hasattr(job.status, "value") else _s(job.status)
+        report_id = getattr(job, "report_id", None) or (getattr(job, "result", None) or {}).get("report_id")
+        if not report_id and status_value not in {"dispatched", "completed"}:
             continue
+        report_id = report_id or job.job_id
         events = list(getattr(job, "events", []) or [])
         approval = next((e for e in reversed(events) if _s(getattr(e, "status", "")) == "approved"), None)
         artifacts = ((getattr(job, "dispatch_result", None) or {}).get("artifacts") or {})
@@ -87,7 +91,7 @@ def rows_from_jobs(jobs: Iterable[Any]) -> List[Dict[str, Any]]:
         status = job.status.value if hasattr(job.status, "value") else _s(job.status)
         dispatched = next((e.created_at for e in reversed(events) if _s(getattr(e, "status", "")) == "dispatched"), None)
         artifact = {
-            "report_id": job.report_id, "job_id": job.job_id, "version": artifacts.get("version") or 1,
+            "report_id": report_id, "job_id": job.job_id, "version": artifacts.get("version") or 1,
             "status": "approved" if status in {"approved", "dispatching", "dispatched", "completed"} else "draft",
             "title": f"Engineering Report - {job.skill_id or job.requested_skill_id or 'analysis'}",
             "skill_id": job.skill_id or job.requested_skill_id, "created_at": job.created_at,
@@ -99,7 +103,7 @@ def rows_from_jobs(jobs: Iterable[Any]) -> List[Dict[str, Any]]:
             "xlsx_sha256": xlsx.get("sha256"), "evidence_sha256": artifacts.get("evidence_sha256"),
         }
         request = ((getattr(job, "orchestration", None) or {}).get("normalized_request"))
-        rows.append(register_row(artifact, {"job_id": job.job_id, "status": status, "source": job.source, "request": request,
+        rows.append(register_row(artifact, {"job_id": job.job_id, "serial_no": getattr(job, "serial_no", None), "status": status, "source": job.source, "request": request,
                                             "skill_id": job.skill_id, "requested_skill_id": job.requested_skill_id,
                                             "created_at": job.created_at, "project_context": getattr(job, "project_context", {})}))
     rows.sort(key=lambda r: _s(r["created_at"]), reverse=True)
@@ -127,7 +131,7 @@ def filter_rows(rows: List[Dict[str, Any]], *, view: str = "all", q: str = "", s
             continue
         if skill and _s(r["skill_id"]) != skill:
             continue
-        if needle and needle not in " ".join(_s(r.get(k)) for k in ("report_id", "job_id", "title", "request", "skill_id", "reviewed_by", "status")).lower():
+        if needle and needle not in " ".join(_s(r.get(k)) for k in ("serial_no", "report_id", "job_id", "title", "request", "project", "client", "skill_id", "reviewed_by", "status")).lower():
             continue
         out.append(r)
     return out
@@ -141,8 +145,8 @@ def build_register_workbook(rows: List[Dict[str, Any]]) -> bytes:
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Report Register"
-    header = ["Date", "Job ID", "Report ID", "Revision", "Project", "Client", "Request", "Skill",
+    ws.title = "Master Register"
+    header = ["Serial No.", "Date", "Job ID", "Report ID", "Revision", "Project", "Client", "Request", "Skill",
               "Status", "Reviewed By", "Approval Date", "Dispatch Date", "PDF Available", "Evidence XLSX Available",
               "PDF SHA-256", "Evidence SHA-256", "Drawing Status", "Drawing Manifest SHA-256", "Drawing PDF SHA-256", "Drawing DXF ZIP SHA-256", "Drawing PDF Available", "Drawing DXF Available", "Superseded"]
     ws.append(header)
@@ -151,43 +155,46 @@ def build_register_workbook(rows: List[Dict[str, Any]]) -> bytes:
         c.fill, c.font = fill, font
     for r in rows:
         ws.append([
-            _s(r.get("created_at")), _s(r.get("job_id")), _s(r.get("report_id")), r.get("revision") or 1,
+            _s(r.get("serial_no")), _s(r.get("created_at")), _s(r.get("job_id")), _s(r.get("report_id")), r.get("revision") or 1,
             _s(r.get("project")), _s(r.get("client")), _s(r.get("request")), _s(r.get("skill_id")),
             _s(r.get("status")), _s(r.get("reviewed_by")), _s(r.get("approved_at")), _s(r.get("dispatched_at")),
             "Yes" if r.get("pdf_available") else "No", "Yes" if r.get("xlsx_available") else "No",
             _s(r.get("pdf_sha256")), _s(r.get("evidence_sha256")), _s(r.get("drawing_status")), _s(r.get("drawing_manifest_sha256")), _s(r.get("drawing_pdf_sha256")), _s(r.get("drawing_dxf_zip_sha256")), "Yes" if r.get("drawing_pdf_available") else "No", "Yes" if r.get("drawing_dxf_available") else "No", "Yes" if r.get("superseded") else "No",
         ])
-    widths = [20, 24, 24, 10, 22, 22, 46, 22, 16, 22, 20, 20, 12, 18, 40, 40, 20, 40, 40, 40, 18, 18, 12]
+    widths = [22, 20, 24, 24, 10, 22, 22, 46, 22, 16, 22, 20, 20, 12, 18, 40, 40, 20, 40, 40, 40, 18, 18, 12]
     for i, w in enumerate(widths):
         ws.column_dimensions[chr(65 + i)].width = w
     for row in ws.iter_rows(min_row=2):
         for c in row:
             c.alignment = Alignment(wrap_text=True, vertical="top")
     ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions  # filter/search on every column in Excel
 
     ev = wb.create_sheet("Evidence Register")
-    ev.append(["Date", "Job ID", "Report ID", "Revision", "Status", "Evidence SHA-256", "PDF SHA-256", "Excel SHA-256", "PDF Available", "Evidence XLSX Available"])
+    ev.append(["Serial No.", "Date", "Job ID", "Report ID", "Revision", "Status", "Evidence SHA-256", "PDF SHA-256", "Excel SHA-256", "PDF Available", "Evidence XLSX Available"])
     for cell in ev[1]:
         cell.fill, cell.font = fill, font
     for r in rows:
         ev.append([
-            _s(r.get("created_at")), _s(r.get("job_id")), _s(r.get("report_id")), r.get("revision") or 1,
+            _s(r.get("serial_no")), _s(r.get("created_at")), _s(r.get("job_id")), _s(r.get("report_id")), r.get("revision") or 1,
             _s(r.get("status")), _s(r.get("evidence_sha256")), _s(r.get("pdf_sha256")), _s(r.get("xlsx_sha256")),
             "Yes" if r.get("pdf_available") else "No", "Yes" if r.get("xlsx_available") else "No",
         ])
     ev.freeze_panes = "A2"
+    ev.auto_filter.ref = ev.dimensions
 
     rh = wb.create_sheet("Revision History")
-    rh.append(["Date", "Job ID", "Report ID", "Revision", "Status", "Superseded", "Supersedes Report ID", "Reviewed By", "Approval Date", "Dispatch Date"])
+    rh.append(["Serial No.", "Date", "Job ID", "Report ID", "Revision", "Status", "Superseded", "Supersedes Report ID", "Reviewed By", "Approval Date", "Dispatch Date"])
     for cell in rh[1]:
         cell.fill, cell.font = fill, font
     for r in rows:
         rh.append([
-            _s(r.get("created_at")), _s(r.get("job_id")), _s(r.get("report_id")), r.get("revision") or 1,
+            _s(r.get("serial_no")), _s(r.get("created_at")), _s(r.get("job_id")), _s(r.get("report_id")), r.get("revision") or 1,
             _s(r.get("status")), "Yes" if r.get("superseded") else "No", _s(r.get("supersedes_report_id")),
             _s(r.get("reviewed_by")), _s(r.get("approved_at")), _s(r.get("dispatched_at")),
         ])
     rh.freeze_panes = "A2"
+    rh.auto_filter.ref = rh.dimensions
 
     for sheet in (ev, rh):
         for col in sheet.columns:

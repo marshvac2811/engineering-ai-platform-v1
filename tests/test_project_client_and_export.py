@@ -89,8 +89,8 @@ def test_register_export_endpoint_returns_a_real_workbook():
     assert out["status"].startswith("200")
     assert "spreadsheet" in out["headers"]["Content-Type"]
     wb = load_workbook(BytesIO(data))
-    rows = list(wb["Report Register"].iter_rows(values_only=True))
-    assert rows[0][:6] == ("Date", "Job ID", "Report ID", "Revision", "Project", "Client")
+    rows = list(wb["Master Register"].iter_rows(values_only=True))
+    assert rows[0][:7] == ("Serial No.", "Date", "Job ID", "Report ID", "Revision", "Project", "Client")
     assert any("Hotel ABC Retrofit" in (r or ()) for r in rows[1:])
 
 
@@ -98,4 +98,4 @@ def test_register_workbook_builder_handles_empty_rows():
     from openpyxl import load_workbook
     from io import BytesIO
     wb = load_workbook(BytesIO(build_register_workbook([])))
-    assert wb["Report Register"]["A1"].value == "Date"
+    assert wb["Master Register"]["A1"].value == "Serial No."

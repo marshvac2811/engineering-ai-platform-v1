@@ -550,6 +550,15 @@ class JobService:
         full = _re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", jid)
         if full:
             return jid
+        if _re.fullmatch(r"\d{12,20}", jid):  # report/job serial number, e.g. 20261010201000001
+            summ = getattr(self.store, "list_summaries", None)
+            rows = summ(tenant_id=self.tenant_id) if summ else self.store.list(tenant_id=self.tenant_id)
+            for r in rows:
+                rid = r.get("job_id") if isinstance(r, dict) else r.job_id
+                ser = r.get("serial_no") if isinstance(r, dict) else getattr(r, "serial_no", None)
+                if ser and str(ser) == jid:
+                    return str(rid)
+            raise KeyError(f"Unknown serial number: {jid}")
         if _re.fullmatch(r"[0-9a-fA-F-]{8,35}", jid):
             summ = getattr(self.store, "list_summaries", None)
             rows = summ(tenant_id=self.tenant_id) if summ else self.store.list(tenant_id=self.tenant_id)
