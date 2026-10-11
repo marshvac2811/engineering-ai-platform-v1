@@ -9,9 +9,9 @@ def test_plan_is_persisted_on_job_and_answers_replan_until_ready():
     job = service.create_from_plan(plan)
     assert job.orchestration["normalized_request"] == "Size a duct"
     assert job.status == JobStatus.AWAITING_INFORMATION
-    service.provide_missing_information(job.job_id, {"airflow": 8000, "method": "velocity", "duct_type": "round"})
-    assert job.status == JobStatus.AWAITING_INFORMATION
-    service.provide_missing_information(job.job_id, {"target_velocity_ms": 7, "material": "gss"})
+    # Only the airflow is genuinely unknown; method/shape/velocity are governed, disclosed assumptions.
+    assert job.orchestration["missing_inputs"] == ["airflow"]
+    service.provide_missing_information(job.job_id, {"airflow": 8000})
     assert job.status == JobStatus.HUMAN_REVIEW
     assert job.orchestration["status"] == "ready_for_execution"
     assert job.result["status"] == "completed"
@@ -20,9 +20,9 @@ def test_plan_is_persisted_on_job_and_answers_replan_until_ready():
 def test_answers_do_not_queue_when_inputs_remain_missing():
     service = JobService(InMemoryJobStore(), tenant_id="test-tenant")
     job = service.create_from_plan(build_plan("Size a duct"))
-    service.provide_missing_information(job.job_id, {"airflow": 8000})
+    service.provide_missing_information(job.job_id, {"material": "gss"})
     assert job.status == JobStatus.AWAITING_INFORMATION
-    assert "method" in job.orchestration["missing_inputs"]
+    assert "airflow" in job.orchestration["missing_inputs"]
 
 
 

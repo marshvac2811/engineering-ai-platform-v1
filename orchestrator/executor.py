@@ -135,6 +135,12 @@ def execute_engineering_plan(
                 assumptions_context,
             )
             task_inputs = assumption_resolved
+            # Defaults already applied at intake are disclosed too (de-duplicated by parameter).
+            seen_params = {a.get("parameter") for a in input_assumptions}
+            for pre in (assumptions_context or {}).get("applied_input_assumptions") or []:
+                if pre.get("source_skill") == capability_id and pre.get("parameter") not in seen_params and pre.get("parameter") in task_inputs:
+                    input_assumptions.append(deepcopy(pre))
+                    seen_params.add(pre.get("parameter"))
             task["input_assumptions"] = deepcopy(input_assumptions)
             if assumption_blockers:
                 task["assumption_blockers"] = list(assumption_blockers)

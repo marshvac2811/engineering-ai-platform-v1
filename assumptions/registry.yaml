@@ -64,3 +64,114 @@ assumptions:
     provenance: audited_source_default
     status: controlled_source_default
     override_allowed: true
+
+  - assumption_id: duct.method.preliminary_default
+    parameter: method
+    value: velocity
+    unit: ''
+    domain: HVAC
+    source_skill: duct_sizing
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: duct.shape.preliminary_default
+    parameter: duct_type
+    value: rectangular
+    unit: ''
+    domain: HVAC
+    source_skill: duct_sizing
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: duct.target_velocity.preliminary_default
+    parameter: target_velocity_ms
+    value: 7
+    unit: 'm/s'
+    domain: HVAC
+    source_skill: duct_sizing
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: load.climate_zone.preliminary_default
+    parameter: climate_zone
+    value: hot_dry
+    unit: ''
+    domain: HVAC
+    source_skill: preliminary_load_estimation
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: fan.total_static_pressure.preliminary_default
+    parameter: total_static_pressure_pa
+    value: 500
+    unit: 'Pa'
+    domain: HVAC
+    source_skill: fan_power_sizing
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+
+  - assumption_id: refrigerant.suction_velocity.preliminary_default
+    parameter: suction_velocity
+    value: 10
+    unit: 'm/s'
+    domain: HVAC
+    source_skill: refrigerant_pipe_sizing
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: refrigerant.liquid_velocity.preliminary_default
+    parameter: liquid_velocity
+    value: 1
+    unit: 'm/s'
+    domain: HVAC
+    source_skill: refrigerant_pipe_sizing
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: tower.range.preliminary_default
+    parameter: range_c
+    value: 5.5
+    unit: 'degC'
+    domain: HVAC
+    source_skill: cooling_tower
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: tower.approach.preliminary_default
+    parameter: approach_c
+    value: 4
+    unit: 'degC'
+    domain: HVAC
+    source_skill: cooling_tower
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: tower.coc.preliminary_default
+    parameter: coc
+    value: 4
+    unit: 'cycles'
+    domain: HVAC
+    source_skill: cooling_tower
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: tower.drift.preliminary_default
+    parameter: drift_pct
+    value: 0.02
+    unit: '%'
+    domain: HVAC
+    source_skill: cooling_tower
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true

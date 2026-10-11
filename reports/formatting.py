@@ -134,6 +134,8 @@ def format_value(value: Any) -> str:
             return "-"
         if abs(value) >= 1000:
             return f"{value:,.0f}"
+        if value != 0 and abs(value) < 0.001:
+            return f"{value:.3g}"  # keep tiny constants (e.g. 1.81e-05) visible
         text = f"{value:,.3f}".rstrip("0").rstrip(".")
         return text or "0"
     return str(value)

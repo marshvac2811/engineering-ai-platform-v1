@@ -317,3 +317,9 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - Job ids: `_resolve_job_id` accepts a unique tenant-scoped prefix (>=8 chars); malformed ids give a clear error instead of Postgres 22P02.
 - Dashboard API timeout raised 15s -> 30s (Render free plan wake-up). Root cause of the /v1/integrations timeout not confirmed from logs.
 - Render logs showed live Gmail sync -> approve -> dispatch of job cfdf2677 succeeded; draft reply not yet verified with the correct id.
+
+## Checkpoint 2026-10-11 (layman requests: governed standard assumptions)
+- Missing non-critical inputs are filled from registered preliminary assumptions (governance/assumption_policy.py + assumptions/registry.yaml) and disclosed as ASSUMED_DUE_TO_CLIENT_DATA_UNAVAILABLE in result, evidence, PDF and Excel. Covers duct_sizing (method velocity, rectangular, 7 m/s), load climate zone, fan static pressure, refrigerant velocities, cooling tower range/approach/COC/drift.
+- Core quantities (e.g. airflow) are never assumed. VFD static_head_fraction deliberately NOT assumed (0 would overstate savings).
+- Fix: intake-applied assumptions now carried via assumptions_context.applied_input_assumptions to the executor; format_value no longer shows 1.81e-05 as 0.
+- TODO: audit remaining skills for layman-friendly defaults (needs engineering sign-off on each default value).

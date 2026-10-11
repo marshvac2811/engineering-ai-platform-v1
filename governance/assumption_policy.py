@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, Dict
 from validators.governance import resolve_assumption
 
-MAX_AUTO_ASSUMPTIONS_PER_TASK = 2
+MAX_AUTO_ASSUMPTIONS_PER_TASK = 4
 
 # skill_id -> input field -> governed assumption id
 INPUT_ASSUMPTIONS: Dict[str, Dict[str, str]] = {
@@ -17,7 +17,34 @@ INPUT_ASSUMPTIONS: Dict[str, Dict[str, str]] = {
         "material": "pump.pipe_material.preliminary_default",
         "margin_pct": "pump.design_margin.preliminary_default",
     },
+    "duct_sizing": {
+        "method": "duct.method.preliminary_default",
+        "duct_type": "duct.shape.preliminary_default",
+        "target_velocity_ms": "duct.target_velocity.preliminary_default",
+    },
+    "preliminary_load_estimation": {
+        "climate_zone": "load.climate_zone.preliminary_default",
+    },
+    "fan_power_sizing": {
+        "total_static_pressure_pa": "fan.total_static_pressure.preliminary_default",
+    },
+    "refrigerant_pipe_sizing": {
+        "suction_velocity": "refrigerant.suction_velocity.preliminary_default",
+        "liquid_velocity": "refrigerant.liquid_velocity.preliminary_default",
+    },
+    "cooling_tower": {
+        "range_c": "tower.range.preliminary_default",
+        "approach_c": "tower.approach.preliminary_default",
+        "coc": "tower.coc.preliminary_default",
+        "drift_pct": "tower.drift.preliminary_default",
+    },
 }
+
+# Assumptions that only make sense for certain already-resolved inputs.
+_APPLIES_WHEN = {
+    ("duct_sizing", "target_velocity_ms"): lambda r: r.get("method") == "velocity",
+}
+
 
 def resolve_input_assumptions(
     skill_id: str,
@@ -29,6 +56,9 @@ def resolve_input_assumptions(
     blockers: list[str] = []
     context = dict(assumptions_context or {})
     for field, assumption_id in INPUT_ASSUMPTIONS.get(skill_id, {}).items():
+        applies = _APPLIES_WHEN.get((skill_id, field))
+        if applies and not applies(resolved):
+            continue
         value = resolved.get(field)
         if value is not None and not (isinstance(value, str) and not value.strip()):
             continue

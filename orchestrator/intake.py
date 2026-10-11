@@ -955,6 +955,7 @@ def build_plan(
             "Attachment evidence was parsed for engineering inputs before missing-information review."
         )
     if input_assumptions:
+        assumptions_context = {**dict(assumptions_context or {}), "applied_input_assumptions": [dict(a) for a in input_assumptions]}
         rationale.append(
             "Minor unavailable inputs were filled from governed preliminary assumptions and are explicitly disclosed for human review."
         )

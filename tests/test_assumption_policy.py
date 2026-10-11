@@ -51,3 +51,47 @@ def test_unknown_skill_has_no_automatic_assumptions():
     assert resolved == {"flow_m3hr": 20}
     assert assumptions == []
     assert blockers == []
+
+
+def test_layman_duct_request_proceeds_with_disclosed_assumptions():
+    from orchestrator.intake import build_plan
+    plan = build_plan("Please size a duct for 5000 CFM")
+    assert plan.selected_skill_id == "duct_sizing"
+    assert plan.status == "ready_for_execution"
+    assert plan.extracted_inputs["method"] == "velocity"
+    assert plan.extracted_inputs["target_velocity_ms"] == 7
+
+
+def test_velocity_assumption_not_applied_for_equal_friction():
+    resolved, applied, _ = resolve_input_assumptions(
+        "duct_sizing", {"airflow": 5000, "method": "equal_friction", "duct_type": "round"})
+    assert "target_velocity_ms" not in resolved
+    assert applied == []
+
+
+def test_airflow_is_never_assumed():
+    resolved, _, _ = resolve_input_assumptions("duct_sizing", {})
+    assert "airflow" not in resolved
+
+
+def test_intake_assumptions_are_disclosed_in_result_and_pdf():
+    import io
+    from jobs.service import JobService
+    from jobs.store import InMemoryJobStore
+    from orchestrator.intake import build_plan
+    st = InMemoryJobStore()
+    svc = JobService(st, tenant_id="t")
+    job = svc.create_from_plan(build_plan("Please size a duct for 5000 CFM"))
+    params = {a.get("parameter"): a for a in job.result["assumptions"]}
+    for name in ("method", "duct_type", "target_velocity_ms"):
+        assert params[name]["status"] == "ASSUMED_DUE_TO_CLIENT_DATA_UNAVAILABLE"
+    svc.approve(job.job_id, reviewer="x")
+    svc.dispatch(job.job_id)
+    from pypdf import PdfReader
+    text = "\n".join(p.extract_text() for p in PdfReader(io.BytesIO(st.get_artifact_bytes(job.job_id, "pdf", tenant_id="t"))).pages)
+    assert "ASSUMED_DUE_TO_CLIENT_DATA_UNAVAILABLE" in text
+
+
+def test_tiny_constants_not_rounded_to_zero():
+    from reports.formatting import format_value
+    assert format_value(1.81e-05) == "1.81e-05"
