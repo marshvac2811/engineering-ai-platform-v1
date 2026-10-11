@@ -42,3 +42,20 @@ def test_brand_is_overridable_by_environment(monkeypatch):
 
 def test_logo_svg_is_valid_markup():
     assert logo_svg(32).startswith("<svg") and logo_svg(32).endswith("</svg>")
+
+
+def test_workbook_has_background_watermark_and_stays_valid():
+    import zipfile
+    from xml.dom import minidom
+    st, job = _dispatched()
+    data = st.get_artifact_bytes(job.job_id, "xlsx", tenant_id="t")
+    z = zipfile.ZipFile(io.BytesIO(data))
+    assert "xl/media/mars_watermark.png" in z.namelist()
+    sheets = [n for n in z.namelist() if n.startswith("xl/worksheets/sheet")]
+    assert sheets
+    for n in z.namelist():
+        if n.endswith((".xml", ".rels")):
+            minidom.parseString(z.read(n))
+    for n in sheets:
+        assert z.read(n).decode().count("<picture ") == 1
+    openpyxl.load_workbook(io.BytesIO(data))

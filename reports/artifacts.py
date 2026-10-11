@@ -538,4 +538,11 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
 
     out = io.BytesIO()
     wb.save(out)
-    return out.getvalue()
+    data = out.getvalue()
+    try:  # faint Mars watermark behind every sheet; never block a report on cosmetics
+        from branding.watermark import watermark_png_bytes
+        from reports.xlsx_watermark import apply_background
+        data = apply_background(data, watermark_png_bytes())
+    except Exception:
+        pass
+    return data
