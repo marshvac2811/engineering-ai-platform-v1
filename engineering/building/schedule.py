@@ -156,3 +156,41 @@ def extract_dxf_candidate_rooms(data: bytes) -> Dict[str, Any]:
     if ambiguous:
         warnings.append(f"{ambiguous} closed polyline(s) contained more than one text label and were ignored.")
     return {"rooms": candidates, "units_code": units_code, "warnings": warnings}
+
+
+_BUILDING_WORDS = (
+    ("hospital", ("hospital", "ward", "icu", "operation theatre", "operating room", "clinic", "patient room")),
+    ("retail", ("retail", "showroom", "shop", "mall", "store")),
+    ("office", ("office", "meeting room", "conference", "boardroom", "cabin", "workstation", "commercial")),
+)
+
+
+def infer_building_type(text: str) -> str:
+    """Best-effort building type from plain words; empty string when unknown."""
+    low = (text or "").lower()
+    for btype, words in _BUILDING_WORDS:
+        if any(re.search(r"\b" + re.escape(w), low) for w in words):
+            return btype
+    return ""
+
+
+def rooms_text_from_prose(text: str) -> str:
+    """Turn 'a 120 m2 open office and a 30 m2 meeting room' into one 'name | area unit | n people' row per room."""
+    segs = re.split(r"\s*(?:,|;|\band\b|\bplus\b|\n)\s*", text or "", flags=re.I)
+    rows: List[str] = []
+    for seg in segs:
+        am = _AREA_IN_TEXT.search(seg)
+        if not am:
+            continue
+        before = re.sub(r"(?i)^.*?\b(?:for|design|of|with|having|includes?|including)\b\s+", "", seg[: am.start()]).strip()
+        after = seg[am.end():]
+        after = re.split(r"(?i)\b(?:in|at|near|for|with|having|located)\b", after)[0]
+        name_src = after if re.search(r"[A-Za-z]{3,}", after) else before
+        name = re.sub(r"(?i)^\s*(?:a|an|the|of|sq\.?\s*m|area)\b\s*", "", name_src).strip(" -:()")
+        name = re.sub(r"(?i)\b(?:hvac|air\s*conditioning)\b", "", name).strip(" -:()")
+        if not re.search(r"[A-Za-z]{3,}", name):
+            name = f"Space {len(rows) + 1}"
+        om = _OCC.search(seg)
+        occ = om.group(1) or om.group(2) if om else None
+        rows.append(f"{name.title()} | {am.group(1)} {am.group(2)}" + (f" | {occ} people" if occ else ""))
+    return "\n".join(rows)

@@ -26,6 +26,13 @@ def build_workflow_result(*, workflow: Dict[str, Any], request_understanding: Di
         for key, target in (("assumptions", assumptions_out), ("warnings", warnings),
                             ("evidence", evidence), ("calculation_trace", calculations)):
             value = er.get(key) or item.get(key)
+            if key == "assumptions":
+                # Engine-level assumptions and the governed input defaults applied at intake are both disclosed.
+                merged_vals = list(er.get(key) or []) + list(item.get(key) or [])
+                value = []
+                for v in merged_vals:
+                    if v not in value:
+                        value.append(v)
             if isinstance(value, list):
                 target.extend(value)
         calculations.append({

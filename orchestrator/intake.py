@@ -124,7 +124,8 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
     "energy_optimisation_study": ("energy optimisation study", "energy optimization study", "energy study", "energy saving measures", "decarbonisation roadmap", "decarbonization roadmap", "energy audit measures", "ranked energy measures"),
     "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance", "deviates on", "technical deviation"),
     "fire_water_storage": ("fire water storage", "fire tank volume", "fire reserve", "fire water requirement"),
-    "hvac_design_package": ("hvac design package", "room by room load", "equipment schedule", "design the hvac", "hvac design for", "room-by-room"),
+    "hvac_design_package": ("hvac design package", "room by room load", "equipment schedule", "design the hvac", "hvac design for", "room-by-room",
+                            "design hvac", "hvac design", "design an hvac", "design air conditioning", "air conditioning design", "design ac for", "design the air conditioning"),
     "plumbing_water_demand": ("plumbing water demand", "fixture demand", "domestic water demand", "plumbing flow"),
 }
 
@@ -923,6 +924,16 @@ def build_plan(
     registry = load_skill_registry(registry_path)
     definition = registry.get(skill_id)
 
+    if skill_id in {"hvac_design_package", "preliminary_load_estimation"}:
+        from engineering.building.schedule import infer_building_type, rooms_text_from_prose, extract_room_schedule
+        if not merged.get("building_type"):
+            bt = infer_building_type(text)
+            if bt:
+                merged = {**merged, "building_type": bt}
+        if skill_id == "hvac_design_package" and not (merged.get("rooms") or merged.get("rooms_text")):
+            rt = rooms_text_from_prose(text)
+            if rt and extract_room_schedule(rt)["rooms"]:
+                merged = {**merged, "rooms_text": rt}
     assumption_resolved, input_assumptions, assumption_blockers = resolve_input_assumptions(
         skill_id,
         merged,

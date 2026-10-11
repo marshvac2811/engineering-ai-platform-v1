@@ -175,3 +175,93 @@ assumptions:
     provenance: platform_preliminary_default
     status: controlled_preliminary_assumption
     override_allowed: true
+
+  - assumption_id: vrf.combination_ratio.preliminary_default
+    parameter: combination_ratio
+    value: 100
+    unit: '%'
+    domain: HVAC
+    source_skill: vrf_sizing
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: coil.leaving_db.preliminary_default
+    parameter: leaving_db_c
+    value: 13
+    unit: 'degC'
+    domain: HVAC
+    source_skill: cooling_coil_load
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: coil.leaving_rh.preliminary_default
+    parameter: leaving_rh_pct
+    value: 90
+    unit: '%'
+    domain: HVAC
+    source_skill: cooling_coil_load
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: heat_recovery.effectiveness.preliminary_default
+    parameter: effectiveness_pct
+    value: 60
+    unit: '%'
+    domain: HVAC
+    source_skill: heat_recovery_assessment
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: heat_recovery.exhaust_db.preliminary_default
+    parameter: exhaust_db_c
+    value: 24
+    unit: 'degC'
+    domain: HVAC
+    source_skill: heat_recovery_assessment
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: heat_recovery.exhaust_rh.preliminary_default
+    parameter: exhaust_rh_pct
+    value: 50
+    unit: '%'
+    domain: HVAC
+    source_skill: heat_recovery_assessment
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: vfd_derating.ambient.preliminary_default
+    parameter: ambient_temp_c
+    value: 40
+    unit: 'degC'
+    domain: HVAC
+    source_skill: vfd_derating
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: vfd_derating.altitude.preliminary_default
+    parameter: altitude_m
+    value: 0
+    unit: 'm'
+    domain: HVAC
+    source_skill: vfd_derating
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true
+
+  - assumption_id: design.climate_zone.preliminary_default
+    parameter: climate_zone
+    value: 'hot_dry'
+    unit: ''
+    domain: HVAC
+    source_skill: hvac_design_package
+    provenance: platform_preliminary_default
+    status: controlled_preliminary_assumption
+    override_allowed: true

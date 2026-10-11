@@ -38,6 +38,21 @@ INPUT_ASSUMPTIONS: Dict[str, Dict[str, str]] = {
         "coc": "tower.coc.preliminary_default",
         "drift_pct": "tower.drift.preliminary_default",
     },
+    "vrf_sizing": {"combination_ratio": "vrf.combination_ratio.preliminary_default"},
+    "cooling_coil_load": {
+        "leaving_db_c": "coil.leaving_db.preliminary_default",
+        "leaving_rh_pct": "coil.leaving_rh.preliminary_default",
+    },
+    "heat_recovery_assessment": {
+        "effectiveness_pct": "heat_recovery.effectiveness.preliminary_default",
+        "exhaust_db_c": "heat_recovery.exhaust_db.preliminary_default",
+        "exhaust_rh_pct": "heat_recovery.exhaust_rh.preliminary_default",
+    },
+    "vfd_derating": {
+        "ambient_temp_c": "vfd_derating.ambient.preliminary_default",
+        "altitude_m": "vfd_derating.altitude.preliminary_default",
+    },
+    "hvac_design_package": {"climate_zone": "design.climate_zone.preliminary_default"},
 }
 
 # Assumptions that only make sense for certain already-resolved inputs.

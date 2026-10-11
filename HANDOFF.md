@@ -323,3 +323,9 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - Core quantities (e.g. airflow) are never assumed. VFD static_head_fraction deliberately NOT assumed (0 would overstate savings).
 - Fix: intake-applied assumptions now carried via assumptions_context.applied_input_assumptions to the executor; format_value no longer shows 1.81e-05 as 0.
 - TODO: audit remaining skills for layman-friendly defaults (needs engineering sign-off on each default value).
+
+## Checkpoint 2026-10-11 (layman HVAC design intake)
+- More governed defaults: vrf combination ratio 100%, coil leaving 13C/90%, heat recovery 60% eff + exhaust 24C/50%, VFD derating ambient 40C/altitude 0, design-package climate zone.
+- Intake: "design HVAC for ..." routes to hvac_design_package; building type inferred from words (office/hospital/retail); rooms parsed from prose ("a 120 m2 open office and a 30 m2 meeting room").
+- orchestrator/result.py: engine assumptions AND intake-applied defaults are both disclosed (previously the latter were dropped when the engine had its own list).
+- Known gap: no LLM provider key on Render (rule-based intake only); fan selection, cooling coil, heat recovery, pump head prose extraction still limited.
