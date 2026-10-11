@@ -56,6 +56,10 @@ IMPLEMENTATION_BINDINGS: Tuple[ImplementationBinding, ...] = (
     ImplementationBinding("rainwater_drainage", "skills.calculators.adapters", "RainwaterDrainageSkill"),
     ImplementationBinding("solar_pv_sizing", "skills.calculators.adapters", "SolarPVSizingSkill"),
     ImplementationBinding("carbon_emissions", "skills.calculators.adapters", "CarbonEmissionsSkill"),
+    ImplementationBinding("pump_power_sizing", "skills.calculators.adapters", "PumpPowerSizingSkill"),
+    ImplementationBinding("generator_sizing", "skills.calculators.adapters", "GeneratorSizingSkill"),
+    ImplementationBinding("transformer_sizing", "skills.calculators.adapters", "TransformerSizingSkill"),
+    ImplementationBinding("domestic_water_tank_sizing", "skills.calculators.adapters", "DomesticWaterTankSizingSkill"),
 )
 
 

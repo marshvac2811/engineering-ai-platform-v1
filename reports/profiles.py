@@ -63,6 +63,10 @@ _PROFILES = {
     "rainwater_drainage": ("rainwater_drainage", "rainwater_drainage_report", "Rainwater Drainage Sizing Report", ("calculation_report",)),
     "solar_pv_sizing": ("solar_pv_sizing", "solar_pv_sizing_report", "Solar PV Sizing Report", ("calculation_report",)),
     "carbon_emissions": ("carbon_emissions", "carbon_emissions_report", "Carbon Emissions Estimate Report", ("calculation_report",)),
+    "pump_power_sizing": ("pump_power_sizing", "pump_power_sizing_report", "Pump Power and Motor Sizing Report", ("calculation_report",)),
+    "generator_sizing": ("generator_sizing", "generator_sizing_report", "Generator (DG Set) Sizing Report", ("calculation_report",)),
+    "transformer_sizing": ("transformer_sizing", "transformer_sizing_report", "Transformer Sizing Report", ("calculation_report",)),
+    "domestic_water_tank_sizing": ("domestic_water_tank_sizing", "domestic_water_tank_sizing_report", "Domestic Water Tank Sizing Report", ("calculation_report",)),
 }
 
 

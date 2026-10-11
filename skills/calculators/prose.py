@@ -128,6 +128,24 @@ def extract_catalogue_inputs(skill_id: str, text: str) -> Dict[str, Any]:
         o = _occupants(t)
         if o is not None:
             out["occupants"] = o
+    if skill_id in {"generator_sizing", "transformer_sizing"}:
+        m = re.search(_NUM + r"\s*(kw|kva|mw)\b", t, re.I)
+        if m:
+            v = _f(m.group(1))
+            out["connected_load_kw"] = v * 1000 if m.group(2).lower() == "mw" else v
+    if skill_id == "pump_power_sizing":
+        v = _flow_water_m3h(t)
+        if v is not None:
+            out["flow_m3h"] = v
+        m = re.search(_NUM + r"\s*(m|mwc|metres?|meters?|ft|feet)\s*(?:of\s*)?(?:head|tdh)\b|(?:head|tdh)\D{0,12}?" + _NUM + r"\s*(m|mwc|metres?|meters?|ft|feet)\b", t, re.I)
+        if m:
+            val = m.group(1) or m.group(3)
+            unit = (m.group(2) or m.group(4) or "m").lower()
+            out["head_m"] = round(_f(val) * 0.3048, 3) if unit in {"ft", "feet"} else _f(val)
+    if skill_id == "domestic_water_tank_sizing":
+        o = _occupants(t)
+        if o is not None:
+            out["occupants"] = o
     if skill_id == "cable_voltage_drop":
         m = re.search(_NUM + r"\s*kw\b", t, re.I)
         if m:

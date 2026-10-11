@@ -351,3 +351,8 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 ## Checkpoint 2026-10-12 (DXF + serial)
 - DXF schematic is attached to the Gmail draft reply for hvac_design_package jobs (test_integration_api); DXF title-block reference now uses the job serial number.
 - Open: user to clear old trial data in Supabase SQL editor (connector delete was cancelled twice); LLM key decision for AI interpretation; recipes CSV for BOQ; exact registered address (MARS_ADDRESS env).
+
+## Checkpoint 2026-10-12 (Excel watermark + 4 calculators)
+- Excel: faint tiled Mars watermark background picture on every sheet (post-processed zip; reports/xlsx_watermark.py, branding/watermark.py). Structure validated + opens in openpyxl/LibreOffice; on-screen look in desktop Excel NOT visually verified.
+- New governed calculators (hand-checked in tests): pump_power_sizing, generator_sizing, transformer_sizing, domestic_water_tank_sizing. Registry now 49 ids / 48 executable. Defaults (e.g. DF 0.8, PF 0.8/0.9, 45 L/person/day) are planning values disclosed as assumptions - need engineer sign-off.
+- Plain-sentence routing/extraction for the four.

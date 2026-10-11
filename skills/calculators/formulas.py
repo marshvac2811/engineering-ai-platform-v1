@@ -676,3 +676,89 @@ def carbon_emissions(inputs: Dict[str, Any]):
     if inputs.get("grid_factor_kg_kwh") in (None, ""):
         a.append({"name": "grid_factor_kg_kwh", "value": gf, "basis": "Indicative Indian grid average; replace with the current CEA CO2 Baseline Database value for the reporting year."})
     return res, trace, a, ["Scope 2 (location-based) and optional refrigerant leakage only; other scopes are not included."]
+
+
+# ------------------------------------------------------------------ pump power
+def pump_power(inputs: Dict[str, Any]):
+    q = num(inputs, "flow_m3h", minimum=0, exclusive_min=True)
+    h = num(inputs, "head_m", minimum=0, exclusive_min=True)
+    rho = num(inputs, "fluid_density_kg_m3", default=1000, minimum=500, maximum=2000)
+    pe = num(inputs, "pump_efficiency_pct", default=70, minimum=10, maximum=95)
+    me = num(inputs, "motor_efficiency_pct", default=92, minimum=50, maximum=99)
+    margin = num(inputs, "motor_margin_pct", default=15, minimum=0, maximum=100)
+    hyd = rho * 9.80665 * (q / 3600.0) * h / 1000.0
+    shaft = hyd / (pe / 100.0)
+    inp = shaft / (me / 100.0)
+    req = shaft * (1 + margin / 100.0)
+    motor = next_standard(req, STD_MOTOR_KW)
+    res = {"hydraulic_power_kw": r(hyd, 3), "pump_shaft_kw": r(shaft, 3), "motor_input_kw": r(inp, 3),
+           "motor_required_kw": r(req, 3), "standard_motor_kw": motor}
+    a = [{"name": n, "value": v, "basis": "Default planning value; replace with the pump curve / vendor data."} for n, v in
+         (("fluid_density_kg_m3", rho), ("pump_efficiency_pct", pe), ("motor_efficiency_pct", me), ("motor_margin_pct", margin)) if inputs.get(n) in (None, "")]
+    trace = [
+        {"step": 1, "operation": "hydraulic_power", "detail": f"rho x g x Q x H = {rho:g} x 9.80665 x {q / 3600:.5f} x {h:g} / 1000 = {hyd:.3f} kW"},
+        {"step": 2, "operation": "shaft_power", "detail": f"{hyd:.3f} / {pe:g}% = {shaft:.3f} kW"},
+        {"step": 3, "operation": "motor_input", "detail": f"{shaft:.3f} / {me:g}% = {inp:.3f} kW"},
+        {"step": 4, "operation": "motor_selection", "detail": f"Shaft x (1+{margin:g}%) = {req:.3f} kW -> next standard {motor} kW"},
+    ]
+    w = [] if motor else ["Required motor exceeds the standard list; select manually."]
+    return res, trace, a, w
+
+
+# -------------------------------------------------- electrical: generator / transformer
+STD_GENSET_KVA = (25, 30, 40, 50, 62.5, 75, 100, 125, 160, 200, 250, 320, 380, 400, 500, 625, 750, 800, 1000, 1250, 1500, 2000, 2500)
+STD_TRANSFORMER_KVA = (25, 63, 100, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150)
+
+
+def _kva_sizing(inputs, *, default_pf, default_margin, series, label):
+    load = num(inputs, "connected_load_kw", minimum=0, exclusive_min=True)
+    df = num(inputs, "demand_factor", default=0.8, minimum=0.1, maximum=1.0)
+    pf = num(inputs, "power_factor", default=default_pf, minimum=0.5, maximum=1.0)
+    margin = num(inputs, "margin_pct", default=default_margin, minimum=0, maximum=100)
+    demand_kw = load * df
+    demand_kva = demand_kw / pf
+    required = demand_kva * (1 + margin / 100.0)
+    std = next_standard(required, series)
+    res = {"demand_kw": r(demand_kw, 2), "demand_kva": r(demand_kva, 2), "required_kva": r(required, 2), f"standard_{label}_kva": std,
+           "loading_at_standard_pct": r(demand_kva / std * 100, 1) if std else None}
+    a = [{"name": n, "value": v, "basis": "Default planning value; confirm with the electrical design."} for n, v in
+         (("demand_factor", df), ("power_factor", pf), ("margin_pct", margin)) if inputs.get(n) in (None, "")]
+    trace = [
+        {"step": 1, "operation": "demand", "detail": f"{load:g} kW x {df:g} = {demand_kw:.2f} kW"},
+        {"step": 2, "operation": "apparent_power", "detail": f"{demand_kw:.2f} / {pf:g} = {demand_kva:.2f} kVA"},
+        {"step": 3, "operation": "margin_and_selection", "detail": f"x (1+{margin:g}%) = {required:.2f} kVA -> next standard {std} kVA"},
+    ]
+    w = [] if std else [f"Required kVA exceeds the standard {label} list; select manually."]
+    return res, trace, a, w
+
+
+def generator_sizing(inputs: Dict[str, Any]):
+    res, trace, a, w = _kva_sizing(inputs, default_pf=0.8, default_margin=20, series=STD_GENSET_KVA, label="genset")
+    w = list(w) + ["Motor starting kVA, voltage dip, altitude/temperature derating and harmonic loads are not modelled; verify with the genset vendor."]
+    return res, trace, a, w
+
+
+def transformer_sizing(inputs: Dict[str, Any]):
+    res, trace, a, w = _kva_sizing(inputs, default_pf=0.9, default_margin=25, series=STD_TRANSFORMER_KVA, label="transformer")
+    w = list(w) + ["Fault level, impedance, losses, harmonics and utility requirements are not modelled."]
+    return res, trace, a, w
+
+
+# ----------------------------------------------------------- domestic water tanks
+def domestic_water_tank(inputs: Dict[str, Any]):
+    n = num(inputs, "occupants", minimum=0, exclusive_min=True)
+    lpcd = num(inputs, "litres_per_person_day", default=45, minimum=5, maximum=1000)
+    days = num(inputs, "underground_storage_days", default=1, minimum=0.25, maximum=5)
+    oht_frac = num(inputs, "overhead_fraction_of_daily", default=1 / 3, minimum=0.05, maximum=1.0)
+    daily = n * lpcd
+    ug = daily * days
+    oht = daily * oht_frac
+    res = {"daily_demand_l": r(daily, 0), "daily_demand_m3": r(daily / 1000, 2), "underground_tank_l": r(ug, 0), "overhead_tank_l": r(oht, 0)}
+    a = [{"name": nm, "value": v, "basis": "Typical planning value (office ~45 L/person/day, one day UG storage, overhead one third of daily demand); confirm with the applicable code and client brief."}
+         for nm, v in (("litres_per_person_day", lpcd), ("underground_storage_days", days), ("overhead_fraction_of_daily", oht_frac)) if inputs.get(nm) in (None, "")]
+    trace = [
+        {"step": 1, "operation": "daily_demand", "detail": f"{n:g} persons x {lpcd:g} L = {daily:,.0f} L/day"},
+        {"step": 2, "operation": "underground_tank", "detail": f"{daily:,.0f} L x {days:g} day(s) = {ug:,.0f} L"},
+        {"step": 3, "operation": "overhead_tank", "detail": f"{daily:,.0f} L x {oht_frac:.3f} = {oht:,.0f} L"},
+    ]
+    return res, trace, a, ["Fire-fighting reserve, flushing/HVAC make-up and irrigation are not included; add them separately."]

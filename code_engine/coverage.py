@@ -89,6 +89,10 @@ _COVERAGE: Dict[str, Tuple[StandardsCandidate, ...]] = {
     "rainwater_drainage": (),
     "solar_pv_sizing": (),
     "carbon_emissions": (),
+    "pump_power_sizing": (),
+    "generator_sizing": (),
+    "transformer_sizing": (),
+    "domestic_water_tank_sizing": (),
     "bms_alarm_evaluation": (
         StandardsCandidate("bis_nbc_2016", "Building automation/system-services reference.", ("jurisdiction", "building_type", "automation_scope")),
     ),

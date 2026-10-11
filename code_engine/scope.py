@@ -69,6 +69,10 @@ def scope_references_for_skill(skill_id: str) -> List[Dict[str, Any]]:
         "rainwater_drainage": ["plumbing"],
         "solar_pv_sizing": ["hvac", "energy"],
         "carbon_emissions": ["hvac", "energy"],
+        "pump_power_sizing": ["hvac"],
+        "generator_sizing": ["electrical"],
+        "transformer_sizing": ["electrical"],
+        "domestic_water_tank_sizing": ["plumbing"],
     }
     disciplines = discipline_map.get(skill_id, [])
     registry = load_scope_registry()

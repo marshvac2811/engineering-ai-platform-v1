@@ -1542,6 +1542,134 @@ skills:
   - "decarbonisation roadmap"
   - "decarbonization roadmap"
   - "energy audit measures"
+- skill_id: pump_power_sizing
+  domain: HVAC
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: flow_m3h
+    data_type: number
+    description: "Pump flow, m3/h."
+  - name: head_m
+    data_type: number
+    description: "Total pump head, m."
+  optional_inputs:
+  - name: fluid_density_kg_m3
+    data_type: number
+    description: "Fluid density, kg/m3 (default 1000)."
+  - name: pump_efficiency_pct
+    data_type: number
+    description: "Pump efficiency, % (default 70)."
+  - name: motor_efficiency_pct
+    data_type: number
+    description: "Motor efficiency, % (default 92)."
+  - name: motor_margin_pct
+    data_type: number
+    description: "Motor margin, % (default 15)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:PumpPowerSizingSkill
+  routing_terms:
+  - "pump power"
+  - "pump motor"
+  - "pump kw"
+  - "pump motor size"
+  - "size the pump motor"
+- skill_id: generator_sizing
+  domain: ELECTRICAL
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: connected_load_kw
+    data_type: number
+    description: "Connected load to be backed up, kW."
+  optional_inputs:
+  - name: demand_factor
+    data_type: number
+    description: "Demand factor (default 0.8)."
+  - name: power_factor
+    data_type: number
+    description: "Power factor (default 0.8)."
+  - name: margin_pct
+    data_type: number
+    description: "Margin, % (default 20)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:GeneratorSizingSkill
+  routing_terms:
+  - "generator size"
+  - "dg set"
+  - "genset"
+  - "diesel generator"
+  - "generator sizing"
+  - "dg sizing"
+- skill_id: transformer_sizing
+  domain: ELECTRICAL
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: connected_load_kw
+    data_type: number
+    description: "Connected load, kW."
+  optional_inputs:
+  - name: demand_factor
+    data_type: number
+    description: "Demand factor (default 0.8)."
+  - name: power_factor
+    data_type: number
+    description: "Power factor (default 0.9)."
+  - name: margin_pct
+    data_type: number
+    description: "Growth margin, % (default 25)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:TransformerSizingSkill
+  routing_terms:
+  - "transformer size"
+  - "transformer sizing"
+  - "kva transformer"
+  - "size a transformer"
+- skill_id: domestic_water_tank_sizing
+  domain: PLUMBING
+  source_repository: engineering-ai-platform
+  source_path: skills/calculators
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: occupants
+    data_type: number
+    description: "Number of occupants."
+  optional_inputs:
+  - name: litres_per_person_day
+    data_type: number
+    description: "Litres per person per day (default 45, office)."
+  - name: underground_storage_days
+    data_type: number
+    description: "Underground storage, days (default 1)."
+  - name: overhead_fraction_of_daily
+    data_type: number
+    description: "Overhead tank as a fraction of daily demand (default 1/3)."
+  conditional_inputs: []
+  implementation_binding: skills.calculators.adapters:DomesticWaterTankSizingSkill
+  routing_terms:
+  - "water tank"
+  - "underground tank"
+  - "overhead tank"
+  - "domestic water storage"
+  - "water storage tank"
+  - "sump size"
+
 crm_pipeline:
   domain: COMMERCIAL
   source: marshvac2811/pipeline/pipeline.html
