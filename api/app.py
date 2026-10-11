@@ -193,7 +193,7 @@ class APIApp:
             if isinstance(er, dict) and er.get("room_schedule"):
                 from engineering.drawing.design_schematic import build_design_schematic_dxf
                 pc = job.project_context or {}
-                return er, build_design_schematic_dxf(er, reference=str(job.report_id or job.job_id), project=str(pc.get("project") or ""))
+                return er, build_design_schematic_dxf(er, reference=str(getattr(job, "serial_no", None) or job.report_id or job.job_id), project=str(pc.get("project") or ""))
         return None, None
 
     def _gmail_sync(self, service, tenant_id: str, *, q: str, max_results: int, download_attachments: bool) -> dict:

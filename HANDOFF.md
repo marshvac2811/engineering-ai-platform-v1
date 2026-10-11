@@ -347,3 +347,7 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - Applied migration 014 to live Supabase: automation_jobs.serial_no, job_serial_seq (untouched, next = 00001), next_job_serial() (service_role only). Format YYYYMMDDHHMM (IST) + 5 digits.
 - Archive copy of all current trial data taken in schema archive_20261012 (jobs 40, events 236, reports 16, usage_events 341). Live tables NOT yet cleared: delete call was cancelled by the user's permission prompt. Storage objects (32 files) also not deleted. Needs explicit user confirmation before retrying.
 - Gmail connection (integration_connections/tokens) deliberately kept.
+
+## Checkpoint 2026-10-12 (DXF + serial)
+- DXF schematic is attached to the Gmail draft reply for hvac_design_package jobs (test_integration_api); DXF title-block reference now uses the job serial number.
+- Open: user to clear old trial data in Supabase SQL editor (connector delete was cancelled twice); LLM key decision for AI interpretation; recipes CSV for BOQ; exact registered address (MARS_ADDRESS env).
