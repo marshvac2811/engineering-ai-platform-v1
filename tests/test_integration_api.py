@@ -162,3 +162,54 @@ def test_gmail_live_sync_normalizes_creates_job_and_downloads_attachment(tmp_pat
     assert body["results"][0]["attachments_downloaded"][0]["filename"] == "floor-plan.pdf"
 
 
+
+
+class _DraftRecordingGmail(FakeGmailClient):
+    def __init__(self, text):
+        self.text = text
+        self.drafts = []
+
+    def get_message(self, tenant_id, message_id):
+        m = super().get_message(tenant_id, message_id)
+        import base64
+        m["payload"]["parts"][0]["body"]["data"] = base64.urlsafe_b64encode(self.text.encode()).decode().rstrip("=")
+        return m
+
+    def create_draft(self, tenant_id, *, raw_b64url, thread_id=None):
+        self.drafts.append(raw_b64url)
+        return {"id": "draft-1"}
+
+
+def _gmail_job_to_draft(tmp_path, email_text):
+    import base64
+    from email import message_from_bytes
+    from ingestion.service import IngestionService
+    from integrations.providers.gmail import TrialGmailTokenStore
+    token_store = TrialGmailTokenStore(str(tmp_path / "gmail"))
+    token_store.save("00000000-0000-0000-0000-000000000001", {"access_token": "a", "refresh_token": "r", "expires_at": 9999999999})
+    gmail = _DraftRecordingGmail(email_text)
+    app = APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore(), ingestion=IngestionService(), gmail_client=gmail, gmail_token_store=token_store)
+    status, body = call(app, "POST", "/v1/integrations/gmail/sync", {"q": "x", "download_attachments": False})
+    assert status == "200 OK" and body["results"][0]["job_created"] is True
+    status, jobs = call(app, "GET", "/v1/jobs")
+    job_id = jobs["jobs"][0]["job_id"] if isinstance(jobs, dict) and "jobs" in jobs else jobs[0]["job_id"]
+    status, _ = call(app, "POST", f"/v1/jobs/{job_id}/approve", {"reviewer": "x"})
+    assert status == "200 OK"
+    status, _ = call(app, "POST", f"/v1/jobs/{job_id}/dispatch", {})
+    assert status == "200 OK"
+    # a short id prefix must work too
+    status, body = call(app, "POST", f"/v1/jobs/{job_id[:8]}/gmail-reply", {"mode": "draft"})
+    assert status == "200 OK", body
+    msg = message_from_bytes(base64.urlsafe_b64decode(gmail.drafts[0] + "=" * (-len(gmail.drafts[0]) % 4)))
+    return [p.get_filename() for p in msg.walk() if p.get_filename()]
+
+
+def test_gmail_reply_draft_attaches_pdf_and_excel(tmp_path):
+    names = _gmail_job_to_draft(tmp_path, "Please size a duct for 5000 CFM")
+    assert any(n.endswith(".pdf") for n in names) and any(n.endswith(".xlsx") for n in names)
+    assert not any(n.endswith(".dxf") for n in names)
+
+
+def test_gmail_reply_draft_for_design_job_also_attaches_dxf(tmp_path):
+    names = _gmail_job_to_draft(tmp_path, "Design HVAC for a 120 m2 open office and a 30 m2 meeting room in Delhi")
+    assert any(n.endswith(".dxf") for n in names), names

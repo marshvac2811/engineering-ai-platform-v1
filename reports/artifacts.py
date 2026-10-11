@@ -24,7 +24,7 @@ from reports.formatting import (
 )
 
 
-DEFAULT_WATERMARK = "ENGINEERING AI PLATFORM • APPROVED CONTROLLED DOCUMENT"
+DEFAULT_WATERMARK = "MARS ENGINEERING SOLUTIONS • APPROVED CONTROLLED DOCUMENT"
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -40,20 +40,56 @@ def _text(value: Any) -> str:
 
 
 def _pdf_watermark(canvas, doc, watermark: str) -> None:
-    canvas.saveState()
+    """Per-page branding: faint monogram + diagonal watermark, branded header and address footer."""
+    from branding import brand, draw_logo, footer_line
+    b = brand()
     width, height = A4
+
+    # Large faint monogram behind the content.
+    draw_logo(canvas, width / 2 - 50 * mm, height / 2 - 50 * mm, 100 * mm, mono=True)
+
+    # Diagonal text watermark.
+    canvas.saveState()
     canvas.setFillColor(colors.Color(0.45, 0.45, 0.45, alpha=0.16))
-    canvas.setFont("Helvetica-Bold", 22)
     canvas.translate(width / 2, height / 2)
     canvas.rotate(32)
-    canvas.drawCentredString(0, 0, watermark)
+    top, _, rest = str(watermark).partition(" \u2022 ")
+    canvas.setFont("Helvetica-Bold", 30)
+    canvas.drawCentredString(0, 6, top)
+    if rest:
+        canvas.setFont("Helvetica-Bold", 16)
+        canvas.drawCentredString(0, -18, rest)
     canvas.restoreState()
 
+    # Header: logo, name, tagline, rule.
+    draw_logo(canvas, 15 * mm, height - 22 * mm, 11 * mm)
     canvas.saveState()
+    canvas.setFillColor(colors.HexColor("#14233c"))
+    canvas.setFont("Helvetica-Bold", 11)
+    canvas.drawString(29 * mm, height - 16.5 * mm, b["name"].upper())
     canvas.setFillColor(colors.HexColor("#555555"))
     canvas.setFont("Helvetica", 7)
-    canvas.drawString(15 * mm, 9 * mm, "Controlled engineering record • Human approval required for validity")
-    canvas.drawRightString(width - 15 * mm, 9 * mm, f"Page {doc.page}")
+    canvas.drawString(29 * mm, height - 20.5 * mm, b["tagline"])
+    canvas.setFillColor(colors.HexColor("#c8442b"))
+    canvas.setFont("Helvetica-Bold", 7)
+    canvas.drawRightString(width - 15 * mm, height - 16.5 * mm, "CONTROLLED ENGINEERING RECORD")
+    canvas.setStrokeColor(colors.HexColor("#c8442b"))
+    canvas.setLineWidth(0.8)
+    canvas.line(15 * mm, height - 24 * mm, width - 15 * mm, height - 24 * mm)
+    canvas.restoreState()
+
+    # Footer: address/contact, validity note, page number.
+    canvas.saveState()
+    canvas.setStrokeColor(colors.HexColor("#cccccc"))
+    canvas.setLineWidth(0.4)
+    canvas.line(15 * mm, 14 * mm, width - 15 * mm, 14 * mm)
+    canvas.setFillColor(colors.HexColor("#14233c"))
+    canvas.setFont("Helvetica", 7)
+    canvas.drawCentredString(width / 2, 10.5 * mm, footer_line())
+    canvas.setFillColor(colors.HexColor("#555555"))
+    canvas.setFont("Helvetica", 6.5)
+    canvas.drawString(15 * mm, 6.5 * mm, "Controlled engineering record \u2022 Human approval required for validity")
+    canvas.drawRightString(width - 15 * mm, 6.5 * mm, f"Page {doc.page}")
     canvas.restoreState()
 
 
@@ -149,8 +185,8 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
     bullet = ParagraphStyle("Bullet", parent=body, leftIndent=10, bulletIndent=0)
 
     doc = SimpleDocTemplate(
-        out, pagesize=A4, rightMargin=15 * mm, leftMargin=15 * mm, topMargin=15 * mm, bottomMargin=15 * mm,
-        title=f"Engineering Report - {job.job_id}", author="Engineering AI Platform",
+        out, pagesize=A4, rightMargin=15 * mm, leftMargin=15 * mm, topMargin=29 * mm, bottomMargin=20 * mm,
+        title=f"Engineering Report - {job.job_id}", author="Mars Engineering Solutions",
     )
     manifest = evidence_bundle.get("manifest", {})
     request = evidence_bundle.get("request", {})
@@ -480,6 +516,25 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
                    _text(t.get("calculation_trace")), _text(t.get("assumptions")), _text(t.get("warnings")), _text(t.get("compliance"))])
     for col in range(1, 11):
         sh.column_dimensions[chr(64 + col)].width = 24
+
+    from branding import brand, footer_line
+    b = brand()
+    summary = wb["Summary"] if "Summary" in wb.sheetnames else wb.worksheets[0]
+    summary.append([])
+    summary.append([b["name"], f"{b['tagline']}  |  {b['address']}  |  {b['email']}  |  {b['phone']}"])
+    summary.cell(row=summary.max_row, column=1).font = Font(bold=True, color="14233C")
+    for sheet in wb.worksheets:
+        sheet.oddHeader.left.text = b["name"].upper()
+        sheet.oddHeader.left.size = 9
+        sheet.oddHeader.right.text = "Controlled engineering record"
+        sheet.oddHeader.right.size = 8
+        sheet.oddFooter.left.text = footer_line()
+        sheet.oddFooter.left.size = 7
+        sheet.oddFooter.right.text = "Page &P of &N"
+        sheet.oddFooter.right.size = 7
+        sheet.sheet_properties.tabColor = "C8442B" if sheet.title == "Summary" else "14233C"
+    wb.properties.creator = b["name"]
+    wb.properties.title = f"Evidence workbook - {job.job_id}"
 
     out = io.BytesIO()
     wb.save(out)

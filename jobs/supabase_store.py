@@ -320,7 +320,7 @@ class SupabaseJobStore(JobStore):
         report_id = artifact.get("report_id")
         version = int(artifact.get("version") or 1)
 
-        watermark = "ENGINEERING AI PLATFORM • APPROVED CONTROLLED DOCUMENT"
+        watermark = "MARS ENGINEERING SOLUTIONS • APPROVED CONTROLLED DOCUMENT"
         pdf = build_approved_pdf(job=job, evidence_bundle=evidence_bundle, watermark=watermark)
         xlsx = build_evidence_xlsx(job=job, evidence_bundle=evidence_bundle)
         pdf_sha = sha256_bytes(pdf)

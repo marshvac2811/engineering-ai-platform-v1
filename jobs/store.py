@@ -51,7 +51,7 @@ class InMemoryJobStore(JobStore):
             "pdf": {
                 "filename": f"engineering-report-{job.job_id}.pdf",
                 "sha256": sha256_bytes(pdf),
-                "watermark": "ENGINEERING AI PLATFORM • APPROVED CONTROLLED DOCUMENT",
+                "watermark": "MARS ENGINEERING SOLUTIONS • APPROVED CONTROLLED DOCUMENT",
             },
             "evidence_workbook": {
                 "filename": f"engineering-evidence-{job.job_id}.xlsx",

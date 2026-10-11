@@ -184,6 +184,18 @@ class APIApp:
         supplied = environ.get("HTTP_X_SCHEDULER_SECRET", "")
         return bool(configured) and len(configured) >= 24 and hmac.compare_digest(configured.encode(), supplied.encode())
 
+    @staticmethod
+    def _design_dxf_for_job(job):
+        """Return (design_result, dxf_bytes) for jobs that carry an HVAC room schedule, else (None, None)."""
+        bundle = (job.result or {}).get("evidence_bundle") or {}
+        for task in bundle.get("tasks") or []:
+            er = task.get("engineering_result") if isinstance(task, dict) else None
+            if isinstance(er, dict) and er.get("room_schedule"):
+                from engineering.drawing.design_schematic import build_design_schematic_dxf
+                pc = job.project_context or {}
+                return er, build_design_schematic_dxf(er, reference=str(job.report_id or job.job_id), project=str(pc.get("project") or ""))
+        return None, None
+
     def _gmail_sync(self, service, tenant_id: str, *, q: str, max_results: int, download_attachments: bool) -> dict:
         """Poll Gmail, de-duplicate, and create one reviewable engineering job per new message."""
         ids = self.gmail_client.list_message_ids(tenant_id, q=q, max_results=max_results)
@@ -730,6 +742,7 @@ class APIApp:
                 if mode == "send":
                     ctx.require_scope("integrations:write")
                 job = service._get(job_id)
+                job_id = job.job_id  # a short prefix was resolved to the full id
                 if job.status.value not in {"dispatched", "completed"}:
                     raise ValueError("A reply is only available after the job has been approved and dispatched")
                 pc = job.project_context or {}
@@ -757,14 +770,19 @@ class APIApp:
                     "",
                     str(body.get("signature") or "Regards").strip(),
                 ]))
+                attachments = [
+                    (pdf_meta.get("filename") or f"engineering-report-{job.job_id}.pdf", "application/pdf", pdf),
+                    (xlsx_meta.get("filename") or f"engineering-evidence-{job.job_id}.xlsx",
+                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx),
+                ]
+                _design, dxf_bytes = self._design_dxf_for_job(job)
+                if dxf_bytes:
+                    attachments.append((f"hvac-design-schematic-{job.job_id}.dxf", "application/dxf", dxf_bytes))
+                    text += "\n\nA schematic CAD file (DXF) is also attached. It is a diagram of the rooms and duct runs, not a floor plan; preliminary and subject to engineer review."
                 raw = gmail_build_reply_message(
                     to=str(pc["reply_to"]), subject=str(pc.get("subject") or "Engineering request"), body_text=text,
                     in_reply_to=pc.get("message_id_header") or None,
-                    attachments=[
-                        (pdf_meta.get("filename") or f"engineering-report-{job.job_id}.pdf", "application/pdf", pdf),
-                        (xlsx_meta.get("filename") or f"engineering-evidence-{job.job_id}.xlsx",
-                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx),
-                    ],
+                    attachments=attachments,
                 )
                 thread_id = pc.get("thread_id") or None
                 if mode == "send":
@@ -1109,20 +1127,11 @@ class APIApp:
                     return self._json(start_response, "404 Not Found", {"error": "Job not found"})
                 if job.status.value not in {"dispatched", "completed"}:
                     return self._json(start_response, "409 Conflict", {"error": "The design DXF is available after the job has been approved and dispatched."})
-                bundle = (job.result or {}).get("evidence_bundle") or {}
-                design = None
-                for task in bundle.get("tasks") or []:
-                    er = task.get("engineering_result") if isinstance(task, dict) else None
-                    if isinstance(er, dict) and er.get("room_schedule"):
-                        design = er
-                        break
+                design, data = self._design_dxf_for_job(job)
                 if design is None:
                     return self._json(start_response, "404 Not Found", {"error": "This job has no HVAC room schedule to draw."})
                 import base64
                 import hashlib
-                from engineering.drawing.design_schematic import build_design_schematic_dxf
-                pc = job.project_context or {}
-                data = build_design_schematic_dxf(design, reference=str(job.report_id or job.job_id), project=str(pc.get("project") or ""))
                 return self._json(start_response, "200 OK", {
                     "job_id": job.job_id, "filename": f"hvac-design-schematic-{job.job_id}.dxf",
                     "media_type": "application/dxf", "sha256": hashlib.sha256(data).hexdigest(),

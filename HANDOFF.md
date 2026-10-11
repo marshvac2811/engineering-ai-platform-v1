@@ -329,3 +329,10 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - Intake: "design HVAC for ..." routes to hvac_design_package; building type inferred from words (office/hospital/retail); rooms parsed from prose ("a 120 m2 open office and a 30 m2 meeting room").
 - orchestrator/result.py: engine assumptions AND intake-applied defaults are both disclosed (previously the latter were dropped when the engine had its own list).
 - Known gap: no LLM provider key on Render (rule-based intake only); fan selection, cooling coil, heat recovery, pump head prose extraction still limited.
+
+## Checkpoint 2026-10-11 (tabbed dashboard + Mars Engineering Solutions branding)
+- web/app.html: five top tabs (New Request, Review & Jobs [badge], Reports, Design & Calculations [HVAC Design/BOQ/Energy/Trials picker], Gmail Intake); last tab remembered; submitting a form jumps to Review & Jobs with a toast. Job cards compact: AI interpretation + rework collapsed; Approve / Approve & Dispatch / View Report / View Evidence on one row. All element ids unchanged. Browser-tested with headless Chromium (scratchpad tabs.js/card.js).
+- branding/: name, tagline, address/contact (env-overridable MARS_BRAND_NAME, MARS_TAGLINE, MARS_ADDRESS, MARS_EMAIL, MARS_PHONE, MARS_WEBSITE), vector logo (ReportLab) + SVG (web/mars-logo.svg).
+- PDFs: branded header, faint monogram + diagonal "MARS ENGINEERING SOLUTIONS / APPROVED CONTROLLED DOCUMENT" watermark, address footer on every page. XLSX: print header/footer on every sheet, brand row on Summary, tab colours.
+- Address is a placeholder "Delhi NCR, India" until the exact registered address is set in Render (MARS_ADDRESS). Phone/email taken from user's profile.
+- Not done: Excel image watermark (openpyxl cannot place header images simply).

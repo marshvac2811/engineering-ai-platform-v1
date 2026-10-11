@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Engineering Operations</title>
+<title>Mars Engineering Solutions</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f7fa;color:#172033}
@@ -43,11 +43,39 @@ button:disabled{opacity:.55;cursor:wait}
 .trial{border:1px solid #e1e5eb;border-radius:10px;padding:13px;background:#fff}
 .trial h3{margin:0 0 6px;font-size:14px}.trial p{margin:0 0 10px;color:#697386;font-size:12px;line-height:1.4}
 .json-result{margin-top:10px;overflow:auto}.json-result table{width:100%;border-collapse:collapse;font-size:12px}.json-result th,.json-result td{border:1px solid #e1e5eb;padding:7px;text-align:left;vertical-align:top}.json-result th{background:#f5f7fa}
+
+header .brand{display:flex;align-items:center;gap:12px}header .brand svg{display:block;border-radius:9px;box-shadow:0 0 0 2px rgba(255,255,255,.22)}
+header .tag{font-size:12px;opacity:.7;letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #e5e8ee;display:flex;gap:2px;padding:0 max(18px,calc((100% - 1050px)/2));overflow-x:auto;box-shadow:0 1px 0 rgba(23,32,51,.03)}
+.tab{background:none;color:#4b5565;border:0;border-bottom:3px solid transparent;border-radius:0;padding:14px 16px;font-weight:600;white-space:nowrap}
+.tab:hover{color:#172033;background:#f5f7fa}
+.tab.active{color:#c8442b;border-bottom-color:#c8442b}
+.badge{display:inline-block;min-width:20px;padding:1px 6px;margin-left:5px;border-radius:10px;background:#c8442b;color:#fff;font-size:11px;text-align:center}
+.badge[hidden]{display:none}
+.tabpanel{display:none}.tabpanel.active{display:block}
+.toolpick{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.toolbtn{background:#eef2f7;color:#172033;border:1px solid #d9e0e9}
+.toolbtn.active{background:#14233c;color:#fff;border-color:#14233c}
+.toolpanel{display:none}.toolpanel.active{display:block}
+.toast{display:none;margin:0 0 14px;padding:11px 14px;border-radius:10px;background:#e9f7ef;color:#176b3a;border:1px solid #bfe3cd;font-size:14px}
+details.more{margin-top:10px;border:1px solid #e1e5eb;border-radius:9px;background:#fbfcfe}
+details.more>summary{cursor:pointer;padding:9px 12px;font-size:13px;font-weight:600;color:#3a4558}
+details.more>.body{padding:0 12px 12px}
+.job .actions{flex-wrap:wrap}
 </style>
 </head>
 <body>
-<header><div class="bar"><h1>Engineering Operations</h1><div id="user" class="user">Authenticated</div></div></header>
+<header><div class="bar"><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Mars Engineering Solutions"><rect width="100" height="100" rx="18" fill="#14233c"/><path d="M20 76V28L50 60L80 28V76" fill="none" stroke="#fff" stroke-width="8.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="76" cy="20" r="9.5" fill="#c8442b"/><line x1="20" y1="87" x2="80" y2="87" stroke="#e0a93b" stroke-width="4.5" stroke-linecap="round"/></svg><div><h1>Mars Engineering Solutions</h1><div class="tag">Engineering Operations</div></div></div><div id="user" class="user">Authenticated</div></div></header>
+<nav class="tabs" id="mainTabs" role="tablist" aria-label="Dashboard sections">
+ <button type="button" class="tab active" data-tab="request" role="tab">New Request</button>
+ <button type="button" class="tab" data-tab="jobs" role="tab">Review &amp; Jobs <span class="badge" id="badgeJobs" hidden></span></button>
+ <button type="button" class="tab" data-tab="reports" role="tab">Reports</button>
+ <button type="button" class="tab" data-tab="tools" role="tab">Design &amp; Calculations</button>
+ <button type="button" class="tab" data-tab="gmail" role="tab">Gmail Intake</button>
+</nav>
 <main>
+<div id="tabToast" class="toast" role="status"></div>
+<div class="tabpanel active" data-panel="request">
 <section class="card">
 <h2>New Engineering Request</h2>
 <p class="muted">Describe the engineering outcome you need in normal language. AI interprets the request, determines the engineering work, identifies governing requirements, asks only for missing information, executes verified capabilities when available, and routes the result for human review.</p><div class="small" style="margin-top:8px"><strong>Note:</strong> This box starts a new engineering request. Use the Continue form in an Information Needed job to answer an existing request.</div>
@@ -61,6 +89,15 @@ button:disabled{opacity:.55;cursor:wait}
 <div id="continuationBox" class="need" style="display:none;margin-top:12px"></div>
 </section>
 
+</div>
+<div class="tabpanel" data-panel="tools">
+<div class="toolpick" id="toolPick">
+ <button type="button" class="toolbtn active" data-tool="design">HVAC Design</button>
+ <button type="button" class="toolbtn" data-tool="boq">BOQ Takeoff</button>
+ <button type="button" class="toolbtn" data-tool="energy">Energy Study</button>
+ <button type="button" class="toolbtn" data-tool="trial">Plant Data &amp; Trials</button>
+</div>
+<div class="toolpanel" data-toolpanel="trial">
 <section class="card">
 <h2>Energy Data Intake & Trial Lab</h2>
 <p class="muted">Upload the plant data the client already has. The platform will send the files with the engineering request so the AI can use them as project evidence. You can also launch controlled trials against registered energy capabilities.</p>
@@ -79,17 +116,10 @@ button:disabled{opacity:.55;cursor:wait}
 <div id="trialMsg" class="msg"></div>
 </section>
 
-<section class="card" id="gmailCard">
-<h2>Gmail Intake</h2>
-<p class="muted">Client emails become reviewable engineering jobs. Only messages matching the filter below are read; nothing is sent automatically. Approved results are saved as a Gmail <strong>draft</strong> reply for you to check and send.</p>
-<div class="trial-grid">
-  <div class="trial"><h3>1. Connect</h3><p id="gmailStatus" class="small">Checking connection...</p><button type="button" class="secondary" id="gmailConnect">Connect Gmail</button></div>
-  <div class="trial"><h3>2. Sync inbox</h3><p class="small">Gmail search filter</p><input id="gmailQuery" type="text" value="label:engineering-requests is:unread" style="width:100%"><button type="button" class="secondary" id="gmailSync" style="margin-top:8px">Sync now</button></div>
-  <div class="trial"><h3>3. Draft reply</h3><p class="small">Job ID of an approved Gmail job</p><input id="gmailJobId" type="text" placeholder="full job id" style="width:100%"><button type="button" class="secondary" id="gmailDraft" style="margin-top:8px">Create Gmail draft</button></div>
 </div>
-<div id="gmailMsg" class="msg"></div>
-</section>
 
+
+<div class="toolpanel active" data-toolpanel="design">
 <section class="card" id="designCard">
 <h2>HVAC Design Package <span class="small">(preliminary)</span></h2>
 <p class="muted">Enter the rooms. The platform estimates each room's cooling load, supply airflow, branch duct size and terminal equipment, plus the block load and a plant suggestion. Results are preliminary rule-of-thumb figures and go to human review.</p>
@@ -112,6 +142,8 @@ button:disabled{opacity:.55;cursor:wait}
 <div id="dpMsg" class="msg"></div>
 </section>
 
+</div>
+<div class="toolpanel" data-toolpanel="boq">
 <section class="card" id="boqCard">
 <h2>BOQ Material Takeoff <span class="small">(preliminary)</span></h2>
 <p class="muted">Paste the BOQ as CSV (header: item_no, description, unit, quantity) or choose a .csv file. Each line is matched to a recipe and the materials needed are calculated with wastage. Lines with no recipe are listed, never guessed.</p>
@@ -123,6 +155,8 @@ button:disabled{opacity:.55;cursor:wait}
 <div id="boqMsg" class="msg"></div>
 </section>
 
+</div>
+<div class="toolpanel" data-toolpanel="energy">
 <section class="card" id="energyCard">
 <h2>Energy Optimisation Study <span class="small">(preliminary)</span></h2>
 <p class="muted">Baseline consumption plus a list of measures. Each measure is ranked by payback with avoided CO&#8322;. Interactions between measures are not modelled.</p>
@@ -135,6 +169,9 @@ button:disabled{opacity:.55;cursor:wait}
 <div style="margin-top:8px"><button type="button" class="secondary" id="enAdd">+ Add measure</button> <button type="button" id="enRun">Run energy study</button></div>
 <div id="enMsg" class="msg"></div>
 </section>
+</div>
+</div>
+<div class="tabpanel" data-panel="reports">
 
 
 <section class="card">
@@ -152,6 +189,8 @@ button:disabled{opacity:.55;cursor:wait}
 <div id="regPanel" style="display:none;margin-top:10px"></div>
 </section>
 
+</div>
+<div class="tabpanel" data-panel="jobs">
 <section class="card">
 <h2>Jobs</h2>
 <p class="muted">Jobs are separated by lifecycle stage so reviewers only see work that requires their action. Use <strong>Ready for Review</strong> for engineering approval; do not approve jobs in other queues.</p>
@@ -164,6 +203,19 @@ button:disabled{opacity:.55;cursor:wait}
   <div id="dispatchedJobs" class="empty">Loading...</div>
 </div>
 </section>
+</div>
+<div class="tabpanel" data-panel="gmail">
+<section class="card" id="gmailCard">
+<h2>Gmail Intake</h2>
+<p class="muted">Client emails become reviewable engineering jobs. Only messages matching the filter below are read; nothing is sent automatically. Approved results are saved as a Gmail <strong>draft</strong> reply for you to check and send.</p>
+<div class="trial-grid">
+  <div class="trial"><h3>1. Connect</h3><p id="gmailStatus" class="small">Checking connection...</p><button type="button" class="secondary" id="gmailConnect">Connect Gmail</button></div>
+  <div class="trial"><h3>2. Sync inbox</h3><p class="small">Gmail search filter</p><input id="gmailQuery" type="text" value="label:engineering-requests is:unread" style="width:100%"><button type="button" class="secondary" id="gmailSync" style="margin-top:8px">Sync now</button></div>
+  <div class="trial"><h3>3. Draft reply</h3><p class="small">Job ID of an approved Gmail job</p><input id="gmailJobId" type="text" placeholder="full job id" style="width:100%"><button type="button" class="secondary" id="gmailDraft" style="margin-top:8px">Create Gmail draft</button></div>
+</div>
+<div id="gmailMsg" class="msg"></div>
+</section>
+</div>
 </main>
 
 <script>
@@ -661,6 +713,7 @@ function jobHtml(j){
       '</div><div class="actions"><button id="btn-'+id+'">Continue</button></div>')+
    '<div id="msg-'+id+'" class="msg"></div></div>';
  }
+ const aiStart=html.length;
  const understanding=orch.request_understanding||{};
  if(understanding.objective||understanding.disciplines?.length||understanding.requested_outputs?.length){ html+="<div class=\"result\"><h3>AI Request Understanding</h3><div class=\"small\"><strong>Objective:</strong> "+esc(understanding.objective||"Not yet established")+"</div>"+(understanding.disciplines?.length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Disciplines:</strong> "+esc(understanding.disciplines.join(", "))+"</div>":"")+(understanding.requested_outputs?.length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Requested outputs:</strong> "+esc(understanding.requested_outputs.join(", "))+"</div>":"")+"</div>"; }
  const engineeringPlan=orch.engineering_plan||{};
@@ -677,11 +730,14 @@ function jobHtml(j){
    "</div>";
  } const governance=orch.governance||orch.standards_context||{};
  if(governance.governing_bodies?.length||governance.standards?.length||governance.methodology&&Object.keys(governance.methodology).length){ html+="<div class=\"result\"><h3>Governance & Methodology</h3>"+(governance.governing_bodies?.length?"<div class=\"small\"><strong>Governing bodies:</strong> "+esc(governance.governing_bodies.join(", "))+"</div>":"")+(governance.standards?.length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Standards:</strong> "+esc(governance.standards.map(s=>typeof s==="string"?s:(s.title||s.standard_id||JSON.stringify(s))).join(", "))+"</div>":"")+(governance.methodology&&Object.keys(governance.methodology).length?"<div class=\"small\" style=\"margin-top:6px\"><strong>Methodology:</strong> "+esc(JSON.stringify(governance.methodology))+"</div>":"")+"</div>"; }
+ if(html.length>aiStart){html=html.slice(0,aiStart)+'<details class="more"><summary>AI interpretation, plan &amp; governance</summary><div class="body">'+html.slice(aiStart)+'</div></details>';}
  if(result)html+=formatResult(result);
  if(j.errors?.length)html+='<div style="color:#a12626;margin-top:8px">'+esc(j.errors.join("; "))+'</div>';
- if(review)html+='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button><button onclick="approve(\''+id+'\',true)" title="Approve and send the final PDF/Excel immediately, no second click needed">Approve &amp; Dispatch</button></div>'+
-  '<div style="margin-top:10px"><label class="small" for="rwc-'+id+'">Something not right? Tell the engineer what to change</label><textarea id="rwc-'+id+'" rows="2" placeholder="e.g. Motor rating should be 90 kW" style="margin-top:4px"></textarea></div>'+
-  '<div class="actions"><button onclick="requestRework(\''+id+'\')">Request Rework</button></div><div id="rwmsg-'+id+'" class="small" style="color:#a12626;margin-top:4px"></div>';
+ let primaryActions='';
+ if(review)primaryActions='<div class="actions"><button onclick="approve(\''+id+'\')">Approve</button><button onclick="approve(\''+id+'\',true)" title="Approve and send the final PDF/Excel immediately, no second click needed">Approve &amp; Dispatch</button></div>';
+ let reworkHtml='';
+ if(review)reworkHtml='<details class="more"><summary>Something not right? Request rework</summary><div class="body"><label class="small" for="rwc-'+id+'">Tell the engineer what to change</label><textarea id="rwc-'+id+'" rows="2" placeholder="e.g. Motor rating should be 90 kW" style="margin-top:4px"></textarea>'+
+  '<div class="actions"><button class="secondary" onclick="requestRework(\''+id+'\')">Request Rework</button></div><div id="rwmsg-'+id+'" class="small" style="color:#a12626;margin-top:4px"></div></div></details>';
  if(status==="rework"){
   const ev=(j.events||[]).slice().reverse().find(e=>String(e.status)==="rework");
   const why=(ev&&ev.metadata&&ev.metadata.comment)||"", by=(ev&&ev.metadata&&ev.metadata.reviewer)||"";
@@ -696,10 +752,10 @@ function jobHtml(j){
  if(status==="approved")html+='<div class="actions"><button onclick="dispatch(\''+id+'\')">Dispatch</button></div>';
  if(["human_review","approved","dispatching","dispatched","completed"].includes(status)){
   const done=["dispatched","completed"].includes(status);
-  html+='<div class="actions"><button onclick="viewArtifact(\''+id+'\',\'report\')">View Report</button><button onclick="viewArtifact(\''+id+'\',\'evidence\')">View Evidence</button>'+
+  html+='<div class="actions">'+(primaryActions?primaryActions.replace('<div class="actions">','').replace(/<\/div>$/,''):'')+'<button class="'+(review?'secondary':'')+'" onclick="viewArtifact(\''+id+'\',\'report\')">View Report</button><button class="secondary" onclick="viewArtifact(\''+id+'\',\'evidence\')">View Evidence</button>'+
    (done?'<button onclick="downloadArtifact(\''+id+'\',\'pdf\')">Download PDF</button><button onclick="downloadArtifact(\''+id+'\',\'xlsx\')">Download Excel</button>':'')+(done&&/hvac_design_package/.test(String(j.requested_skill_id||j.skill_id||""))?'<button onclick="downloadDesignDxf(\''+id+'\')">Download DXF (schematic)</button>':'')+'</div>'+
    (done?'':'<div class="small" style="margin-top:6px">The PDF report and Excel evidence workbook are created when you Approve and then Dispatch this job.</div>')+
-   '<div id="art-'+id+'" class="small" style="display:none;margin-top:8px"></div><div id="dlmsg-'+id+'" class="small" style="margin-top:6px;color:#a12626"></div>';
+   reworkHtml+'<div id="art-'+id+'" class="small" style="display:none;margin-top:8px"></div><div id="dlmsg-'+id+'" class="small" style="margin-top:6px;color:#a12626"></div>';
  }
  html+='</div>';return html;
 }
@@ -1022,6 +1078,57 @@ loadAccount();loadJobs();
    });
   }
  }catch(e){console.error("BOQ/Energy panels failed to initialise",e);}
+})();
+</script>
+
+<script>
+/* Tab navigation (isolated; the rest of the dashboard logic is unchanged and addresses elements by id). */
+(function(){
+  const TABS=["request","jobs","reports","tools","gmail"], TOOLS=["design","boq","energy","trial"];
+  const safeGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+  const safeSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+  function showTool(name){
+    if(!TOOLS.includes(name))name="design";
+    document.querySelectorAll(".toolbtn").forEach(b=>b.classList.toggle("active",b.dataset.tool===name));
+    document.querySelectorAll(".toolpanel").forEach(p=>p.classList.toggle("active",p.dataset.toolpanel===name));
+    safeSet("mars.tool",name);
+  }
+  function showTab(name,opts){
+    if(!TABS.includes(name))name="request";
+    document.querySelectorAll(".tab").forEach(b=>{const on=b.dataset.tab===name;b.classList.toggle("active",on);b.setAttribute("aria-selected",on?"true":"false");});
+    document.querySelectorAll(".tabpanel").forEach(p=>p.classList.toggle("active",p.dataset.panel===name));
+    safeSet("mars.tab",name);
+    try{ if(!(opts&&opts.noHash)) history.replaceState(null,"","#"+name); }catch(e){}
+    if(!(opts&&opts.noScroll)) window.scrollTo({top:0,behavior:"auto"});
+  }
+  window.showTab=showTab;window.showTool=showTool;
+  document.getElementById("mainTabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b)showTab(b.dataset.tab);});
+  document.getElementById("toolPick").addEventListener("click",e=>{const b=e.target.closest(".toolbtn");if(b)showTool(b.dataset.tool);});
+  const fromHash=(location.hash||"").replace("#","");
+  showTool(safeGet("mars.tool")||"design");
+  showTab(TABS.includes(fromHash)?fromHash:(safeGet("mars.tab")||"request"),{noScroll:true,noHash:true});
+  window.addEventListener("hashchange",()=>{const h=(location.hash||"").replace("#","");if(TABS.includes(h))showTab(h,{noHash:true});});
+
+  /* After a form creates a job, take the user to the review queue with a short confirmation. */
+  const toast=document.getElementById("tabToast");let toastTimer;
+  function announce(text){toast.textContent=text;toast.style.display="block";clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.style.display="none"},9000);}
+  ["requestMsg","dpMsg","boqMsg","enMsg","trialMsg"].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    new MutationObserver(()=>{
+      if(el.classList.contains("ok")&&el.style.display!=="none"&&el.textContent.trim()){
+        const t=el.textContent.trim();
+        setTimeout(()=>{showTab("jobs");announce(t+" Find it under Ready for Review or Information Needed.");},600);
+      }
+    }).observe(el,{attributes:true,attributeFilter:["class"],childList:true,characterData:true,subtree:true});
+  });
+
+  /* Count badge on the Review tab, read from the job-queue tabs the dashboard already renders. */
+  const jt=document.getElementById("jobTabs"),badge=document.getElementById("badgeJobs");
+  if(jt&&badge)new MutationObserver(()=>{
+    const first=[...jt.querySelectorAll(".job-tab")].find(b=>/ready for review/i.test(b.textContent));
+    const n=first&&first.querySelector(".count")?parseInt(first.querySelector(".count").textContent,10):0;
+    badge.textContent=n;badge.hidden=!(n>0);
+  }).observe(jt,{childList:true,subtree:true});
 })();
 </script>
 </body>
