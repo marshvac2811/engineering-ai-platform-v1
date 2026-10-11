@@ -312,3 +312,8 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 ## Checkpoint 2026-10-11 — Optional component-summation room loads
 - A room in `hvac_design_package` may carry `envelope`: `walls[{area_m2,u_value,delta_t_c}]`, `glazing[{area_m2,u_value,delta_t_c,shgc,solar_w_m2}]`, `lighting_w_m2`, `equipment_w_m2`, optional `person_sensible_w/person_latent_w` (defaults 75/55 W flagged as assumptions), `safety_margin_pct` (default 10). Load = steady-state sum x margin; every coefficient is caller-supplied (no built-in CLTD/solar tables). Rooms without `envelope` still use the benchmark; each row reports `load_method`. Hand-checked in tests (4,930 W x 1.10 = 5,423 W). API/JSON only; no dashboard fields yet.
 - User reported being unable to complete a step on the Google Cloud console page (Gmail OAuth client); waiting for details.
+
+## Checkpoint 2026-10-11 (Gmail dashboard fixes)
+- Job ids: `_resolve_job_id` accepts a unique tenant-scoped prefix (>=8 chars); malformed ids give a clear error instead of Postgres 22P02.
+- Dashboard API timeout raised 15s -> 30s (Render free plan wake-up). Root cause of the /v1/integrations timeout not confirmed from logs.
+- Render logs showed live Gmail sync -> approve -> dispatch of job cfdf2677 succeeded; draft reply not yet verified with the correct id.

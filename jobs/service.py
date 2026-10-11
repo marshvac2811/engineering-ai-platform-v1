@@ -543,7 +543,29 @@ class JobService:
     def list_jobs(self) -> list[Job]:
         return list(self.store.list(tenant_id=self.tenant_id))
 
+    def _resolve_job_id(self, job_id: str) -> str:
+        """Accept a unique tenant-scoped prefix (>= 8 chars) of a full job id."""
+        import re as _re
+        jid = str(job_id or "").strip()
+        full = _re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", jid)
+        if full:
+            return jid
+        if _re.fullmatch(r"[0-9a-fA-F-]{8,35}", jid):
+            summ = getattr(self.store, "list_summaries", None)
+            rows = summ(tenant_id=self.tenant_id) if summ else self.store.list(tenant_id=self.tenant_id)
+            ids = [str(r.get("job_id")) if isinstance(r, dict) else str(r.job_id) for r in rows]
+            matches = [i for i in ids if i.lower().startswith(jid.lower())]
+            if len(matches) == 1:
+                return matches[0]
+            if len(matches) > 1:
+                raise ValueError(f"Job id '{jid}' matches several jobs; paste the full 36-character job id")
+            raise KeyError(f"Unknown job: {jid}")
+        if jid and not _re.fullmatch(r"[A-Za-z0-9_.-]+", jid):
+            raise ValueError("Invalid job id; paste the full job id shown on the job card")
+        return jid
+
     def _get(self, job_id: str) -> Job:
+        job_id = self._resolve_job_id(job_id)
         job = self.store.get(job_id)
         if job is None:
             raise KeyError(f"Unknown job: {job_id}")
