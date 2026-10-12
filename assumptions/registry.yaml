@@ -97,7 +97,7 @@ assumptions:
 
   - assumption_id: load.climate_zone.preliminary_default
     parameter: climate_zone
-    value: hot_dry
+    value: composite
     unit: ''
     domain: HVAC
     source_skill: preliminary_load_estimation
@@ -258,7 +258,7 @@ assumptions:
 
   - assumption_id: design.climate_zone.preliminary_default
     parameter: climate_zone
-    value: 'hot_dry'
+    value: 'composite'
     unit: ''
     domain: HVAC
     source_skill: hvac_design_package
