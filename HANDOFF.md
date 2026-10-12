@@ -356,3 +356,9 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - Excel: faint tiled Mars watermark background picture on every sheet (post-processed zip; reports/xlsx_watermark.py, branding/watermark.py). Structure validated + opens in openpyxl/LibreOffice; on-screen look in desktop Excel NOT visually verified.
 - New governed calculators (hand-checked in tests): pump_power_sizing, generator_sizing, transformer_sizing, domestic_water_tank_sizing. Registry now 49 ids / 48 executable. Defaults (e.g. DF 0.8, PF 0.8/0.9, 45 L/person/day) are planning values disclosed as assumptions - need engineer sign-off.
 - Plain-sentence routing/extraction for the four.
+
+## Checkpoint 2026-10-12 (fire / domestic-water schematic DXF)
+- engineering/drawing/services_schematic.py: block-diagram DXF for sprinkler_demand / fire_water_storage (tank > pump > sprinklers > hose) and domestic_water_tank_sizing / plumbing_water_demand (UG tank > transfer pump > OH tank > fixtures). Numbers only from calculator output; pump head/selection stated as "not determined here". No pipe routes invented.
+- Served by GET /v1/jobs/{id}/design-dxf and attached to the Gmail draft reply; dashboard DXF button shown for these skills too. Tests: tests/test_services_schematic.py (incl. API end-to-end).
+- Earlier checkpoint correction: Excel faint Mars watermark background (84c1c24) and pump_power/generator/transformer/domestic_water_tank calculators (eb7fe47) were already built.
+- Still not built: OCR of scanned drawings, DWG output, live Upwork/CRM pipeline.

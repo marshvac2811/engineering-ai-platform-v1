@@ -194,7 +194,35 @@ class APIApp:
                 from engineering.drawing.design_schematic import build_design_schematic_dxf
                 pc = job.project_context or {}
                 return er, build_design_schematic_dxf(er, reference=str(getattr(job, "serial_no", None) or job.report_id or job.job_id), project=str(pc.get("project") or ""))
+        # Fire-water and domestic-water jobs: block-diagram schematics from the same evidence.
+        fire_keys, water_keys = {"sprinkler_demand", "fire_water_storage"}, {"domestic_water_tank_sizing", "plumbing_water_demand"}
+        merged: Dict[str, Any] = {"fire": {}, "water": {}}
+        for task in bundle.get("tasks") or []:
+            if not isinstance(task, dict):
+                continue
+            cap, er = task.get("capability_id"), task.get("engineering_result")
+            if not isinstance(er, dict):
+                continue
+            if cap in fire_keys:
+                merged["fire"].update(er)
+            elif cap in water_keys:
+                merged["water"].update(er)
+        pc = job.project_context or {}
+        ref = str(getattr(job, "serial_no", None) or job.report_id or job.job_id)
+        try:
+            from engineering.drawing.services_schematic import build_fire_schematic_dxf, build_water_schematic_dxf
+            if merged["fire"]:
+                return {"drawing_kind": "fire-water"}, build_fire_schematic_dxf(merged["fire"], reference=ref, project=str(pc.get("project") or ""))
+            if merged["water"]:
+                return {"drawing_kind": "domestic-water"}, build_water_schematic_dxf(merged["water"], reference=ref, project=str(pc.get("project") or ""))
+        except ValueError:
+            pass
         return None, None
+
+    @staticmethod
+    def _drawing_filename(design, job_id: str) -> str:
+        kind = (design or {}).get("drawing_kind") or "hvac-design"
+        return f"{kind}-schematic-{job_id}.dxf"
 
     def _gmail_sync(self, service, tenant_id: str, *, q: str, max_results: int, download_attachments: bool) -> dict:
         """Poll Gmail, de-duplicate, and create one reviewable engineering job per new message."""
@@ -778,7 +806,7 @@ class APIApp:
                 ]
                 _design, dxf_bytes = self._design_dxf_for_job(job)
                 if dxf_bytes:
-                    attachments.append((f"hvac-design-schematic-{job.job_id}.dxf", "application/dxf", dxf_bytes))
+                    attachments.append((self._drawing_filename(_design, job.job_id), "application/dxf", dxf_bytes))
                     text += "\n\nA schematic CAD file (DXF) is also attached. It is a diagram of the rooms and duct runs, not a floor plan; preliminary and subject to engineer review."
                 raw = gmail_build_reply_message(
                     to=str(pc["reply_to"]), subject=str(pc.get("subject") or "Engineering request"), body_text=text,
@@ -1130,11 +1158,11 @@ class APIApp:
                     return self._json(start_response, "409 Conflict", {"error": "The design DXF is available after the job has been approved and dispatched."})
                 design, data = self._design_dxf_for_job(job)
                 if design is None:
-                    return self._json(start_response, "404 Not Found", {"error": "This job has no HVAC room schedule to draw."})
+                    return self._json(start_response, "404 Not Found", {"error": "This job has nothing to draw (no HVAC room schedule, fire-water or domestic-water results)."})
                 import base64
                 import hashlib
                 return self._json(start_response, "200 OK", {
-                    "job_id": job.job_id, "filename": f"hvac-design-schematic-{job.job_id}.dxf",
+                    "job_id": job.job_id, "filename": self._drawing_filename(design, job.job_id),
                     "media_type": "application/dxf", "sha256": hashlib.sha256(data).hexdigest(),
                     "content_base64": base64.b64encode(data).decode("ascii"),
                     "governance": "Schematic only, not a floor plan; preliminary; engineer review required.",
