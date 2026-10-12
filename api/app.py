@@ -529,6 +529,40 @@ class APIApp:
                 drawing = plan_discipline_layout(building, discipline, floor_id, room_inputs, revision=str(body.get("revision", "A")))
                 return self._json(start_response, "200 OK", {"building": building_to_dict(building), "drawing": drawing_to_dict(drawing), "svg": drawing_to_svg(drawing), "governance": {"status": "preliminary", "human_review_required": True}})
 
+            if len(parts) == 3 and parts[0] == "v1" and parts[1] == "drawings" and parts[2] == "read-plan" and method == "POST":
+                ctx.require_scope("jobs:write")
+                import base64
+                import binascii
+                from engineering.plan import read_plan
+                from engineering.layout.generator import build_layout_dxf
+                filename = str(body.get("filename") or "").strip()
+                if not filename:
+                    raise ValueError("filename is required")
+                try:
+                    raw_file = base64.b64decode(str(body.get("content_base64") or ""), validate=True)
+                except (binascii.Error, ValueError):
+                    raise ValueError("content_base64 must be valid base64")
+                if not raw_file:
+                    raise ValueError("content_base64 is empty")
+                scale = body.get("scale")
+                res = read_plan(filename, raw_file, units=(str(body["units"]) if body.get("units") else None), scale=(float(scale) if scale not in (None, "") else None))
+                out = {"status": res.status, "messages": res.messages, "plan": res.model.summary() if res.model else None,
+                       "rooms": [{"room_id": r.room_id, "name": r.name, "area_m2": r.area_m2, "confidence": r.confidence, "name_source": r.name_source}
+                                 for r in (res.model.rooms if res.model else [])],
+                       "governance": {"status": "preliminary", "human_review_required": True,
+                                      "note": "Rooms, units and scale are read from the file and must be confirmed by an engineer before any drawing is issued."}}
+                if res.model and res.model.has_geometry and body.get("generate_layout"):
+                    services = [str(x) for x in (body.get("services") or ["hvac", "fire"]) if str(x) in ("hvac", "fire")] or ["hvac", "fire"]
+                    plant = body.get("plant_xy")
+                    lay = build_layout_dxf(res.model, services=services, plant_xy=(float(plant[0]), float(plant[1])) if plant else None,
+                                           params=body.get("params") if isinstance(body.get("params"), dict) else None,
+                                           reference=str(body.get("reference") or ""), project=str(body.get("project") or ""))
+                    import hashlib
+                    out["layout"] = {"filename": "concept-layout-" + (filename.rsplit(".", 1)[0] or "plan") + ".dxf", "media_type": "application/dxf",
+                                     "sha256": hashlib.sha256(lay.dxf).hexdigest(), "content_base64": base64.b64encode(lay.dxf).decode("ascii"),
+                                     "summary": lay.summary, "warnings": lay.warnings}
+                return self._json(start_response, "200 OK", out)
+
             if len(parts) == 3 and parts[0] == "v1" and parts[1] == "drawings" and parts[2] == "route" and method == "POST":
                 ctx.require_scope("jobs:write")
                 payload = body.get("building")

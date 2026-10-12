@@ -93,6 +93,7 @@ details.more>.body{padding:0 12px 12px}
 <div class="tabpanel" data-panel="tools">
 <div class="toolpick" id="toolPick">
  <button type="button" class="toolbtn active" data-tool="design">HVAC Design</button>
+ <button type="button" class="toolbtn" data-tool="layout">Plan &amp; Layout</button>
  <button type="button" class="toolbtn" data-tool="boq">BOQ Takeoff</button>
  <button type="button" class="toolbtn" data-tool="energy">Energy Study</button>
  <button type="button" class="toolbtn" data-tool="trial">Plant Data &amp; Trials</button>
@@ -142,6 +143,28 @@ details.more>.body{padding:0 12px 12px}
 <div id="dpMsg" class="msg"></div>
 </section>
 
+</div>
+<div class="toolpanel" data-toolpanel="layout">
+<section class="card" id="layoutCard">
+<h2>Plan &amp; Layout <span class="small">(preliminary)</span></h2>
+<p class="muted">Upload a client plan: DXF, vector PDF, or a room schedule (Excel/CSV/text). The platform reads the rooms and, for DXF/PDF plans, draws a concept HVAC and sprinkler layout as an editable layered DXF. DWG, scanned and photo plans are not readable yet. Rooms, units and scale must be confirmed by an engineer.</p>
+<div class="trial-grid">
+ <div class="trial"><h3>File</h3>
+  <input id="lyFile" type="file" accept=".dxf,.pdf,.xlsx,.csv,.txt,.dwg,.png,.jpg,.jpeg" style="width:100%">
+  <label class="small">Drawing units (DXF, optional)</label>
+  <select id="lyUnits" style="width:100%"><option value="">Auto-detect</option><option value="mm">Millimetres</option><option value="cm">Centimetres</option><option value="m">Metres</option></select>
+  <label class="small">PDF scale 1 : ? (only if not written on the drawing)</label><input id="lyScale" type="number" min="1" placeholder="e.g. 100" style="width:100%">
+ </div>
+ <div class="trial"><h3>Layout</h3>
+  <label class="small"><input type="checkbox" id="lyHvac" checked> HVAC units, diffusers, duct trunk</label>
+  <label class="small"><input type="checkbox" id="lyFire" checked> Sprinkler heads and pipes</label>
+  <label class="small">Project name (title block)</label><input id="lyProject" type="text" style="width:100%">
+ </div>
+</div>
+<div style="margin-top:8px"><button type="button" id="lyRead">Read plan only</button> <button type="button" class="secondary" id="lyRun">Read plan &amp; generate layout</button></div>
+<div id="lyMsg" class="msg"></div>
+<div id="lyOut"></div>
+</section>
 </div>
 <div class="toolpanel" data-toolpanel="boq">
 <section class="card" id="boqCard">
@@ -1084,7 +1107,7 @@ loadAccount();loadJobs();
 <script>
 /* Tab navigation (isolated; the rest of the dashboard logic is unchanged and addresses elements by id). */
 (function(){
-  const TABS=["request","jobs","reports","tools","gmail"], TOOLS=["design","boq","energy","trial"];
+  const TABS=["request","jobs","reports","tools","gmail"], TOOLS=["design","layout","boq","energy","trial"];
   const safeGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
   const safeSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
   function showTool(name){
@@ -1129,6 +1152,36 @@ loadAccount();loadJobs();
     const n=first&&first.querySelector(".count")?parseInt(first.querySelector(".count").textContent,10):0;
     badge.textContent=n;badge.hidden=!(n>0);
   }).observe(jt,{childList:true,subtree:true});
+})();
+
+/* Plan & Layout upload (isolated). */
+(function(){
+  const $=id=>document.getElementById(id);
+  async function go(gen){
+    const f=$("lyFile").files[0],msg=$("lyMsg"),out=$("lyOut");out.textContent="";
+    if(!f){msg.textContent="Choose a plan file first.";return;}
+    if(f.size>8*1024*1024){msg.textContent="File is larger than 8 MB. Please send a smaller or simplified export.";return;}
+    msg.textContent="Reading plan...";
+    try{
+      const b64=await new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(",")[1]||"");fr.onerror=()=>no(Error("Could not read the file"));fr.readAsDataURL(f);});
+      const services=[];if($("lyHvac").checked)services.push("hvac");if($("lyFire").checked)services.push("fire");
+      const body={filename:f.name,content_base64:b64,generate_layout:gen,services:services.length?services:["hvac","fire"],project:$("lyProject").value||""};
+      if($("lyUnits").value)body.units=$("lyUnits").value;
+      if($("lyScale").value)body.scale=Number($("lyScale").value);
+      const r=await api("/v1/drawings/read-plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      const d=await r.json();
+      if(!r.ok)throw Error(d.error||"Could not read the plan");
+      msg.textContent="Status: "+d.status+(d.messages&&d.messages.length?" - "+d.messages.join(" "):"");
+      const add=(tag,text,cls)=>{const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;out.appendChild(e);return e;};
+      if(d.plan){add("p","Rooms found: "+d.plan.room_count+", total "+d.plan.total_area_m2+" m2. Method: "+d.plan.method+". "+(d.plan.units||"")+" "+(d.plan.scale||""),"small");(d.plan.warnings||[]).forEach(w=>add("p",w,"small"));}
+      if(d.rooms&&d.rooms.length){const t=document.createElement("table");t.style.width="100%";t.innerHTML="<thead><tr><th>ID</th><th>Room</th><th>Area (m2)</th><th>Name from</th><th>Confidence</th></tr></thead>";const tb=document.createElement("tbody");
+        d.rooms.forEach(x=>{const tr=document.createElement("tr");[x.room_id,x.name,x.area_m2,x.name_source,x.confidence].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});tb.appendChild(tr);});t.appendChild(tb);out.appendChild(t);}
+      if(d.layout){const sm=d.layout.summary;add("p","Concept layout: "+sm.diffusers+" diffusers, "+sm.indoor_units+" indoor units, "+sm.sprinklers+" sprinkler heads. Preliminary, not sized, not for construction.","small");(d.layout.warnings||[]).forEach(w=>add("p",w,"small"));
+        const bin=atob(d.layout.content_base64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+        const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([u8],{type:"application/dxf"}));a.download=d.layout.filename;a.textContent="Download editable DXF layout";a.className="btn";out.appendChild(a);}
+    }catch(e){msg.textContent="Could not read the plan: "+e.message;}
+  }
+  $("lyRead").addEventListener("click",()=>go(false));$("lyRun").addEventListener("click",()=>go(true));
 })();
 </script>
 </body>
