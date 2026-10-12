@@ -818,8 +818,14 @@ class APIApp:
                 artifacts = (job.dispatch_result or {}).get("artifacts") or {}
                 pdf_meta, xlsx_meta = artifacts.get("pdf") or {}, artifacts.get("evidence_workbook") or {}
                 note = str(body.get("note") or "").strip()
+                _design, dxf_bytes = self._design_dxf_for_job(job)
+                dxf_note = ("A schematic CAD file (DXF) is also attached. It is a block diagram, not a floor plan; "
+                            "preliminary and subject to engineer review.") if dxf_bytes else None
+                from email.utils import parseaddr as _parseaddr
+                _who = _parseaddr(str(pc.get("from") or ""))[0].strip()
+                _greeting = str(body.get("greeting")).strip() if body.get("greeting") else (f"Dear {_who}," if _who else "Dear Sir/Madam,")
                 text = "\n".join(filter(None, [
-                    "Dear Sir/Madam," if not body.get("greeting") else str(body.get("greeting")).strip(),
+                    _greeting,
                     "",
                     "Please find attached the engineering report (PDF) and the supporting evidence workbook (Excel) for your request.",
                     "The results are preliminary engineering outputs that have been reviewed and approved by our engineer before issue.",
@@ -831,17 +837,17 @@ class APIApp:
                     f"PDF SHA-256: {pdf_meta.get('sha256')}" if pdf_meta.get("sha256") else None,
                     f"Workbook SHA-256: {xlsx_meta.get('sha256')}" if xlsx_meta.get("sha256") else None,
                     "",
-                    str(body.get("signature") or "Regards").strip(),
+                    dxf_note,
+                    "" if dxf_note else None,
+                    str(body.get("signature") or "Regards,\nMars Engineering Solutions").strip(),
                 ]))
                 attachments = [
                     (pdf_meta.get("filename") or f"engineering-report-{job.job_id}.pdf", "application/pdf", pdf),
                     (xlsx_meta.get("filename") or f"engineering-evidence-{job.job_id}.xlsx",
                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx),
                 ]
-                _design, dxf_bytes = self._design_dxf_for_job(job)
                 if dxf_bytes:
                     attachments.append((self._drawing_filename(_design, job.job_id), "application/dxf", dxf_bytes))
-                    text += "\n\nA schematic CAD file (DXF) is also attached. It is a diagram of the rooms and duct runs, not a floor plan; preliminary and subject to engineer review."
                 raw = gmail_build_reply_message(
                     to=str(pc["reply_to"]), subject=str(pc.get("subject") or "Engineering request"), body_text=text,
                     in_reply_to=pc.get("message_id_header") or None,
