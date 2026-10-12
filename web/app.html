@@ -159,6 +159,8 @@ details.more>.body{padding:0 12px 12px}
   <label class="small"><input type="checkbox" id="lyHvac" checked> HVAC units, diffusers, duct trunk</label>
   <label class="small"><input type="checkbox" id="lyFire" checked> Sprinkler heads and pipes</label>
   <label class="small">Project name (title block)</label><input id="lyProject" type="text" style="width:100%">
+  <label class="small">Plant / riser position in metres, X and Y on the plan (optional)</label>
+  <div style="display:flex;gap:6px"><input id="lyPx" type="number" step="0.1" placeholder="X" style="width:50%"><input id="lyPy" type="number" step="0.1" placeholder="Y" style="width:50%"></div>
  </div>
 </div>
 <div style="margin-top:8px"><button type="button" id="lyRead">Read plan only</button> <button type="button" class="secondary" id="lyRun">Read plan &amp; generate layout</button></div>
@@ -1168,6 +1170,7 @@ loadAccount();loadJobs();
       const body={filename:f.name,content_base64:b64,generate_layout:gen,services:services.length?services:["hvac","fire"],project:$("lyProject").value||""};
       if($("lyUnits").value)body.units=$("lyUnits").value;
       if($("lyScale").value)body.scale=Number($("lyScale").value);
+      if($("lyPx").value!==""&&$("lyPy").value!=="")body.plant_xy=[Number($("lyPx").value),Number($("lyPy").value)];
       const r=await api("/v1/drawings/read-plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
       const d=await r.json();
       if(!r.ok)throw Error(d.error||"Could not read the plan");

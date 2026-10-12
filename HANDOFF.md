@@ -365,3 +365,6 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 
 ## Pending: Docker deploy (added 2026-10-12)
 Needed for DWG->DXF (LibreDWG dwg2dxf) and OCR/scanned plans (tesseract, OpenCV). Render free python runtime lacks these. Plan reader already reports DWG/images as unsupported until then.
+
+## Docker candidate (2026-10-12)
+docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: build locally, then on Render change runtime to Docker with dockerfilePath docs/docker/Dockerfile (env vars stay). The plan reader already calls `dwg2dxf` when present. OCR/scanned-plan reading code is NOT written yet (needs scale + wall detection; unreliable without a vision service).
