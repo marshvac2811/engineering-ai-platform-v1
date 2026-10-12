@@ -1,0 +1,8 @@
+work_type,work_unit,material_name,unit,consumption_per_unit,wastage_percent
+Gypsum partition,sqft,Anchors/Fasteners,nos,0.5,5
+Gypsum partition,sqft,E Section / Stud,rft,0.7,5
+Gypsum partition,sqft,Floor/Ceiling Track,rft,0.22,5
+Gypsum partition,sqft,Gypsum Board 12mm,sqft,2.1,5
+Gypsum partition,sqft,Gypsum Tape,m,0.5,5
+Gypsum partition,sqft,Jointing Compound,kg,0.1,5
+Gypsum partition,sqft,Screws,nos,4,5

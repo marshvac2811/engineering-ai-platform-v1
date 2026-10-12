@@ -53,7 +53,8 @@ recipes:
   - id: gypsum_wall_partition
     name: Gypsum Wall Partition
     verticals: [interiors]
-    validated: false
+    validated: true   # matches the company's live SiteTrack Work Library recipe (read 2026-10-12)
+    source: SiteTrack Work Library, work type "Gypsum partition"
     base_unit: sqft
     aliases: [gypsum partition, gypsum wall, drywall partition, gypsum board partition]
     quantity_patterns:
