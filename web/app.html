@@ -235,7 +235,7 @@ details.more>.body{padding:0 12px 12px}
 <p class="muted">Client emails become reviewable engineering jobs. Only messages matching the filter below are read; nothing is sent automatically. Approved results are saved as a Gmail <strong>draft</strong> reply for you to check and send.</p>
 <div class="trial-grid">
   <div class="trial"><h3>1. Connect</h3><p id="gmailStatus" class="small">Checking connection...</p><button type="button" class="secondary" id="gmailConnect">Connect Gmail</button></div>
-  <div class="trial"><h3>2. Sync inbox</h3><p class="small">Gmail search filter</p><input id="gmailQuery" type="text" value="label:engineering-requests is:unread" style="width:100%"><button type="button" class="secondary" id="gmailSync" style="margin-top:8px">Sync now</button></div>
+  <div class="trial"><h3>2. Sync inbox</h3><p class="small">Gmail search filter</p><input id="gmailQuery" type="text" value="(label:engineering-requests OR from:upwork.com OR from:fiverr.com) is:unread" style="width:100%"><button type="button" class="secondary" id="gmailSync" style="margin-top:8px">Sync now</button></div>
   <div class="trial"><h3>3. Draft reply</h3><p class="small">Serial no. (or job ID) of an approved Gmail job</p><input id="gmailJobId" type="text" placeholder="serial no. or job id" style="width:100%"><button type="button" class="secondary" id="gmailDraft" style="margin-top:8px">Create Gmail draft</button></div>
 </div>
 <div id="gmailMsg" class="msg"></div>
