@@ -37,3 +37,24 @@ def test_layout_refuses_schedule_only_plan():
     m = PlanModel(source_file="s.csv", file_type="csv", rooms=[PlanRoom("R01", "A", [], 20.0)], has_geometry=False)
     with pytest.raises(ValueError):
         plan_layout(m)
+
+
+def test_routes_go_through_door_openings_not_walls():
+    from shapely.geometry import LineString
+    from engineering.layout.routing import build_grid, route_tree
+    m = _model()
+    g = build_grid(m.walls, m.bounds)
+    res = route_tree(g, (4.0, 3.0), [(4, 11), (12, 3), (20, 11)])
+    assert not res.crossing_targets and res.segments
+    walls = [LineString(w) for w in m.walls]
+    for a, b in res.segments:
+        seg = LineString([a, b])
+        assert not any(seg.crosses(w) for w in walls), (a, b)
+
+
+def test_layout_has_equipment_tags_and_schedule():
+    r = build_layout_dxf(_model(), reference="R", project="P")
+    assert r.summary["schedule"] and r.summary["schedule"][0]["indoor_units"].startswith("FCU-")
+    doc = ezdxf.read(io.StringIO(r.dxf.decode("utf-8")))
+    texts = " ".join(e.dxf.text for e in doc.modelspace() if e.dxftype() == "TEXT")
+    assert "EQUIPMENT SCHEDULE" in texts and "FCU-01" in texts
