@@ -362,3 +362,6 @@ Recipes imported this way are treated as company-validated (no "unvalidated" war
 - Served by GET /v1/jobs/{id}/design-dxf and attached to the Gmail draft reply; dashboard DXF button shown for these skills too. Tests: tests/test_services_schematic.py (incl. API end-to-end).
 - Earlier checkpoint correction: Excel faint Mars watermark background (84c1c24) and pump_power/generator/transformer/domestic_water_tank calculators (eb7fe47) were already built.
 - Still not built: OCR of scanned drawings, DWG output, live Upwork/CRM pipeline.
+
+## Pending: Docker deploy (added 2026-10-12)
+Needed for DWG->DXF (LibreDWG dwg2dxf) and OCR/scanned plans (tesseract, OpenCV). Render free python runtime lacks these. Plan reader already reports DWG/images as unsupported until then.
