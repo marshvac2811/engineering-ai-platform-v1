@@ -56,4 +56,5 @@ def build_supabase_workflow_task_store_from_env() -> Optional[SupabaseWorkflowTa
         from supabase import create_client
     except ImportError as exc:
         raise RuntimeError("Supabase environment is configured but supabase-py is not installed") from exc
-    return SupabaseWorkflowTaskStore(create_client(url, key))
+    from jobs.threadlocal_client import ThreadLocalClient
+    return SupabaseWorkflowTaskStore(ThreadLocalClient(lambda: create_client(url, key)))

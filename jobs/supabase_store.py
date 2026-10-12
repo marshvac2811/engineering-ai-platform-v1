@@ -638,7 +638,8 @@ def build_supabase_job_store_from_env() -> Optional[SupabaseJobStore]:
     # network-backed health check; client construction itself must remain local and
     # bounded to the SDK initialization path.
     print("[startup] Supabase client initialization: begin", flush=True)
-    client = create_client(
+    from jobs.threadlocal_client import ThreadLocalClient
+    client = ThreadLocalClient(lambda: create_client(
         url,
         key,
         options=ClientOptions(
@@ -647,7 +648,7 @@ def build_supabase_job_store_from_env() -> Optional[SupabaseJobStore]:
             auto_refresh_token=False,
             persist_session=False,
         ),
-    )
+    ))
     print("[startup] Supabase client initialization: complete", flush=True)
     return SupabaseJobStore(client)
 

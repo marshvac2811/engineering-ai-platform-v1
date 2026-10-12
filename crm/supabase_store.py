@@ -122,5 +122,6 @@ def build_supabase_crm_store_from_env() -> Optional[SupabaseCRMStore]:
             "but supabase-py is not installed"
         ) from exc
 
-    client = create_client(url, key)
+    from jobs.threadlocal_client import ThreadLocalClient
+    client = ThreadLocalClient(lambda: create_client(url, key))
     return SupabaseCRMStore(client)

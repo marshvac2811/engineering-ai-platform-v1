@@ -122,7 +122,8 @@ def build_supabase_ingestion_service_from_env() -> Any:
 
     from .service import IngestionService
 
-    client = create_client(url, key)
+    from jobs.threadlocal_client import ThreadLocalClient
+    client = ThreadLocalClient(lambda: create_client(url, key))
     bucket = os.getenv("SUPABASE_ATTACHMENT_BUCKET", "engineering-attachments")
     store = SupabaseAttachmentStore(client, bucket=bucket)
     repo = SupabaseAttachmentRepository(client)
