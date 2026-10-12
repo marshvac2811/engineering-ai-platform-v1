@@ -220,6 +220,31 @@ class APIApp:
         return None, None
 
     @staticmethod
+    def _layout_dxf_for_job(service, job):
+        """Concept layout DXF built on a plan (DXF or vector PDF) attached to the job, else (None, None).
+
+        Services drawn follow the job's capabilities: HVAC for HVAC tasks, sprinklers for fire tasks, both if unclear.
+        """
+        plan_att = next((a for a in (job.attachments or []) if str(a.get("filename") or "").lower().endswith((".dxf", ".pdf")) and a.get("storage_key")), None)
+        ingestion = getattr(service, "ingestion", None)
+        if not plan_att or ingestion is None:
+            return None, None
+        try:
+            raw = ingestion.store.get(plan_att["storage_key"])
+            from engineering.plan import read_plan
+            from engineering.layout.generator import build_layout_dxf
+            res = read_plan(str(plan_att.get("filename")), raw)
+            if not (res.model and res.model.has_geometry and res.model.rooms):
+                return None, None
+            caps = " ".join(str(t.get("capability_id") or "") for t in ((job.result or {}).get("evidence_bundle") or {}).get("tasks") or []) or str(job.requested_skill_id or "")
+            services = [x for x, key in (("hvac", ("hvac", "duct", "cooling", "ventilation", "load")), ("fire", ("fire", "sprinkler"))) if any(k in caps.lower() for k in key)] or ["hvac", "fire"]
+            pc = job.project_context or {}
+            lay = build_layout_dxf(res.model, services=services, reference=str(getattr(job, "serial_no", None) or job.report_id or job.job_id), project=str(pc.get("project") or ""))
+            return {"drawing_kind": "concept-layout", "plan_file": plan_att.get("filename"), "summary": lay.summary, "warnings": lay.warnings}, lay.dxf
+        except Exception:
+            return None, None
+
+    @staticmethod
     def _drawing_filename(design, job_id: str) -> str:
         kind = (design or {}).get("drawing_kind") or "hvac-design"
         return f"{kind}-schematic-{job_id}.dxf"
@@ -848,6 +873,10 @@ class APIApp:
                 ]
                 if dxf_bytes:
                     attachments.append((self._drawing_filename(_design, job.job_id), "application/dxf", dxf_bytes))
+                _lay, lay_bytes = self._layout_dxf_for_job(service, job)
+                if lay_bytes:
+                    attachments.append((f"concept-layout-{job.job_id}.dxf", "application/dxf", lay_bytes))
+                    text = text.replace("Regards,", "A concept layout DXF on your plan is also attached (equipment on a spacing grid; not sized, not for construction; subject to engineer review).\n\nRegards,", 1) if "Regards," in text else text + "\n\nA concept layout DXF on your plan is also attached (not sized, not for construction; subject to engineer review)."
                 raw = gmail_build_reply_message(
                     to=str(pc["reply_to"]), subject=str(pc.get("subject") or "Engineering request"), body_text=text,
                     in_reply_to=pc.get("message_id_header") or None,
@@ -1186,6 +1215,27 @@ class APIApp:
                         "error": "The PDF and Excel evidence workbook are created when the job is dispatched. Approve and dispatch the job first.",
                     })
                 return self._json(start_response, "200 OK", link)
+
+            if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "layout-dxf" and method == "GET":
+                job_id = parts[2]
+                ctx.require_scope("jobs:read")
+                try:
+                    job = service._get(job_id)
+                except KeyError:
+                    return self._json(start_response, "404 Not Found", {"error": "Job not found"})
+                if job.status.value not in {"dispatched", "completed"}:
+                    return self._json(start_response, "409 Conflict", {"error": "The layout DXF is available after the job has been approved and dispatched."})
+                info, data = self._layout_dxf_for_job(service, job)
+                if data is None:
+                    return self._json(start_response, "404 Not Found", {"error": "No readable DXF or vector-PDF plan is attached to this job."})
+                import base64
+                import hashlib
+                return self._json(start_response, "200 OK", {
+                    "job_id": job.job_id, "filename": f"concept-layout-{job.job_id}.dxf", "media_type": "application/dxf",
+                    "sha256": hashlib.sha256(data).hexdigest(), "content_base64": base64.b64encode(data).decode("ascii"),
+                    "plan_file": info["plan_file"], "summary": info["summary"], "warnings": info["warnings"],
+                    "governance": "Concept layout: preliminary, not sized, not for construction; engineer review required.",
+                })
 
             if len(parts) == 4 and parts[0] == "v1" and parts[1] == "jobs" and parts[3] == "design-dxf" and method == "GET":
                 job_id = parts[2]
