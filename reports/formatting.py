@@ -141,7 +141,7 @@ def format_value(value: Any) -> str:
     return str(value)
 
 
-def flatten_rows(data: Dict[str, Any], prefix: str = "") -> List[Tuple[str, Any, str]]:
+def flatten_rows(data: Dict[str, Any], prefix: str = "", path: str = "") -> List[Tuple[str, Any, str]]:
     """Flatten a (possibly nested) dict into ``(label, value, unit)`` rows.
 
     Lists of scalars become one comma-separated cell. Lists of dicts become one
@@ -150,12 +150,15 @@ def flatten_rows(data: Dict[str, Any], prefix: str = "") -> List[Tuple[str, Any,
     rows: List[Tuple[str, Any, str]] = []
     for key, value in (data or {}).items():
         label, unit = split_unit(key)
-        if prefix:
+        full = f"{path}_{key}" if path else str(key)
+        if path and full in _DISPLAY_OVERRIDES:      # nested keys such as plant_summary.total_outdoor_air_l_s
+            label, unit = _DISPLAY_OVERRIDES[full]
+        elif prefix:
             label = f"{prefix} - {label}"
         if is_scalar(value):
             rows.append((label, value, unit))
         elif isinstance(value, dict):
-            rows.extend(flatten_rows(value, label))
+            rows.extend(flatten_rows(value, label, full))
         elif isinstance(value, (list, tuple)):
             if all(is_scalar(v) for v in value):
                 rows.append((label, ", ".join(format_value(v) for v in value) or "-", unit))
@@ -219,6 +222,32 @@ def trace_steps(trace: Iterable[Any]) -> List[Dict[str, str]]:
         else:
             steps.append({"step": str(n), "operation": str(item), "detail": ""})
     return steps
+
+
+_ASSUMPTION_LABELS = {
+    "cfm_per_tr": ("Supply airflow basis", "CFM per TR"), "target_velocity_ms": ("Branch duct velocity", "m/s"),
+    "duct_material": ("Duct material", ""), "diversity_factor_pct": ("Diversity factor", "%"),
+    "fan_pressure_pa": ("Total fan pressure per unit", "Pa"), "chw_delta_t_c": ("Chilled-water temperature difference", "K"),
+    "climate_zone": ("Climate zone", ""), "building_type": ("Building type", ""),
+}
+_VALUE_WORDS = {"gss": "Galvanised steel sheet", "hot_dry": "Hot and dry", "warm_humid": "Warm and humid", "composite": "Composite", "moderate": "Moderate", "cold": "Cold"}
+
+
+def assumption_parts(item: Any) -> Tuple[str, str, str]:
+    """(label, value, basis) for an assumption dict; plain strings become (text, '', '')."""
+    if isinstance(item, dict) and any(k in item for k in ("name", "parameter", "value")):
+        key = str(item.get("name") or item.get("parameter") or "assumption")
+        label, unit = _ASSUMPTION_LABELS.get(key, (split_unit(key)[0], ""))
+        value = format_value(item.get("value")) if item.get("value") not in (None, "") else "-"
+        value = _VALUE_WORDS.get(value, value)
+        if unit and value != "-":
+            value = f"{value} {unit}"
+        basis = str(item.get("basis") or item.get("reason") or "").strip()
+        status = str(item.get("status") or "").strip()
+        if status:
+            basis = f"{status}. {basis}".strip()
+        return label, value, basis
+    return describe_item(item), "", ""
 
 
 def describe_item(item: Any) -> str:

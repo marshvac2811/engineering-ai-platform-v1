@@ -20,7 +20,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
 
 from reports.formatting import (
-    describe_item, extract_tables, flatten_rows, format_value, humanize, split_inputs_and_results, split_unit, trace_steps,
+    assumption_parts, describe_item, extract_tables, flatten_rows, format_value, humanize, split_inputs_and_results, split_unit, trace_steps,
 )
 
 
@@ -301,12 +301,24 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         elif not _result_tables(task, request_inputs):
             story.append(Paragraph("No numeric results were produced for this task.", body))
         for tbl in _result_tables(task, request_inputs):
-            skip = {i for i, h in enumerate(tbl["headers"]) if h.lower().startswith("source calculation")}
+            drop_prefixes = ("source calculation", "outdoor air basis", "load method", "cooling load (kw)", "duct friction", "room id")
+            skip = {i for i, h in enumerate(tbl["headers"]) if h.lower().startswith(drop_prefixes)}
+            basis_idx = next((i for i, h in enumerate(tbl["headers"]) if h.lower().startswith("outdoor air basis")), None)
             heads = [h for i, h in enumerate(tbl["headers"]) if i not in skip]
             rows_ = [[v for i, v in enumerate(r) if i not in skip] for r in tbl["rows"]]
             story.append(Paragraph(P(tbl["title"], body).text, task_h))
-            w_each = width / max(1, len(heads))
-            story.append(wide_table(heads, rows_, [w_each] * len(heads)))
+            # column widths follow content length so names and equipment text are not squeezed into a few letters per line
+            weights = [max(9, min(26, max([len(str(h))] + [len(str(r[j])) for r in rows_]))) for j, h in enumerate(heads)]
+            weights[0] = max(weights[0], 13)
+            total_w = float(sum(weights))
+            story.append(wide_table(heads, rows_, [width * w / total_w for w in weights]))
+            if basis_idx is not None:
+                bases = []
+                for r in tbl["rows"]:
+                    if r[basis_idx] not in bases and r[basis_idx] not in ("", "-"):
+                        bases.append(r[basis_idx])
+                for b_ in bases:
+                    story.append(Paragraph("Outdoor air basis: " + str(b_).replace("&", "&amp;").replace("<", "&lt;"), small))
             story.append(Spacer(1, 4))
         steps = trace_steps(task.get("calculation_trace") or [])
         if steps:
@@ -316,7 +328,11 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         assumptions = task.get("assumptions") or []
         if assumptions:
             story.append(Paragraph("Assumptions", task_h))
-            story.extend(Paragraph(describe_item(a).replace("&", "&amp;").replace("<", "&lt;"), bullet, bulletText="•") for a in assumptions)
+            parts = [assumption_parts(a) for a in assumptions]
+            if all(v for _l, v, _b in parts):
+                story.append(table(["Assumption", "Value used", "Basis"], parts, [52 * mm, 38 * mm, 90 * mm]))
+            else:
+                story.extend(Paragraph(describe_item(a).replace("&", "&amp;").replace("<", "&lt;"), bullet, bulletText="•") for a in assumptions)
         warnings = task.get("warnings") or []
         if warnings:
             story.append(Paragraph("Points to note", task_h))
@@ -328,10 +344,11 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
     # 3. Standards and compliance
     story.append(Paragraph("3. Standards and Compliance", section))
     limitations = []
+    already_shown = {str(describe_item(w)) for t in tasks for w in (t.get("warnings") or [])}
     for t in tasks:
         for item in t.get("limitations") or []:
             text = str(item)
-            if text and text not in limitations:
+            if text and text not in limitations and text not in already_shown:   # "Points to note" already lists these
                 limitations.append(text)
     if limitations:
         story.append(Paragraph("Limitations", task_h))
@@ -457,7 +474,7 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         inputs_rows += [(label, l, v, u) for l, v, u in in_rows]
         results_rows += [(label, l, v, u) for l, v, u in res_rows]
         step_rows += [(label, x["step"], x["operation"], x["detail"]) for x in trace_steps(t.get("calculation_trace") or [])]
-        note_rows += [(label, "Assumption", describe_item(a)) for a in t.get("assumptions") or []]
+        note_rows += [(label, "Assumption", (lambda p: f"{p[0]} = {p[1]}. {p[2]}".strip() if p[1] else p[0])(assumption_parts(a))) for a in t.get("assumptions") or []]
         note_rows += [(label, "Point to note", describe_item(w)) for w in t.get("warnings") or []]
         for c in t.get("compliance") or []:
             if isinstance(c, dict):

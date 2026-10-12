@@ -270,6 +270,18 @@ def build_reply_message(*, to: str, subject: str, body_text: str, in_reply_to: s
     return base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii")
 
 
+def html_to_text(html: str) -> str:
+    """Plain text from an HTML email part (no external dependencies)."""
+    import html as _html
+    import re as _re
+    text = _re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", html)
+    text = _re.sub(r"(?i)<br\s*/?>|</(p|div|li|tr|h[1-6])>", "\n", text)
+    text = _re.sub(r"(?s)<[^>]+>", " ", text)
+    text = _html.unescape(text)
+    lines = [_re.sub(r"[ \t\u00a0]+", " ", ln).strip() for ln in text.splitlines()]
+    return "\n".join(ln for ln in lines if ln)
+
+
 def _walk_parts(part: dict[str, Any]) -> Iterable[dict[str, Any]]:
     yield part
     for child in part.get("parts") or []:
@@ -279,7 +291,8 @@ def _walk_parts(part: dict[str, Any]) -> Iterable[dict[str, Any]]:
 def normalize_message(*, tenant_id: str, message: Dict[str, Any]) -> Dict[str, Any]:
     payload = message.get("payload") or {}
     headers = message_headers(payload.get("headers") or [])
-    body_parts: list[str] = []
+    plain_parts: list[str] = []
+    html_parts: list[str] = []
     attachments: list[dict[str, Any]] = []
 
     for part in _walk_parts(payload):
@@ -294,8 +307,11 @@ def normalize_message(*, tenant_id: str, message: Dict[str, Any]) -> Dict[str, A
                 "size": int(part_body.get("size", 0) or 0),
             })
         data = part_body.get("data")
-        if data and mime_type.startswith("text/"):
-            body_parts.append(decode_b64url(data).decode("utf-8", errors="replace"))
+        if data and mime_type.startswith("text/") and not filename:
+            decoded = decode_b64url(data).decode("utf-8", errors="replace")
+            (html_parts if mime_type == "text/html" else plain_parts).append(decoded)
+    # Gmail sends the same message as text/plain and text/html: use the plain part, and only fall back to HTML.
+    body_parts = [x for x in plain_parts if x.strip()] or [html_to_text(x) for x in html_parts]
 
     return {
         "tenant_id": tenant_id,
