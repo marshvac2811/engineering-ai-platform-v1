@@ -96,6 +96,7 @@ details.more>.body{padding:0 12px 12px}
  <button type="button" class="toolbtn" data-tool="layout">Plan &amp; Layout</button>
  <button type="button" class="toolbtn" data-tool="boq">BOQ Takeoff</button>
  <button type="button" class="toolbtn" data-tool="energy">Energy Study</button>
+ <button type="button" class="toolbtn" data-tool="retrofit">Retrofit Study</button>
  <button type="button" class="toolbtn" data-tool="trial">Plant Data &amp; Trials</button>
 </div>
 <div class="toolpanel" data-toolpanel="trial">
@@ -193,6 +194,24 @@ details.more>.body{padding:0 12px 12px}
 <table style="width:100%;margin-top:12px"><thead><tr><th>Measure</th><th>Type</th><th>Investment</th><th>O&amp;M / yr</th><th id="enH1">Motor kW</th><th id="enH2">Speed reduction %</th><th id="enH3">Static head %</th><th id="enH4">Hours / yr</th><th></th></tr></thead><tbody id="enRows"></tbody></table>
 <div style="margin-top:8px"><button type="button" class="secondary" id="enAdd">+ Add measure</button> <button type="button" id="enRun">Run energy study</button></div>
 <div id="enMsg" class="msg"></div>
+</section>
+</div>
+<div class="toolpanel" data-toolpanel="retrofit">
+<section class="card" id="retrofitCard">
+<h2>Retrofit Study <span class="small">(preliminary)</span></h2>
+<p class="muted">List the existing plant, then the upgrade options. The study works out each item's annual energy, checks it against the measured bill, ranks the options by payback and groups them into phases. Interactions between options are not modelled.</p>
+<div class="trial-grid"><div class="trial">
+<label class="small">Tariff per kWh</label><input id="rfTariff" type="number" min="0" step="0.01" style="width:100%">
+<label class="small">Measured annual consumption from bills, kWh (optional, recommended)</label><input id="rfMeasured" type="number" min="1" style="width:100%">
+<label class="small">Grid factor, kg CO2e/kWh (blank = 0.71 default)</label><input id="rfGrid" type="number" min="0" step="0.01" style="width:100%">
+</div></div>
+<h3 style="margin-top:14px">1. Existing plant survey</h3>
+<table style="width:100%"><thead><tr><th>Item name</th><th>Type</th><th>Rated kW</th><th>Load factor (0 to 1)</th><th>Hours / yr</th><th></th></tr></thead><tbody id="rfSurvey"></tbody></table>
+<div style="margin-top:8px"><button type="button" class="secondary" id="rfAddItem">+ Add plant item</button></div>
+<h3 style="margin-top:14px">2. Retrofit options</h3>
+<table style="width:100%"><thead><tr><th>Option</th><th>Type</th><th>Investment</th><th>O&amp;M / yr</th><th colspan="4">Details (hover each box)</th><th></th></tr></thead><tbody id="rfOpts"></tbody></table>
+<div style="margin-top:8px"><button type="button" class="secondary" id="rfAddOpt">+ Add option</button> <button type="button" id="rfRun">Run retrofit study</button></div>
+<div id="rfMsg" class="msg"></div>
 </section>
 </div>
 </div>
@@ -1048,6 +1067,7 @@ loadAccount();loadJobs();
    finally{btn.disabled=false;}
   };
   const fail=(msg,t)=>{msg.className="msg err";msg.style.display="block";msg.textContent=t;};
+  window.__submitForm=submit;
   /* ---- BOQ ---- */
   let xlsxB64="";const csv=document.getElementById("boqCsv"),file=document.getElementById("boqFile"),bm=document.getElementById("boqMsg");
   if(csv&&file&&bm){
@@ -1110,7 +1130,7 @@ loadAccount();loadJobs();
 <script>
 /* Tab navigation (isolated; the rest of the dashboard logic is unchanged and addresses elements by id). */
 (function(){
-  const TABS=["request","jobs","reports","tools","gmail"], TOOLS=["design","layout","boq","energy","trial"];
+  const TABS=["request","jobs","reports","tools","gmail"], TOOLS=["design","layout","boq","energy","retrofit","trial"];
   const safeGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
   const safeSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
   function showTool(name){
@@ -1138,7 +1158,7 @@ loadAccount();loadJobs();
   /* After a form creates a job, take the user to the review queue with a short confirmation. */
   const toast=document.getElementById("tabToast");let toastTimer;
   function announce(text){toast.textContent=text;toast.style.display="block";clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.style.display="none"},9000);}
-  ["requestMsg","dpMsg","boqMsg","enMsg","trialMsg"].forEach(id=>{
+  ["requestMsg","dpMsg","boqMsg","enMsg","rfMsg","trialMsg"].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     new MutationObserver(()=>{
       if(el.classList.contains("ok")&&el.style.display!=="none"&&el.textContent.trim()){
@@ -1186,6 +1206,68 @@ loadAccount();loadJobs();
     }catch(e){msg.textContent="Could not read the plan: "+e.message;}
   }
   $("lyRead").addEventListener("click",()=>go(false));$("lyRun").addEventListener("click",()=>go(true));
+})();
+</script>
+<script>
+(function(){
+ try{
+  const sv=document.getElementById("rfSurvey"),op=document.getElementById("rfOpts"),m=document.getElementById("rfMsg");
+  if(!sv||!op||!m)return;
+  const LAB={vfd:["Motor kW","Speed reduction %","Static head %","Hours / yr"],solar:["Capacity kWp","Yield kWh/kWp/yr (opt.)","",""],custom:["Annual saving kWh","","",""],efficiency_upgrade:["Plant item name (as in survey)","Existing kW per TR","New kW per TR",""]};
+  const KEY={vfd:["motor_kw","speed_reduction_pct","static_head_fraction","annual_hours"],solar:["capacity_kwp","specific_yield_kwh_kwp_yr"],custom:["annual_savings_kwh"],efficiency_upgrade:["survey_item","existing_efficiency","new_efficiency"]};
+  const fail=t=>{m.className="msg err";m.style.display="block";m.textContent=t;};
+  function addItem(){
+   const tr=document.createElement("tr");
+   tr.innerHTML='<td><input type="text" class="rf-n" style="width:100%"></td><td><select class="rf-t"><option>chiller</option><option>pump</option><option>cooling tower</option><option>AHU / fan</option><option>other</option></select></td><td><input type="number" min="0" step="any" class="rf-kw" style="width:100%"></td><td><input type="number" min="0" max="1" step="0.01" class="rf-lf" style="width:100%"></td><td><input type="number" min="1" max="8760" class="rf-h" style="width:100%"></td><td><button type="button" class="secondary rf-d">&times;</button></td>';
+   tr.querySelector(".rf-d").addEventListener("click",()=>{if(sv.children.length>1)tr.remove();});
+   sv.appendChild(tr);
+  }
+  function sync(tr){
+   const t=tr.querySelector(".rf-ty").value,ls=LAB[t];
+   tr.querySelectorAll(".rf-p").forEach((el,k)=>{el.placeholder=ls[k]||"";el.title=ls[k]||"";el.disabled=!ls[k];el.type=(t==="efficiency_upgrade"&&k===0)?"text":"number";if(!ls[k])el.value="";});
+  }
+  function addOpt(){
+   const tr=document.createElement("tr");
+   tr.innerHTML='<td><input type="text" class="rf-on" style="width:100%"></td><td><select class="rf-ty"><option value="efficiency_upgrade">Replace equipment</option><option value="vfd">VFD</option><option value="solar">Solar PV</option><option value="custom">Custom saving</option></select></td><td><input type="number" min="0" class="rf-inv" style="width:100%"></td><td><input type="number" min="0" class="rf-om" style="width:100%"></td>'+[0,1,2,3].map(()=>'<td><input type="number" step="any" class="rf-p" style="width:100%"></td>').join("")+'<td><button type="button" class="secondary rf-d">&times;</button></td>';
+   tr.querySelector(".rf-ty").addEventListener("change",()=>sync(tr));
+   tr.querySelector(".rf-d").addEventListener("click",()=>{if(op.children.length>1)tr.remove();});
+   op.appendChild(tr);sync(tr);
+  }
+  addItem();addOpt();
+  document.getElementById("rfAddItem").addEventListener("click",addItem);
+  document.getElementById("rfAddOpt").addEventListener("click",addOpt);
+  document.getElementById("rfRun").addEventListener("click",()=>{
+   const tar=parseFloat(document.getElementById("rfTariff").value);
+   if(!(tar>0)){fail("Enter the tariff per kWh (greater than zero).");return;}
+   const survey=[];let n=0;
+   for(const tr of Array.from(sv.children)){
+    n++;const kw=parseFloat(tr.querySelector(".rf-kw").value),lf=parseFloat(tr.querySelector(".rf-lf").value),h=parseFloat(tr.querySelector(".rf-h").value);
+    if(!(kw>0)||!(lf>0&&lf<=1)||!(h>=1&&h<=8760)){fail("Plant item "+n+": enter rated kW, a load factor between 0 and 1, and hours per year (1 to 8760).");return;}
+    survey.push({name:tr.querySelector(".rf-n").value.trim()||("Item "+n),type:tr.querySelector(".rf-t").value,rated_kw:kw,load_factor:lf,annual_hours:h});
+   }
+   const names=survey.map(x=>x.name);
+   if(new Set(names).size!==names.length){fail("Plant item names must be different from each other.");return;}
+   const measures=[];n=0;
+   for(const tr of Array.from(op.children)){
+    n++;const type=tr.querySelector(".rf-ty").value,o={name:tr.querySelector(".rf-on").value.trim()||("Option "+n),type:type};
+    const inv=parseFloat(tr.querySelector(".rf-inv").value);
+    if(!(inv>=0)){fail("Option "+n+": enter the investment cost (0 or more).");return;}
+    o.investment=inv;const om=tr.querySelector(".rf-om").value.trim();if(om!=="")o.annual_om=parseFloat(om);
+    const ps=Array.from(tr.querySelectorAll(".rf-p")),ks=KEY[type];
+    for(let k=0;k<ks.length;k++){
+     const v=ps[k].value.trim();
+     if(v===""){if(type==="solar"&&k===1)continue;fail("Option "+n+": fill in "+LAB[type][k]+".");return;}
+     o[ks[k]]=(type==="efficiency_upgrade"&&k===0)?v:parseFloat(v);
+    }
+    if(type==="efficiency_upgrade"&&names.indexOf(o.survey_item)<0){fail("Option "+n+": the plant item name must match one in the survey ("+names.join(", ")+").");return;}
+    measures.push(o);
+   }
+   const inputs={tariff_per_kwh:tar,survey:survey,measures:measures};
+   const ms=document.getElementById("rfMeasured").value.trim(),gf=document.getElementById("rfGrid").value.trim();
+   if(ms!=="")inputs.measured_annual_kwh=parseFloat(ms);if(gf!=="")inputs.grid_factor_kg_kwh=parseFloat(gf);
+   window.__submitForm(m,document.getElementById("rfRun"),{message:"Prepare the preliminary retrofit study for the existing plant",requested_skill_id:"retrofit_study",inputs:inputs});
+  });
+ }catch(e){console.error("Retrofit panel failed to initialise",e);}
 })();
 </script>
 </body>
