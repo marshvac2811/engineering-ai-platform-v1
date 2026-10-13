@@ -368,3 +368,8 @@ Needed for DWG->DXF (LibreDWG dwg2dxf) and OCR/scanned plans (tesseract, OpenCV)
 
 ## Docker candidate (2026-10-12)
 docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: build locally, then on Render change runtime to Docker with dockerfilePath docs/docker/Dockerfile (env vars stay). The plan reader already calls `dwg2dxf` when present. OCR/scanned-plan reading code is NOT written yet (needs scale + wall detection; unreliable without a vision service).
+
+## Checkpoint 2026-10-14 — BOQ takeoff and retrofit study
+- BOQ takeoff: Excel (.xlsx) upload (dashboard + skill input `boq_xlsx_b64`), heading context carried into sub-lines, tender unit aliases, starter recipes (ceilings, partitions, wall tile, cables, trays, conduit, MS/GI pipes, louvers, dampers, fire door; all `validated: false`), `{spec}` size text in material names, equipment/lump-sum lines listed as `procure_as_specified`, optional AI-drafted recipes (`ai_draft.py`, needs OPENAI_API_KEY and OpenAI credit; flagged unverified). RITES BOQ: 39 lines taken off, 142 procure-as-specified, 0 unmatched.
+- OpenAI key is set on Render; live test returned 429 `insufficient_quota` (account has no credit). Pipeline otherwise worked live.
+- New skill `retrofit_study` (skills/energy/retrofit): plant survey -> baseline (reconciled with measured kWh, warning over 15%) -> options incl. `efficiency_upgrade` (E x (1 - new/old)) -> ranked and phased. No dashboard form yet (works via API/Gmail routing with phrases like "retrofit study"). 509+ tests pass. Not verified on live Render.

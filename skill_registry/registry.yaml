@@ -1545,6 +1545,40 @@ skills:
   - "decarbonisation roadmap"
   - "decarbonization roadmap"
   - "energy audit measures"
+- skill_id: retrofit_study
+  domain: ENERGY
+  source_repository: engineering-ai-platform
+  source_path: skills/energy/retrofit
+  execution: deterministic_python
+  classification: preliminary_calculation
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: tariff_per_kwh
+    data_type: number
+    description: "Electricity tariff per kWh (any currency; costs reported in it)."
+  - name: survey
+    data_type: array
+    description: "Existing plant items {name, type, rated_kw, load_factor (0-1), annual_hours, age_years (optional), condition (optional)}."
+  - name: measures
+    data_type: array
+    description: "Retrofit options {name, type (vfd|solar|custom|efficiency_upgrade), investment, annual_om, plus type inputs; efficiency_upgrade -> survey_item, existing_efficiency, new_efficiency (kW per unit of output, e.g. kW/TR)}."
+  optional_inputs:
+  - name: measured_annual_kwh
+    data_type: number
+    description: "Measured (billed) annual consumption, kWh; the survey is reconciled against it and it becomes the baseline."
+  - name: grid_factor_kg_kwh
+    data_type: number
+    description: "Grid emission factor, kg CO2e/kWh (default 0.71)."
+  conditional_inputs: []
+  implementation_binding: skills.energy.retrofit.adapter:RetrofitStudySkill
+  routing_terms:
+  - "retrofit study"
+  - "retrofit report"
+  - "retrofit assessment"
+  - "retrofit options"
+  - "retrofit survey"
+  - "existing plant retrofit"
 - skill_id: pump_power_sizing
   domain: HVAC
   source_repository: engineering-ai-platform

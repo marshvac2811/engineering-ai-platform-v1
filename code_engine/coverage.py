@@ -118,6 +118,7 @@ _COVERAGE: Dict[str, Tuple[StandardsCandidate, ...]] = {
     ),
     "deviation_statement": (),
     "energy_optimisation_study": (),
+    "retrofit_study": (),
     "boq_takeoff": (),
     "facade_u_factor": (
         StandardsCandidate("bis_nbc_2016", "NBC Part 6 Section 8 covers glass and glazing.", ("jurisdiction", "building_type", "component")),

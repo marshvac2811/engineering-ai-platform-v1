@@ -15,7 +15,15 @@ ENERGY = {"annual_consumption_kwh": 600000, "tariff_per_kwh": 8.5, "measures": [
     {"name": "Solar", "type": "solar", "investment": 4500000, "annual_om": 40000, "capacity_kwp": 100}]}
 
 
+RETRO = {"tariff_per_kwh": 8, "measured_annual_kwh": 650000,
+         "survey": [{"name": "Chiller 1", "type": "chiller", "rated_kw": 200, "load_factor": 0.6, "annual_hours": 4000},
+                    {"name": "CHW pump", "type": "pump", "rated_kw": 30, "load_factor": 0.8, "annual_hours": 6000}],
+         "measures": [{"name": "New chiller", "type": "efficiency_upgrade", "survey_item": "Chiller 1",
+                       "existing_efficiency": 0.9, "new_efficiency": 0.6, "investment": 3000000}]}
+
+
 @pytest.mark.parametrize("skill,inputs,message", [
+    ("retrofit_study", RETRO, "Prepare the preliminary retrofit study for the existing plant"),
     ("boq_takeoff", BOQ, "Prepare the preliminary BOQ material takeoff"),
     ("energy_optimisation_study", ENERGY, "Prepare the preliminary energy optimisation study for 2 measure(s)"),
 ])
