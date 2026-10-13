@@ -38,3 +38,15 @@ def test_takeoff_from_xlsx_with_tender_units():
 def test_no_table_is_reported():
     with pytest.raises(ValueError):
         parse_boq_xlsx(_book([["a", "b"], [1, 2]]))
+
+
+def test_skill_accepts_xlsx_upload_and_rejects_garbage():
+    import base64
+    from skills.common import SkillRequest
+    from skills.commercial.boq_takeoff.adapter import BoqTakeoffSkill
+    sk = BoqTakeoffSkill()
+    sk.draft_fn = None
+    ok = sk.run(SkillRequest(skill_id="boq_takeoff", inputs={"boq_xlsx_b64": base64.b64encode(_book(ROWS)).decode()}))
+    assert ok.status == "draft_ready" and ok.engineering_result["matched_line_count"] == 3
+    bad = sk.run(SkillRequest(skill_id="boq_takeoff", inputs={"boq_xlsx_b64": base64.b64encode(b"not excel").decode()}))
+    assert bad.status == "input_validation_failed"

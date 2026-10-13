@@ -1495,6 +1495,9 @@ skills:
   - name: boq_csv
     data_type: string
     description: "BOQ as CSV text with a header row (item_no, description, unit, quantity)."
+  - name: boq_xlsx_b64
+    data_type: string
+    description: "Excel (.xlsx) BOQ or tender schedule, base64 encoded. Needs Description, Qty and Unit columns; unpriced heading rows are carried into their sub-lines."
   - name: recipes
     data_type: array
     description: "Company recipes {id, name, base_unit, aliases, materials[{name, unit, consumption_per_unit, wastage_percent}]} that override or extend the catalogue."

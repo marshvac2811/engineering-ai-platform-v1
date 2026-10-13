@@ -2,6 +2,7 @@ from __future__ import annotations
 from skills.common import SkillRequest, SkillResult
 from skills.commercial.boq_takeoff import takeoff, parse_boq_csv, parse_recipes_csv
 from skills.commercial.boq_takeoff.ai_draft import make_draft_fn
+from skills.commercial.boq_takeoff.xlsx_boq import parse_boq_xlsx
 
 
 class BoqTakeoffSkill:
@@ -12,6 +13,15 @@ class BoqTakeoffSkill:
     def _lines(self, i):
         if isinstance(i.get("boq_items"), list) and i["boq_items"]:
             return i["boq_items"]
+        if str(i.get("boq_xlsx_b64") or "").strip():
+            import base64
+            import binascii
+            try:
+                return parse_boq_xlsx(base64.b64decode(str(i["boq_xlsx_b64"]), validate=True))
+            except (binascii.Error, ValueError):
+                raise ValueError("The Excel BOQ could not be read: it must be an .xlsx file with Description, Qty and Unit columns")
+            except Exception:
+                raise ValueError("The Excel BOQ could not be opened; save it as .xlsx and try again")
         if str(i.get("boq_csv") or "").strip():
             return parse_boq_csv(str(i["boq_csv"]))
         return []
@@ -19,8 +29,12 @@ class BoqTakeoffSkill:
     def validate(self, request: SkillRequest):
         i = request.inputs
         errors = []
-        if not self._lines(i):
-            errors.append("Provide boq_items (list of {item_no, description, unit, quantity}) or boq_csv text with a header row")
+        try:
+            lines = self._lines(i)
+        except ValueError as exc:
+            return [str(exc)]
+        if not lines:
+            errors.append("Provide boq_items (list of {item_no, description, unit, quantity}) boq_csv text with a header row, or an Excel BOQ (boq_xlsx_b64)")
         if i.get("recipes") is not None and not isinstance(i.get("recipes"), list):
             errors.append("recipes must be a list of recipe objects")
         return errors

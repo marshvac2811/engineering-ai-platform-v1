@@ -172,7 +172,7 @@ details.more>.body{padding:0 12px 12px}
 <section class="card" id="boqCard">
 <h2>BOQ Material Takeoff <span class="small">(preliminary)</span></h2>
 <p class="muted">Paste the BOQ as CSV (header: item_no, description, unit, quantity) or choose a .csv file. Each line is matched to a recipe and the materials needed are calculated with wastage. Lines with no recipe are listed, never guessed.</p>
-<input type="file" id="boqFile" accept=".csv,text/csv" style="width:100%">
+<input type="file" id="boqFile" accept=".csv,text/csv,.xlsx" style="width:100%">
 <textarea id="boqCsv" rows="6" style="width:100%;margin-top:8px" placeholder="item_no,description,unit,quantity&#10;1,Gypsum wall partition,sqm,100&#10;2,Vitrified tile flooring,sqft,500"></textarea>
 <details style="margin-top:8px"><summary class="small">Use my own recipes (SiteTrack work-library export, optional)</summary>
 <textarea id="boqRecipes" rows="4" style="width:100%;margin-top:6px" placeholder="work_type,work_unit,material_name,unit,consumption_per_unit,wastage_percent"></textarea></details>
@@ -1049,13 +1049,14 @@ loadAccount();loadJobs();
   };
   const fail=(msg,t)=>{msg.className="msg err";msg.style.display="block";msg.textContent=t;};
   /* ---- BOQ ---- */
-  const csv=document.getElementById("boqCsv"),file=document.getElementById("boqFile"),bm=document.getElementById("boqMsg");
+  let xlsxB64="";const csv=document.getElementById("boqCsv"),file=document.getElementById("boqFile"),bm=document.getElementById("boqMsg");
   if(csv&&file&&bm){
-   file.addEventListener("change",()=>{const f=file.files&&file.files[0];if(!f)return;if(f.size>1000000){fail(bm,"File is too large (max 1 MB).");return;}const rd=new FileReader();rd.onload=()=>{csv.value=String(rd.result||"");};rd.readAsText(f);});
+   file.addEventListener("change",()=>{const f=file.files&&file.files[0];if(!f)return;if(f.size>1000000){fail(bm,"File is too large (max 1 MB).");return;}xlsxB64="";const rd=new FileReader();if(/\.xlsx$/i.test(f.name)){rd.onload=()=>{xlsxB64=String(rd.result||"").split(",")[1]||"";csv.value="Excel BOQ loaded: "+f.name+" (it will be read when you run the takeoff)";};rd.readAsDataURL(f);}else{rd.onload=()=>{csv.value=String(rd.result||"");};rd.readAsText(f);}});
+   csv.addEventListener("input",()=>{xlsxB64="";});
    document.getElementById("boqRun").addEventListener("click",()=>{
     const text=csv.value.trim();
-    if(text.split(/\r?\n/).length<2){fail(bm,"Add a header row and at least one BOQ line.");return;}
-    const inputs={boq_csv:text};
+    if(!xlsxB64&&text.split(/\r?\n/).length<2){fail(bm,"Add a header row and at least one BOQ line, or choose an Excel file.");return;}
+    const inputs=xlsxB64?{boq_xlsx_b64:xlsxB64}:{boq_csv:text};
     const rc=document.getElementById("boqRecipes").value.trim();if(rc)inputs.recipes_csv=rc;
     submit(bm,document.getElementById("boqRun"),{message:"Prepare the preliminary BOQ material takeoff",requested_skill_id:"boq_takeoff",inputs:inputs});
    });
