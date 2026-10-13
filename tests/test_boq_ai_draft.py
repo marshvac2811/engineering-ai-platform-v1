@@ -8,7 +8,7 @@ def fake_draft(desc, unit):
             "assumptions": ["12 mm toughened glass"]}
 
 
-LINE = [{"item_no": "1", "description": "Frameless glass partition 12mm", "unit": "sqft", "quantity": "100"}]
+LINE = [{"item_no": "1", "description": "Epoxy floor coating 2mm", "unit": "sqft", "quantity": "100"}]
 
 
 def test_no_draft_fn_stays_unmatched():

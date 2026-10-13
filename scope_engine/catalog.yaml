@@ -102,3 +102,71 @@ recipes:
       - '(\d[\d,.]*)\s*(?:sqm|sq\.?\s*m|m2)'
     materials:
       - {name: Insulation Material (surface area), unit: sqm, consumption_per_unit: 1.0, wastage_percent: 5}
+  # Standard-practice starter factors (not company-validated): confirm or replace via recipes_csv. Assumptions are in `notes`.
+  - id: gypsum_false_ceiling
+    name: Gypsum False Ceiling
+    verticals: [interiors]
+    validated: false
+    notes: 12.5 mm board on GI grid, main channel at 1.2 m, cross channel at about 0.45 m, hangers at 1.2 m.
+    base_unit: sqft
+    aliases: [gypsum ceiling, gypsum false ceiling, false ceiling gypsum, gypsum board ceiling, drywall ceiling]
+    materials:
+      - {name: Gypsum Board 12.5mm, unit: sqft, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Main Channel, unit: rft, consumption_per_unit: 0.25, wastage_percent: 5}
+      - {name: Cross/Furring Channel, unit: rft, consumption_per_unit: 0.7, wastage_percent: 5}
+      - {name: Perimeter Angle, unit: rft, consumption_per_unit: 0.12, wastage_percent: 5}
+      - {name: Hangers/Clips, unit: nos, consumption_per_unit: 0.07, wastage_percent: 5}
+      - {name: Screws, unit: nos, consumption_per_unit: 2.5, wastage_percent: 5}
+      - {name: Jointing Compound, unit: kg, consumption_per_unit: 0.1, wastage_percent: 5}
+      - {name: Gypsum Tape, unit: m, consumption_per_unit: 0.5, wastage_percent: 5}
+  - id: gypsum_ceiling_tiles
+    name: Grid Ceiling Tiles
+    verticals: [interiors]
+    validated: false
+    notes: 600 x 600 tiles on exposed T-grid, main tee at 1.2 m, cross tees at 1.2 m and 0.6 m.
+    base_unit: sqft
+    aliases: [gypsum ceiling tiles, gypsum tile ceiling, grid ceiling, mineral fibre ceiling, tile ceiling, 600x600 ceiling]
+    materials:
+      - {name: Ceiling Tiles 600x600, unit: sqft, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Main Tee, unit: rft, consumption_per_unit: 0.25, wastage_percent: 5}
+      - {name: Cross Tee 1200, unit: rft, consumption_per_unit: 0.25, wastage_percent: 5}
+      - {name: Cross Tee 600, unit: rft, consumption_per_unit: 0.5, wastage_percent: 5}
+      - {name: Wall Angle, unit: rft, consumption_per_unit: 0.12, wastage_percent: 5}
+      - {name: Hangers/Clips, unit: nos, consumption_per_unit: 0.07, wastage_percent: 5}
+  - id: aluminium_partition_particle_board
+    name: Aluminium Partition with Particle Board
+    verticals: [interiors]
+    validated: false
+    notes: Aluminium frame about 3 m high, 1.2 m modules, 12 mm particle board on both faces.
+    base_unit: sqft
+    aliases: [aluminium partition, aluminum partition, aluminium partition with particle board, aluminium particle board partition]
+    materials:
+      - {name: Aluminium Sections, unit: rft, consumption_per_unit: 0.7, wastage_percent: 7}
+      - {name: Particle Board 12mm, unit: sqft, consumption_per_unit: 2.0, wastage_percent: 5}
+      - {name: Gasket/Beading, unit: rft, consumption_per_unit: 0.7, wastage_percent: 5}
+      - {name: Screws/Rivets, unit: nos, consumption_per_unit: 6, wastage_percent: 5}
+      - {name: Anchors/Fasteners, unit: nos, consumption_per_unit: 0.5, wastage_percent: 5}
+  - id: frameless_glass_partition
+    name: Frameless Glass Partition
+    verticals: [interiors]
+    validated: false
+    notes: 12 mm toughened glass, about 3 m high, top and bottom aluminium U-channel, silicone joints.
+    base_unit: sqft
+    aliases: [frameless glass partition, frameless glass, glass partition, toughened glass partition]
+    materials:
+      - {name: Toughened Glass 12mm, unit: sqft, consumption_per_unit: 1.0, wastage_percent: 3}
+      - {name: Aluminium U-Channel, unit: rft, consumption_per_unit: 0.2, wastage_percent: 5}
+      - {name: Silicone Sealant, unit: kg, consumption_per_unit: 0.02, wastage_percent: 5}
+      - {name: Patch Fittings/Hardware, unit: nos, consumption_per_unit: 0.03, wastage_percent: 0}
+      - {name: Glass Gasket/Packers, unit: rft, consumption_per_unit: 0.1, wastage_percent: 5}
+  - id: wall_tile_work
+    name: Wall Tile Work
+    verticals: [interiors]
+    validated: false
+    base_unit: sqft
+    aliases: [wall tiles, wall tile, wall tiling, wall cladding tiles]
+    materials:
+      - {name: Wall Tiles, unit: sqft, consumption_per_unit: 1.0, wastage_percent: 7}
+      - {name: Tile Adhesive, unit: kg, consumption_per_unit: 2.5, wastage_percent: 5}
+      - {name: Grout, unit: kg, consumption_per_unit: 0.25, wastage_percent: 0}
+      - {name: Spacers, unit: nos, consumption_per_unit: 4, wastage_percent: 0}
