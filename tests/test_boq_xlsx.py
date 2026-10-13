@@ -32,7 +32,7 @@ def test_takeoff_from_xlsx_with_tender_units():
     r = takeoff(parse_boq_xlsx(_book(ROWS)))
     ids = {x["item_no"]: x["recipe_id"] for x in r["line_takeoff"]}
     assert ids["3"] == ids["4"] == "duct_thermal_insulation" and ids["5"] == "wall_tile_work"
-    assert r["unmatched_line_count"] == 1                # pump set has no recipe, reported not guessed
+    assert r["unmatched_line_count"] == 0 and r["procure_as_specified_count"] == 1   # pump set is equipment
 
 
 def test_no_table_is_reported():

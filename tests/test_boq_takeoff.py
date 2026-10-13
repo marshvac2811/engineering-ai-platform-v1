@@ -35,8 +35,9 @@ def test_unmatched_bad_unit_and_bad_quantity_are_reported_not_guessed():
     r = takeoff([{"item_no": "1", "description": "Chiller 100 TR", "unit": "nos", "quantity": 1},
                  {"item_no": "2", "description": "Gypsum partition", "unit": "kg", "quantity": 5},
                  {"item_no": "3", "description": "Gypsum partition", "unit": "sqft", "quantity": "abc"}])
-    assert r["matched_line_count"] == 0 and r["unmatched_line_count"] == 3
-    assert "cannot convert" in r["unmatched_lines"][1]["reason"]
+    assert r["matched_line_count"] == 0 and r["unmatched_line_count"] == 2
+    assert r["procure_as_specified_count"] == 1          # the chiller is equipment, listed not guessed
+    assert "cannot convert" in r["unmatched_lines"][0]["reason"]
 
 
 def test_custom_recipe_overrides_and_is_not_flagged_unvalidated():
@@ -52,7 +53,7 @@ def test_csv_input_and_skill_warnings():
     res = run(boq_csv=csv_text)
     assert res.status == "draft_ready"
     assert res.engineering_result["material_totals"][0]["quantity"] == pytest.approx(216.0)
-    assert any("unvalidated" in w for w in res.warnings) and any("not taken off" in w for w in res.warnings)
+    assert any("unvalidated" in w for w in res.warnings) and any("procure" in w.lower() for w in res.warnings)
 
 
 def test_requires_boq():

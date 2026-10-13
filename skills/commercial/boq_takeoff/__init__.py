@@ -94,6 +94,21 @@ def _match(line: Dict[str, Any], recipes: List[Dict[str, Any]]) -> Optional[Dict
     return best
 
 
+def _draft_error(exc: Exception) -> str:
+    t = str(exc).lower()
+    if "insufficient_quota" in t or "credit" in t or "billing" in t:
+        return "AI drafting unavailable: no credit on the OpenAI account"
+    if "401" in t or "invalid_api_key" in t or "incorrect api key" in t:
+        return "AI drafting unavailable: the OpenAI key was rejected"
+    if "429" in t or "rate" in t:
+        return "AI drafting busy: rate limit, try again shortly"
+    return "AI drafting failed; the line was not guessed"
+
+
+def _is_equipment(unit: str) -> bool:
+    return _unit_key(unit) in {*_COUNT, "lot", "lots", "ls", "lumpsum", "job"}
+
+
 def _clean_draft(d: Dict[str, Any], desc: str, unit: str) -> Optional[Dict[str, Any]]:
     mats = []
     for m in d.get("materials", []):
@@ -122,7 +137,7 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
     recipes = _recipes(custom_recipes)
     results, unmatched, totals, flat = [], [], {}, []
     used_unvalidated = set()
-    drafted, draft_cache = [], {}
+    drafted, draft_cache, procure = [], {}, []
     for n, line in enumerate(lines, 1):
         item = str(line.get("item_no") or n)
         try:
@@ -134,6 +149,10 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
             unmatched.append({"item_no": item, "description": line.get("description", ""), "reason": "quantity must be greater than zero"})
             continue
         recipe = _match(line, recipes)
+        if recipe is None and _is_equipment(str(line.get("unit") or "")):
+            procure.append({"item_no": item, "description": str(line.get("description", ""))[:160],
+                            "unit": str(line.get("unit") or ""), "quantity": qty})
+            continue
         if recipe is None and draft_fn is not None:
             desc, unit = str(line.get("description", "")), str(line.get("unit") or "")
             key = (_norm(desc), _unit_key(unit))
@@ -143,7 +162,7 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
                     draft_cache[key] = _clean_draft(d, desc, unit) if d else None
                 recipe = draft_cache[key]
             except Exception as exc:  # provider down, bad JSON: report, do not invent
-                unmatched.append({"item_no": item, "description": desc, "reason": f"AI draft failed: {exc}"})
+                unmatched.append({"item_no": item, "description": desc, "reason": _draft_error(exc)})
                 continue
             if recipe is not None:
                 drafted.append(item)
@@ -177,5 +196,7 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
         "line_count": len(lines), "matched_line_count": len(results), "unmatched_line_count": len(unmatched),
         "line_takeoff": [{k: v for k, v in r.items() if k != "materials"} for r in results], "line_materials": flat, "material_totals": sorted(totals.values(), key=lambda r: r["material_name"].lower()),
         "unmatched_lines": unmatched, "unvalidated_recipes_used": sorted(used_unvalidated),
-        "ai_drafted_items": drafted,
+        **({"ai_drafted_items": drafted} if drafted else {}),
+        "procure_as_specified_count": len(procure),
+        "procure_as_specified": procure,
     }

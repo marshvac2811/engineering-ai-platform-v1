@@ -58,6 +58,8 @@ class BoqTakeoffSkill:
             warnings.append(f"{res['unmatched_line_count']} BOQ line(s) were not taken off (no recipe, bad unit or bad quantity); see the unmatched list.")
         if res["unvalidated_recipes_used"]:
             warnings.append("Consumption and wastage factors for these recipes are unvalidated defaults: " + ", ".join(res["unvalidated_recipes_used"]))
+        if res.get("procure_as_specified_count"):
+            warnings.append(f"{res['procure_as_specified_count']} equipment or lump-sum line(s) have no material takeoff and are listed under procure_as_specified: buy to the specification in the BOQ.")
         if res.get("ai_drafted_items"):
             warnings.append("AI-DRAFTED, UNVERIFIED: BOQ item(s) " + ", ".join(res["ai_drafted_items"]) + " had no stored recipe, so consumption and wastage were drafted by AI. An engineer must confirm these quantities before ordering.")
         trace = [

@@ -13,7 +13,7 @@ LINE = [{"item_no": "1", "description": "Epoxy floor coating 2mm", "unit": "sqft
 
 def test_no_draft_fn_stays_unmatched():
     r = takeoff(LINE)
-    assert r["unmatched_line_count"] == 1 and not r["ai_drafted_items"]
+    assert r["unmatched_line_count"] == 1 and not r.get("ai_drafted_items")
 
 
 def test_draft_is_flagged_clamped_and_calculated():
@@ -30,4 +30,15 @@ def test_draft_failure_reported_not_invented():
     def boom(d, u):
         raise RuntimeError("down")
     r = takeoff(LINE, draft_fn=boom)
-    assert r["unmatched_line_count"] == 1 and "AI draft failed" in r["unmatched_lines"][0]["reason"]
+    assert r["unmatched_line_count"] == 1 and "AI drafting failed" in r["unmatched_lines"][0]["reason"]
+
+
+def test_equipment_lines_listed_not_unmatched_and_quota_message_plain():
+    lines = [{"item_no": "1", "description": "Chiller 300 kW", "unit": "Nos.", "quantity": "2"},
+             {"item_no": "2", "description": "Epoxy floor coating", "unit": "sqft", "quantity": "10"}]
+
+    def quota(d, u):
+        raise RuntimeError("Error code: 429 - insufficient_quota You have no credits remaining")
+    r = takeoff(lines, draft_fn=quota)
+    assert r["procure_as_specified_count"] == 1 and r["procure_as_specified"][0]["item_no"] == "1"
+    assert r["unmatched_line_count"] == 1 and r["unmatched_lines"][0]["reason"] == "AI drafting unavailable: no credit on the OpenAI account"
