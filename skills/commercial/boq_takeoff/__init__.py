@@ -92,12 +92,35 @@ def _match(line: Dict[str, Any], recipes: List[Dict[str, Any]]) -> Optional[Dict
     return best
 
 
-def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+def _clean_draft(d: Dict[str, Any], desc: str, unit: str) -> Optional[Dict[str, Any]]:
+    mats = []
+    for m in d.get("materials", []):
+        try:
+            cons = float(m.get("consumption_per_unit", 0))
+            waste = min(max(float(m.get("wastage_percent", 0)), 0.0), 30.0)
+        except (TypeError, ValueError):
+            continue
+        if cons > 0 and m.get("name") and m.get("unit"):
+            mats.append({"name": str(m["name"]), "unit": str(m["unit"]), "consumption_per_unit": cons, "wastage_percent": waste})
+    if not mats:
+        return None
+    return {"id": "ai_" + re.sub(r"[^a-z0-9]+", "_", _norm(desc))[:40], "name": desc[:80],
+            "base_unit": unit or str(d.get("base_unit") or "nos"), "materials": mats,
+            "validated": False, "source": "ai_draft", "assumptions": list(d.get("assumptions", []))}
+
+
+def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str, Any]]] = None,
+            draft_fn: Optional[Any] = None) -> Dict[str, Any]:
+    """draft_fn(description, unit) -> recipe dict, used only for lines no stored recipe matches.
+
+    Drafted recipes are always marked `source: ai_draft` and `validated: False`.
+    """
     if not lines:
         raise ValueError("BOQ must contain at least one line")
     recipes = _recipes(custom_recipes)
     results, unmatched, totals, flat = [], [], {}, []
     used_unvalidated = set()
+    drafted, draft_cache = [], {}
     for n, line in enumerate(lines, 1):
         item = str(line.get("item_no") or n)
         try:
@@ -109,6 +132,19 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
             unmatched.append({"item_no": item, "description": line.get("description", ""), "reason": "quantity must be greater than zero"})
             continue
         recipe = _match(line, recipes)
+        if recipe is None and draft_fn is not None:
+            desc, unit = str(line.get("description", "")), str(line.get("unit") or "")
+            key = (_norm(desc), _unit_key(unit))
+            try:
+                if key not in draft_cache:
+                    d = draft_fn(desc, unit)
+                    draft_cache[key] = _clean_draft(d, desc, unit) if d else None
+                recipe = draft_cache[key]
+            except Exception as exc:  # provider down, bad JSON: report, do not invent
+                unmatched.append({"item_no": item, "description": desc, "reason": f"AI draft failed: {exc}"})
+                continue
+            if recipe is not None:
+                drafted.append(item)
         if recipe is None:
             unmatched.append({"item_no": item, "description": line.get("description", ""), "reason": "no recipe matches this description"})
             continue
@@ -119,6 +155,7 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
             continue
         if recipe.get("validated") is False:
             used_unvalidated.add(recipe["name"])
+        src = recipe.get("source", "catalogue")
         mats = []
         for m in recipe.get("materials", []):
             cons, waste = float(m.get("consumption_per_unit", 0)), float(m.get("wastage_percent", 0))
@@ -132,10 +169,11 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
         flat.extend({"item_no": item, "recipe_name": recipe["name"], **mm} for mm in mats)
         results.append({"item_no": item, "description": str(line.get("description", "")), "boq_quantity": qty,
                         "boq_unit": str(line.get("unit") or recipe["base_unit"]), "recipe_id": recipe["id"],
-                        "recipe_name": recipe["name"], "recipe_quantity": round(base_qty, 3), "recipe_unit": recipe["base_unit"],
+                        "recipe_name": recipe["name"], "recipe_source": src, "recipe_quantity": round(base_qty, 3), "recipe_unit": recipe["base_unit"],
                         "materials": mats})
     return {
         "line_count": len(lines), "matched_line_count": len(results), "unmatched_line_count": len(unmatched),
         "line_takeoff": [{k: v for k, v in r.items() if k != "materials"} for r in results], "line_materials": flat, "material_totals": sorted(totals.values(), key=lambda r: r["material_name"].lower()),
         "unmatched_lines": unmatched, "unvalidated_recipes_used": sorted(used_unvalidated),
+        "ai_drafted_items": drafted,
     }

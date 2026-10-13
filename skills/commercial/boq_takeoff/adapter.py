@@ -1,6 +1,7 @@
 from __future__ import annotations
 from skills.common import SkillRequest, SkillResult
 from skills.commercial.boq_takeoff import takeoff, parse_boq_csv, parse_recipes_csv
+from skills.commercial.boq_takeoff.ai_draft import make_draft_fn
 
 
 class BoqTakeoffSkill:
@@ -33,7 +34,8 @@ class BoqTakeoffSkill:
             custom = list(request.inputs.get("recipes") or [])
             if str(request.inputs.get("recipes_csv") or "").strip():
                 custom += parse_recipes_csv(str(request.inputs["recipes_csv"]))
-            res = takeoff(self._lines(request.inputs), custom or None)
+            draft_fn = self.draft_fn if hasattr(self, 'draft_fn') else (make_draft_fn() if request.inputs.get('ai_draft', True) else None)
+            res = takeoff(self._lines(request.inputs), custom or None, draft_fn=draft_fn)
         except (ValueError, TypeError, KeyError) as exc:
             return SkillResult(skill_id=self.skill_id, status="calculation_failed", validation_errors=[str(exc)],
                                source_revision=self.source_revision, skill_version=self.version)
@@ -42,6 +44,8 @@ class BoqTakeoffSkill:
             warnings.append(f"{res['unmatched_line_count']} BOQ line(s) were not taken off (no recipe, bad unit or bad quantity); see the unmatched list.")
         if res["unvalidated_recipes_used"]:
             warnings.append("Consumption and wastage factors for these recipes are unvalidated defaults: " + ", ".join(res["unvalidated_recipes_used"]))
+        if res.get("ai_drafted_items"):
+            warnings.append("AI-DRAFTED, UNVERIFIED: BOQ item(s) " + ", ".join(res["ai_drafted_items"]) + " had no stored recipe, so consumption and wastage were drafted by AI. An engineer must confirm these quantities before ordering.")
         trace = [
             {"step": 1, "operation": "match_recipes", "detail": f"{res['matched_line_count']} of {res['line_count']} BOQ lines matched to a recipe by description"},
             {"step": 2, "operation": "convert_units", "detail": "BOQ quantity converted to the recipe base unit (sqm/sqft, m/rft)"},
