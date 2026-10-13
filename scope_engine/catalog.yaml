@@ -97,7 +97,7 @@ recipes:
     verticals: [hvac]
     validated: false
     base_unit: sqm
-    aliases: [duct insulation, thermal insulation of duct, duct lagging, duct thermal insulation]
+    aliases: [duct insulation, thermal insulation of duct, duct lagging, duct thermal insulation, duct thermal & acoustic insulation, nitrile rubber insulation, acoustic lining]
     quantity_patterns:
       - '(\d[\d,.]*)\s*(?:sqm|sq\.?\s*m|m2)'
     materials:

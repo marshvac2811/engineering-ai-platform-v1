@@ -16,9 +16,11 @@ from scope_engine.analyzer import _catalog, _norm
 
 SQFT_PER_SQM = 10.7639104
 FT_PER_M = 3.280839895
-_AREA = {"sqft": 1.0, "sft": 1.0, "sq.ft": 1.0, "sqm": SQFT_PER_SQM, "m2": SQFT_PER_SQM, "sq.m": SQFT_PER_SQM}
-_LEN = {"rft": 1.0, "rm_ft": 1.0, "m": FT_PER_M, "rm": FT_PER_M, "mtr": FT_PER_M, "meter": FT_PER_M, "metre": FT_PER_M}
-_COUNT = {"nos": 1.0, "no": 1.0, "each": 1.0, "ea": 1.0, "unit": 1.0, "units": 1.0, "set": 1.0, "sets": 1.0}
+_AREA = {"sqft": 1.0, "sft": 1.0, "sq.ft": 1.0, "sqm": SQFT_PER_SQM, "m2": SQFT_PER_SQM, "sq.m": SQFT_PER_SQM,
+         "sqmt": SQFT_PER_SQM, "sq.mt": SQFT_PER_SQM, "sqmtr": SQFT_PER_SQM, "sqmtrs": SQFT_PER_SQM, "sqmeter": SQFT_PER_SQM, "sqmetre": SQFT_PER_SQM, "sq.mtr": SQFT_PER_SQM}
+_LEN = {"rft": 1.0, "rm_ft": 1.0, "m": FT_PER_M, "rm": FT_PER_M, "mtr": FT_PER_M, "meter": FT_PER_M, "metre": FT_PER_M,
+        "rmt": FT_PER_M, "rmtr": FT_PER_M, "mtrs": FT_PER_M, "meters": FT_PER_M, "metres": FT_PER_M, "mt": FT_PER_M, "rmtrs": FT_PER_M}
+_COUNT = {"nos": 1.0, "no": 1.0, "each": 1.0, "ea": 1.0, "unit": 1.0, "units": 1.0, "set": 1.0, "sets": 1.0, "nos.": 1.0, "pcs": 1.0, "pc": 1.0}
 
 
 def _unit_key(u: str) -> str:
