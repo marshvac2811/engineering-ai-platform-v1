@@ -68,7 +68,7 @@ def parse_boq_xlsx(source: Union[str, bytes, io.BytesIO]) -> List[Dict[str, Any]
             # item codes agree (NS-43.1 belongs under NS-43.0), so an unrelated priced line is not polluted
             use_ctx = bool(ctx) and len(desc) <= 80 and (not last_was_line or (_stem(desc) and _stem(desc) == _stem(" ".join(ctx))))
             full = " | ".join(ctx[-3:])[:MAX_CONTEXT] + " | " + desc if use_ctx else desc
-            lines.append({"item_no": item, "description": full, "unit": unit, "quantity": qty})
+            lines.append({"item_no": item, "description": full, "spec": desc[:90], "unit": unit, "quantity": qty})
             last_was_line = True
         if lines:
             return lines

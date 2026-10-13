@@ -170,6 +170,10 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
             unmatched.append({"item_no": item, "description": line.get("description", ""), "reason": "no recipe matches this description"})
             continue
         base_qty = _convert(qty, str(line.get("unit") or recipe["base_unit"]), recipe["base_unit"])
+        if base_qty is None and _is_equipment(str(line.get("unit") or "")):
+            procure.append({"item_no": item, "description": str(line.get("description", ""))[:160],
+                            "unit": str(line.get("unit") or ""), "quantity": qty})
+            continue
         if base_qty is None:
             unmatched.append({"item_no": item, "description": line.get("description", ""),
                               "reason": f"cannot convert BOQ unit '{line.get('unit')}' to recipe unit '{recipe['base_unit']}'"})
@@ -178,13 +182,16 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
             used_unvalidated.add(recipe["name"])
         src = recipe.get("source", "catalogue")
         mats = []
+        spec = str(line.get("spec") or line.get("description", ""))[:90]
+        spec = re.sub(r"^[A-Za-z]{1,4}[\s-]*\d+(?:\.\d+)?\s*(?:\([A-Za-z]\)\s*)?", "", spec).strip() or spec
         for m in recipe.get("materials", []):
+            mname = str(m["name"]).replace("{spec}", spec)
             cons, waste = float(m.get("consumption_per_unit", 0)), float(m.get("wastage_percent", 0))
             q = base_qty * cons * (1 + waste / 100.0)
-            mats.append({"material_name": m["name"], "unit": m["unit"], "quantity": round(q, 3),
+            mats.append({"material_name": mname, "unit": m["unit"], "quantity": round(q, 3),
                          "basis": f"{base_qty:g} {recipe['base_unit']} x {cons:g} {m['unit']}/{recipe['base_unit']} + {waste:g}% wastage"})
-            key = (m["name"].strip().lower(), m["unit"].strip().lower())
-            cur = totals.setdefault(key, {"material_name": m["name"], "unit": m["unit"], "quantity": 0.0, "source_items": ""})
+            key = (mname.strip().lower(), m["unit"].strip().lower())
+            cur = totals.setdefault(key, {"material_name": mname, "unit": m["unit"], "quantity": 0.0, "source_items": ""})
             cur["quantity"] = round(cur["quantity"] + q, 3)
             cur["source_items"] = (cur["source_items"] + ", " + item) if cur["source_items"] else item
         flat.extend({"item_no": item, "recipe_name": recipe["name"], **mm} for mm in mats)

@@ -170,3 +170,87 @@ recipes:
       - {name: Tile Adhesive, unit: kg, consumption_per_unit: 2.5, wastage_percent: 5}
       - {name: Grout, unit: kg, consumption_per_unit: 0.25, wastage_percent: 0}
       - {name: Spacers, unit: nos, consumption_per_unit: 4, wastage_percent: 0}
+  # Supply-and-lay items for tender BOQs. {spec} is replaced by the size text of the BOQ line. Factors are unvalidated starters.
+  - id: mv_cable_supply
+    name: MV Armoured Cable
+    verticals: [electrical]
+    validated: false
+    notes: Cable by size plus 3% cutting wastage. Glands, lugs and trenching are not included.
+    base_unit: m
+    aliases: [mv cable, armoured cable, pvc sheathed, xlpe insulated, power cable, control cable]
+    materials:
+      - {name: "Armoured cable {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 3}
+  - id: cable_tray
+    name: Cable Tray
+    verticals: [electrical]
+    validated: false
+    notes: Tray in 3 m lengths, supports about every 1.5 m, one coupler plate per length.
+    base_unit: m
+    aliases: [cable tray, side member, perforated type, ladder type]
+    materials:
+      - {name: "Cable tray {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 3}
+      - {name: Tray Supports/Brackets, unit: nos, consumption_per_unit: 0.67, wastage_percent: 0}
+      - {name: Tray Coupler Plates, unit: nos, consumption_per_unit: 0.34, wastage_percent: 0}
+  - id: flexible_conduit
+    name: Flexible Conduit
+    verticals: [electrical]
+    validated: false
+    notes: Conduit with saddles about every 1.5 m.
+    base_unit: m
+    aliases: [flexible conduit, gi flexible conduit, flexible pipe conduit]
+    materials:
+      - {name: GI Flexible Conduit, unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Conduit Saddles/Clamps, unit: nos, consumption_per_unit: 0.67, wastage_percent: 5}
+  - id: ms_condenser_water_pipe
+    name: MS Condenser Water Pipe
+    verticals: [hvac]
+    validated: false
+    notes: MS pipe with clamps/supports about every 2 m. Insulation, painting, flanges and valves are separate BOQ items.
+    base_unit: m
+    aliases: [condenser water pipe, chilled water pipe, ms pipe, ms c class]
+    materials:
+      - {name: "MS pipe {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Pipe Clamps/Supports, unit: nos, consumption_per_unit: 0.5, wastage_percent: 5}
+  - id: gi_drain_pipe
+    name: GI Drain Piping
+    verticals: [hvac]
+    validated: false
+    notes: GI pipe with screwed fittings about one per 4 m and clamps about every 2 m.
+    base_unit: m
+    aliases: [drain piping, drain pipings, gi b class, gi drain pipe]
+    materials:
+      - {name: "GI pipe {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Fittings (bends/tees/unions/sockets), unit: nos, consumption_per_unit: 0.25, wastage_percent: 0}
+      - {name: Pipe Clamps/Supports, unit: nos, consumption_per_unit: 0.5, wastage_percent: 5}
+  - id: underdeck_insulation
+    name: Under-deck Insulation
+    verticals: [hvac]
+    validated: false
+    base_unit: sqm
+    aliases: [under deck insulation, underdeck insulation, expanded polystyrene, phenotherm]
+    materials:
+      - {name: Under-deck Insulation (TF EPS/phenotherm), unit: sqm, consumption_per_unit: 1.0, wastage_percent: 5}
+  - id: fresh_air_louvers
+    name: Fresh Air Louvers
+    verticals: [hvac]
+    validated: false
+    base_unit: sqm
+    aliases: [fresh air louvers, louvers with vcd, extruded aluminium louver]
+    materials:
+      - {name: Aluminium Louver with VCD and Bird Screen, unit: sqm, consumption_per_unit: 1.0, wastage_percent: 0}
+  - id: non_return_damper
+    name: Non-return Damper
+    verticals: [hvac]
+    validated: false
+    base_unit: sqm
+    aliases: [non return damper]
+    materials:
+      - {name: GS Non-return Damper, unit: sqm, consumption_per_unit: 1.0, wastage_percent: 0}
+  - id: fire_rated_door
+    name: Fire Rated Steel Door
+    verticals: [interiors]
+    validated: false
+    base_unit: sqm
+    aliases: [fire rated steel fire door, fire door and frame, fire rated door]
+    materials:
+      - {name: Fire Rated Steel Door and Frame, unit: sqm, consumption_per_unit: 1.0, wastage_percent: 0}

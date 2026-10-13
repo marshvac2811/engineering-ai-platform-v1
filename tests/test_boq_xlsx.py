@@ -50,3 +50,13 @@ def test_skill_accepts_xlsx_upload_and_rejects_garbage():
     assert ok.status == "draft_ready" and ok.engineering_result["matched_line_count"] == 3
     bad = sk.run(SkillRequest(skill_id="boq_takeoff", inputs={"boq_xlsx_b64": base64.b64encode(b"not excel").decode()}))
     assert bad.status == "input_validation_failed"
+
+
+def test_supply_items_carry_size_and_equipment_with_area_alias_is_listed():
+    lines = [{"item_no": "1", "description": "NS-54.0 MV Cable | NS-54.2 3C-6 sq mm Aluminium", "spec": "NS-54.2 3C-6 sq mm Aluminium", "unit": "Metre", "quantity": 100},
+             {"item_no": "2", "description": "NS-54.0 MV Cable | NS-54.3 4C-10 sq mm Copper", "spec": "NS-54.3 4C-10 sq mm Copper", "unit": "Metre", "quantity": 50},
+             {"item_no": "3", "description": "Non return damper motorised", "unit": "Each", "quantity": 2}]
+    r = takeoff(lines)
+    names = {m["material_name"]: m["quantity"] for m in r["material_totals"]}
+    assert names["Armoured cable 3C-6 sq mm Aluminium"] == 103.0 and names["Armoured cable 4C-10 sq mm Copper"] == 51.5
+    assert r["unmatched_line_count"] == 0 and r["procure_as_specified_count"] == 1
