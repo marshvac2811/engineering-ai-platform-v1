@@ -1,8 +1,8 @@
 """Concept-level HVAC and sprinkler layouts on a read plan, as an editable layered DXF (mm).
 
 RULE-BASED AND PRELIMINARY. Equipment is positioned on a regular grid inside each room from stated spacing rules;
-ducts and pipes are straight Manhattan runs drawn as centre lines. NOTHING here is sized, hydraulically checked or
-clash-checked. Every spacing parameter is returned in the result so it can be shown, changed and approved.
+ducts and pipes are routed centre lines. Trunk ducts and sprinkler mains are given PRELIMINARY sizes (see sizing.py);
+branches, fittings, equipment and hydraulics are NOT checked and nothing is clash-checked. Every spacing parameter is returned in the result so it can be shown, changed and approved.
 Output is deterministic.
 """
 from __future__ import annotations
@@ -15,6 +15,7 @@ from shapely.geometry import Point, Polygon
 
 from engineering.drawing.services_schematic import _finish, _new_doc
 from engineering.layout.routing import build_grid, nearest_free, route_tree
+from engineering.layout.sizing import size_ducts, size_sprinkler_mains
 from engineering.plan.model import PlanModel, PlanRoom
 
 DEFAULTS: Dict[str, float] = {
@@ -23,8 +24,10 @@ DEFAULTS: Dict[str, float] = {
     "sprinkler_max_spacing_m": 4.0,  # max spacing along and between branch lines
     "sprinkler_max_coverage_m2": 12.1,  # max floor area per head (light-hazard style; hazard class to be confirmed)
     "sprinkler_wall_max_m": 2.0,     # max distance from a wall
+    "supply_air_m3h_per_m2": 20.0,   # concept supply air per floor area, used only to size the duct trunk
+    "duct_max_velocity_ms": 6.0,     # trunk duct velocity limit for the preliminary size
 }
-EXTRA = {"M-DIFF": 3, "M-UNIT": 4, "M-DUCT-TRUNK": 5, "F-SPKL": 1, "F-PIPE-MAIN": 6, "F-PIPE-BRANCH": 2, "A-WALL": 8, "A-ROOM": 9, "G-SCHED": 7, "M-TAG": 3}
+EXTRA = {"M-DIFF": 3, "M-UNIT": 4, "M-DUCT-TRUNK": 5, "F-SPKL": 1, "F-PIPE-MAIN": 6, "F-PIPE-BRANCH": 2, "A-WALL": 8, "A-ROOM": 9, "G-SCHED": 7, "M-TAG": 3, "F-TAG": 2}
 
 
 @dataclass
@@ -128,6 +131,8 @@ def build_layout_dxf(model: PlanModel, *, services: Sequence[str] = ("hvac", "fi
     msp.add_circle(P(plant), 300, dxfattribs={"layer": "M-UNIT"})
     msp.add_text("PLANT / RISER (confirm)", dxfattribs={"layer": "G-NOTE", "height": 250, "insert": (plant[0] * K + 400, plant[1] * K)})
     unit_targets: List[Tuple[float, float]] = []
+    unit_loads: List[float] = []
+    fire_loads: List[float] = []
     fire_targets: List[Tuple[float, float]] = []
     schedule: List[Dict[str, Any]] = []
     unit_n = diff_n = spk_n = 0
@@ -154,6 +159,7 @@ def build_layout_dxf(model: PlanModel, *, services: Sequence[str] = ("hvac", "fi
         if tags:
             row["indoor_units"] = ", ".join(tags)
             unit_targets.append(it["units"][0])
+            unit_loads.append(r.area_m2 * data["params"]["supply_air_m3h_per_m2"])
         heads = it.get("sprinklers", [])
         for h in heads:
             spk_n += 1
@@ -176,11 +182,12 @@ def build_layout_dxf(model: PlanModel, *, services: Sequence[str] = ("hvac", "fi
             if len(ys) > 1:
                 msp.add_line(P((feed[0], ys[0])), P((feed[0], ys[-1])), dxfattribs={"layer": "F-PIPE-BRANCH"})
             fire_targets.append(feed)
+            fire_loads.append(float(len(heads)))
         schedule.append(row)
 
-    def draw_routes(targets, layer: str, what: str) -> None:
+    def draw_routes(targets, layer: str, what: str):
         if not targets:
-            return
+            return []
         if grid is not None:
             res = route_tree(grid, plant, targets)
             segs, bad = res.segments, res.crossing_targets
@@ -194,16 +201,36 @@ def build_layout_dxf(model: PlanModel, *, services: Sequence[str] = ("hvac", "fi
         for a_, b_ in segs:
             if a_ != b_:
                 msp.add_line(P(a_), P(b_), dxfattribs={"layer": layer})
+        return segs
 
+    def label_runs(runs, layer: str, text_fn) -> None:
+        for run in runs:
+            a_, b_ = run["a"], run["b"]
+            if run["length_m"] < 2.5:
+                continue
+            mx, my = (a_[0] + b_[0]) / 2 * K, (a_[1] + b_[1]) / 2 * K
+            vertical = abs(a_[0] - b_[0]) < 1e-6
+            msp.add_text(text_fn(run), dxfattribs={"layer": "M-TAG" if layer.startswith("M") else "F-TAG", "height": 170,
+                                                   "insert": (mx + (120 if vertical else -300), my + (-300 if vertical else 120)), "rotation": 90 if vertical else 0})
+
+    sizing: Dict[str, Any] = {}
     if "hvac" in services:
-        draw_routes(unit_targets, "M-DUCT-TRUNK", "Duct trunk")
+        segs_d = draw_routes(unit_targets, "M-DUCT-TRUNK", "Duct trunk")
+        if segs_d:
+            sizing["duct_trunk"] = size_ducts(segs_d, plant, list(zip(unit_targets, unit_loads)), max_velocity_ms=data["params"]["duct_max_velocity_ms"])
+            label_runs(sizing["duct_trunk"]["runs"], "M", lambda x: f"{x['size']} ({x['airflow_m3h']} m3/h)")
     if "fire" in services:
-        draw_routes(fire_targets, "F-PIPE-MAIN", "Sprinkler main")
+        segs_f = draw_routes(fire_targets, "F-PIPE-MAIN", "Sprinkler main")
+        if segs_f:
+            sizing["sprinkler_main"] = size_sprinkler_mains(segs_f, plant, list(zip(fire_targets, fire_loads)))
+            label_runs(sizing["sprinkler_main"]["runs"], "F", lambda x: f"{x['size']} ({x['heads']} heads)")
+            if any(x["note"] for x in sizing["sprinkler_main"]["runs"]):
+                warnings.append("Sprinkler main: some runs exceed the pipe-schedule head limit; a hydraulic calculation is required.")
 
     bx0, by0 = (model.bounds[0] if model.bounds else minx_of(model)) * K, (model.bounds[1] if model.bounds else miny_of(model)) * K
     ty = by0 - 4500
     lines = [f"CONCEPT LAYOUT - PRELIMINARY, NOT FOR CONSTRUCTION  |  Ref {reference}  Project {project}  Rev {revision}",
-             "Equipment is placed on a rule grid; ducts and pipes are centre lines routed through door openings. Not sized, not hydraulically checked, not clash checked.",
+             "Equipment is placed on a rule grid; ducts and pipes are centre lines routed through door openings. Trunk duct and sprinkler main sizes are preliminary (round duct by velocity; light-hazard pipe schedule); fittings, branches and hydraulics not checked, not clash checked.",
              f"Source plan: {model.source_file} ({model.method}). Rooms/scale must be confirmed by an engineer. Spacing rules: " +
              ", ".join(f"{k}={v:g}" for k, v in data["params"].items())]
     lines += warnings
@@ -216,7 +243,8 @@ def build_layout_dxf(model: PlanModel, *, services: Sequence[str] = ("hvac", "fi
         txt = f"{row['room_id']}  {row['room']}  {row['area_m2']:.1f} m2  |  indoor units: {row.get('indoor_units', '-')}  |  diffusers: {row.get('diffusers', '-')}  |  sprinklers: {row.get('sprinklers', '-')}"
         msp.add_text(txt, dxfattribs={"layer": "G-SCHED", "height": 220, "insert": (bx0, sy - i * 380)})
     summary = {"services": list(services), "room_count": len(data["rooms"]), **totals, "params": data["params"], "plant_xy": plant,
-               "schedule": schedule,
+               "schedule": schedule, "sizing": {k: {"by_size": v["by_size"], **({"critical_loss_pa": v["critical_loss_pa"]} if "critical_loss_pa" in v else {}),
+                                                    "runs": [{**{kk: vv for kk, vv in r_.items() if kk not in ("a", "b")}, "from": r_["a"], "to": r_["b"]} for r_ in v["runs"]]} for k, v in sizing.items()},
                "rooms": [{k: (len(v) if isinstance(v, list) else v) for k, v in it.items()} for it in data["rooms"]]}
     return LayoutResult(dxf=_finish(doc), summary=summary, warnings=warnings)
 
