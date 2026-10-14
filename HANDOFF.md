@@ -379,3 +379,8 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 - Sample plans for trials generated from `engineering/plan/samples.py` (DXF mm and PDF 1:100).
 - Master-prompt status: calculators 49 executable (target 42 exceeded); HVAC design, BOQ takeoff, energy study, retrofit study, layout + sizing built. Remaining items depend on the owner or infrastructure: OpenAI credit (AI drafting), Docker/OCR/DWG, live Upwork/CRM, Gmail cron after trial sign-off, engineer sign-off on defaults/recipes, MARS_ADDRESS, old trial data clear.
 - Owner plan: salaried job to Dec 2026, platform in test-only mode; monetisation (fixed-fee services) from Jan 2027.
+
+## Checkpoint 2026-10-14 — Dashboard look + CRM & Clients tab
+- web/app.html: visible Mars watermark (fixed tiled SVG overlay, low opacity, prints too), gradient header with skyline/duct illustration and strap line, softer cards. New tab "CRM & Clients": KPI tiles (open deals, open pipeline value, follow-ups due, won value), Pipeline board with stage drop-down per card, Add/Edit Deal form, Clients view. Uses existing /v1/crm routes (GET list, POST create, PATCH update); follow-up empty sent as null.
+- Clients are DERIVED (no new table): deal.company and job project_context.client grouped case-insensitively. A proper client table, per-client storage folders, Gmail/Upwork enquiry -> deal, won deal -> job are still TODO.
+- Browser-tested headlessly with mocked API (board, move stage, add deal, client view); not yet seen on live Render.

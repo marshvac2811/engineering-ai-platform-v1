@@ -62,14 +62,46 @@ details.more{margin-top:10px;border:1px solid #e1e5eb;border-radius:9px;backgrou
 details.more>summary{cursor:pointer;padding:9px 12px;font-size:13px;font-weight:600;color:#3a4558}
 details.more>.body{padding:0 12px 12px}
 .job .actions{flex-wrap:wrap}
+
+/* ---- Mars look: watermark, hero, KPI tiles, CRM ---- */
+body{position:relative}
+body::after{content:"";position:fixed;inset:0;z-index:50;pointer-events:none;background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22420%22 height=%22320%22 viewBox=%220 0 420 320%22%3E%3Cg transform=%22rotate(-24 210 160)%22 fill=%22none%22%3E%3Crect x=%22168%22 y=%2286%22 width=%2252%22 height=%2252%22 rx=%2210%22 fill=%22%2314233c%22/%3E%3Cpath d=%22M178 126V98L194 116L210 98V126%22 stroke=%22%23fff%22 stroke-width=%225%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22/%3E%3Ccircle cx=%22212%22 cy=%2294%22 r=%225.5%22 fill=%22%23c8442b%22/%3E%3Ctext x=%22196%22 y=%22170%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-weight=%22700%22 font-size=%2217%22 letter-spacing=%222.5%22 fill=%22%2314233c%22%3EMARS ENGINEERING SOLUTIONS%3C/text%3E%3Ctext x=%22196%22 y=%22190%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2211%22 letter-spacing=%222%22 fill=%22%2314233c%22%3ECONTROLLED ENGINEERING WORKSPACE%3C/text%3E%3C/g%3E%3C/svg%3E");background-repeat:repeat;background-size:420px 320px;opacity:.055}
+@media print{body::after{opacity:.09}}
+header{position:relative;overflow:hidden;background:linear-gradient(120deg,#0f1b30 0%,#172a47 55%,#22406b 100%);padding:24px 28px 20px;min-height:132px}
+header .bar{position:relative;z-index:2}
+header .hero-art{position:absolute;right:0;bottom:0;height:100%;width:min(560px,62%);z-index:1;opacity:.8}
+header h1{letter-spacing:.01em}
+header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-height:1.4;text-transform:none;letter-spacing:0}
+.card{background:rgba(255,255,255,.96);box-shadow:0 1px 2px rgba(23,32,51,.04),0 6px 18px rgba(23,32,51,.04)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 16px}
+.kpi{background:#fff;border:1px solid #e5e8ee;border-left:4px solid #1769e0;border-radius:12px;padding:14px 16px}
+.kpi .n{font-size:24px;font-weight:700;color:#14233c}.kpi .l{font-size:12px;color:#697386;margin-top:2px}
+.kpi.warn{border-left-color:#c8442b}.kpi.gold{border-left-color:#e0a93b}.kpi.green{border-left-color:#1e8f56}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(210px,1fr);gap:10px;overflow-x:auto;padding-bottom:8px}
+.col{background:#f1f4f9;border-radius:12px;padding:10px;min-height:120px}
+.col h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#3a4558;display:flex;justify-content:space-between}
+.deal{background:#fff;border:1px solid #e1e5eb;border-radius:10px;padding:10px;margin-bottom:8px;font-size:12px}
+.deal b{display:block;font-size:13px;margin-bottom:2px}.deal .meta{color:#697386}
+.deal.due{border-color:#e7b3a8;background:#fff6f4}
+.deal select{margin-top:6px;width:100%;padding:5px;border:1px solid #d9e0e9;border-radius:6px;font-size:12px;background:#fff}
+.deal .edit{margin-top:6px;padding:4px 9px;font-size:11px}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.formgrid label{font-size:12px;color:#697386;display:block;margin-bottom:4px}
+.formgrid select,.formgrid input{width:100%;padding:10px;border:1px solid #ccd3df;border-radius:9px;font:inherit;background:#fff}
+.clientlist{display:grid;grid-template-columns:minmax(200px,280px) 1fr;gap:14px}
+@media(max-width:760px){.clientlist{grid-template-columns:1fr}header .hero-art{opacity:.35}}
+.cl{border:1px solid #e1e5eb;border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:#fff;font-size:13px}
+.cl.active{border-color:#1769e0;background:#f2f7ff}.cl .small{display:block}
+.illus{display:block;margin:6px auto;opacity:.9}
 </style>
 </head>
 <body>
-<header><div class="bar"><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Mars Engineering Solutions"><rect width="100" height="100" rx="18" fill="#14233c"/><path d="M20 76V28L50 60L80 28V76" fill="none" stroke="#fff" stroke-width="8.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="76" cy="20" r="9.5" fill="#c8442b"/><line x1="20" y1="87" x2="80" y2="87" stroke="#e0a93b" stroke-width="4.5" stroke-linecap="round"/></svg><div><h1>Mars Engineering Solutions</h1><div class="tag">Engineering Operations</div></div></div><div id="user" class="user">Authenticated</div></div></header>
+<header><div class="bar"><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Mars Engineering Solutions"><rect width="100" height="100" rx="18" fill="#14233c"/><path d="M20 76V28L50 60L80 28V76" fill="none" stroke="#fff" stroke-width="8.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="76" cy="20" r="9.5" fill="#c8442b"/><line x1="20" y1="87" x2="80" y2="87" stroke="#e0a93b" stroke-width="4.5" stroke-linecap="round"/></svg><div><h1>Mars Engineering Solutions</h1><div class="tag">Engineering Operations</div><div class="strap">HVAC &middot; MEP &middot; Energy &middot; Retrofit &middot; BOQ &mdash; calculations, drawings and reports with disclosed assumptions and engineer review</div></div></div><div id="user" class="user">Authenticated</div></div><svg class="hero-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 170" preserveAspectRatio="xMaxYMax meet" aria-hidden="true"><defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c4a78" stop-opacity=".55"/><stop offset="1" stop-color="#14233c" stop-opacity="0"/></linearGradient></defs><circle cx="560" cy="44" r="26" fill="#e0a93b" opacity=".85"/><g fill="url(#hg)" stroke="#6f8fbf" stroke-opacity=".55" stroke-width="1.2"><rect x="330" y="60" width="62" height="110"/><rect x="396" y="30" width="54" height="140"/><rect x="454" y="78" width="70" height="92"/><rect x="528" y="52" width="48" height="118"/><rect x="580" y="88" width="60" height="82"/></g><g stroke="#9db6dc" stroke-opacity=".6" stroke-width="1.4" fill="none"><path d="M340 78h42M340 96h42M340 114h42M340 132h42M406 48h34M406 66h34M406 84h34M406 102h34M406 120h34M464 96h50M464 114h50M464 132h50M538 70h28M538 88h28M538 106h28"/></g><g fill="#c8442b" opacity=".9"><rect x="462" y="68" width="26" height="10" rx="2"/><rect x="498" y="68" width="18" height="10" rx="2"/></g><g stroke="#e0a93b" stroke-width="2" fill="none" stroke-linecap="round" opacity=".85"><path d="M20 150h120a8 8 0 0 0 8-8v-30h110"/><path d="M20 160h250"/></g><g fill="#6f8fbf" opacity=".55"><rect x="64" y="118" width="38" height="24" rx="3"/><rect x="108" y="124" width="24" height="18" rx="3"/></g></svg></header>
 <nav class="tabs" id="mainTabs" role="tablist" aria-label="Dashboard sections">
  <button type="button" class="tab active" data-tab="request" role="tab">New Request</button>
  <button type="button" class="tab" data-tab="jobs" role="tab">Review &amp; Jobs <span class="badge" id="badgeJobs" hidden></span></button>
  <button type="button" class="tab" data-tab="reports" role="tab">Reports</button>
+ <button type="button" class="tab" data-tab="crm" role="tab">CRM &amp; Clients</button>
  <button type="button" class="tab" data-tab="tools" role="tab">Design &amp; Calculations</button>
  <button type="button" class="tab" data-tab="gmail" role="tab">Gmail Intake</button>
 </nav>
@@ -89,6 +121,47 @@ details.more>.body{padding:0 12px 12px}
 <div id="continuationBox" class="need" style="display:none;margin-top:12px"></div>
 </section>
 
+</div>
+<div class="tabpanel" data-panel="crm">
+<div class="kpis" id="crmKpis">
+ <div class="kpi"><div class="n" id="kOpen">-</div><div class="l">Open deals</div></div>
+ <div class="kpi gold"><div class="n" id="kValue">-</div><div class="l">Open pipeline value</div></div>
+ <div class="kpi warn"><div class="n" id="kDue">-</div><div class="l">Follow-ups due</div></div>
+ <div class="kpi green"><div class="n" id="kWon">-</div><div class="l">Won value</div></div>
+</div>
+<div class="toolpick" id="crmPick">
+ <button type="button" class="toolbtn active" data-crm="board">Pipeline</button>
+ <button type="button" class="toolbtn" data-crm="form">Add / Edit Deal</button>
+ <button type="button" class="toolbtn" data-crm="clients">Clients</button>
+</div>
+<div class="crmpanel" data-crmpanel="board">
+<section class="card"><h2>Deal pipeline</h2>
+<p class="muted">Move a deal along the stages with the drop-down on its card. Deals with a follow-up date today or earlier are highlighted.</p>
+<div id="crmBoard" class="board"></div><div id="crmBoardMsg" class="msg"></div></section>
+</div>
+<div class="crmpanel" data-crmpanel="form" style="display:none">
+<section class="card"><h2 id="crmFormTitle">Add a deal</h2>
+<p class="muted">One record per opportunity. The company name is the client: deals and jobs with the same name are grouped together under Clients.</p>
+<div class="formgrid">
+ <div><label for="cdName">Deal / project name *</label><input id="cdName" type="text" placeholder="e.g. Hotel ABC chiller retrofit"></div>
+ <div><label for="cdCompany">Client / company</label><input id="cdCompany" type="text" placeholder="e.g. Hotel ABC Pvt Ltd"></div>
+ <div><label for="cdContact">Contact person</label><input id="cdContact" type="text"></div>
+ <div><label for="cdCat">Category</label><select id="cdCat"><option>Project Sales</option><option>Retrofit Jobs</option><option>Energy Optimization</option></select></div>
+ <div><label for="cdStake">Client type</label><select id="cdStake"><option>Consultant</option><option>Builder</option><option>Developer</option><option>Contractor</option><option>End Client</option><option selected>Other</option></select></div>
+ <div><label for="cdStage">Stage</label><select id="cdStage"></select></div>
+ <div><label for="cdValue">Value (INR)</label><input id="cdValue" type="number" min="0" step="1000" value="0"></div>
+ <div><label for="cdFollow">Next follow-up</label><input id="cdFollow" type="date"></div>
+</div>
+<label class="small" for="cdNotes" style="display:block;margin-top:10px">Notes</label>
+<textarea id="cdNotes" rows="3"></textarea>
+<div class="actions"><button type="button" id="cdSave">Save deal</button><button type="button" class="secondary" id="cdClear">Clear form</button></div>
+<div id="cdMsg" class="msg"></div></section>
+</div>
+<div class="crmpanel" data-crmpanel="clients" style="display:none">
+<section class="card"><h2>Clients</h2>
+<p class="muted">Everything for one client in one place: their deals and the engineering jobs raised for them. Nothing is shared between clients.</p>
+<div class="clientlist"><div id="clList"></div><div id="clDetail" class="muted">Select a client.</div></div></section>
+</div>
 </div>
 <div class="tabpanel" data-panel="tools">
 <div class="toolpick" id="toolPick">
@@ -1133,7 +1206,7 @@ loadAccount();loadJobs();
 <script>
 /* Tab navigation (isolated; the rest of the dashboard logic is unchanged and addresses elements by id). */
 (function(){
-  const TABS=["request","jobs","reports","tools","gmail"], TOOLS=["design","layout","boq","energy","retrofit","trial"];
+  const TABS=["request","jobs","reports","crm","tools","gmail"], TOOLS=["design","layout","boq","energy","retrofit","trial"];
   const safeGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
   const safeSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
   function showTool(name){
@@ -1271,6 +1344,111 @@ loadAccount();loadJobs();
    window.__submitForm(m,document.getElementById("rfRun"),{message:"Prepare the preliminary retrofit study for the existing plant",requested_skill_id:"retrofit_study",inputs:inputs});
   });
  }catch(e){console.error("Retrofit panel failed to initialise",e);}
+})();
+</script>
+<script>
+/* CRM & Clients (isolated). Deals via /v1/crm; clients are derived by company/client name from deals and jobs. */
+(function(){
+ const $=id=>document.getElementById(id);
+ const STAGES=[["budgetary","Budgetary"],["tendering","Tendering"],["quotation","Quotation"],["followup","Follow-Up"],["negotiation","Negotiation"],["won","Closed - Won"],["lost","Closed - Lost"]];
+ const OPEN=s=>s!=="won"&&s!=="lost";
+ let deals=[],editing=null,activeClient=null;
+ const E=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const inr=n=>"₹"+Math.round(Number(n)||0).toLocaleString("en-IN");
+ const today=()=>new Date().toISOString().slice(0,10);
+ const say=(el,t,ok)=>{el.className="msg "+(ok?"ok":"err");el.style.display="block";el.textContent=t;};
+ $("cdStage").innerHTML=STAGES.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");
+ function showSub(n){
+  document.querySelectorAll("#crmPick .toolbtn").forEach(b=>b.classList.toggle("active",b.dataset.crm===n));
+  document.querySelectorAll(".crmpanel").forEach(p=>p.style.display=p.dataset.crmpanel===n?"block":"none");
+  if(n==="clients")renderClients();
+ }
+ $("crmPick").addEventListener("click",e=>{const b=e.target.closest(".toolbtn");if(b)showSub(b.dataset.crm);});
+ async function load(){
+  try{
+   const r=await api("/v1/crm");const d=await r.json();
+   if(!r.ok)throw Error(d.error||"Could not load deals");
+   deals=d.deals||[];render();
+  }catch(e){say($("crmBoardMsg"),"Could not load deals: "+e.message,false);}
+ }
+ function kpis(){
+  const open=deals.filter(d=>OPEN(d.stage));
+  $("kOpen").textContent=open.length;
+  $("kValue").textContent=inr(open.reduce((a,d)=>a+Number(d.value||0),0));
+  $("kDue").textContent=open.filter(d=>d.next_follow_up&&d.next_follow_up<=today()).length;
+  $("kWon").textContent=inr(deals.filter(d=>d.stage==="won").reduce((a,d)=>a+Number(d.value||0),0));
+ }
+ function render(){
+  kpis();
+  if(!deals.length){
+   $("crmBoard").style.display="block";
+   $("crmBoard").innerHTML='<div class="empty" style="text-align:center"><svg class="illus" width="120" height="80" viewBox="0 0 120 80" aria-hidden="true"><rect x="10" y="30" width="30" height="45" fill="#dbe4f1"/><rect x="45" y="12" width="32" height="63" fill="#c3d2e8"/><rect x="82" y="38" width="28" height="37" fill="#dbe4f1"/><circle cx="98" cy="16" r="9" fill="#e0a93b"/><path d="M4 75h112" stroke="#14233c" stroke-width="3"/></svg>No deals yet. Use <strong>Add / Edit Deal</strong> to record your first enquiry.</div>';
+   return;
+  }
+  $("crmBoard").style.display="grid";
+  $("crmBoard").innerHTML=STAGES.map(([k,label])=>{
+   const list=deals.filter(d=>d.stage===k);
+   return '<div class="col"><h3><span>'+E(label)+'</span><span>'+list.length+'</span></h3>'+list.map(d=>{
+    const due=OPEN(d.stage)&&d.next_follow_up&&d.next_follow_up<=today();
+    return '<div class="deal'+(due?" due":"")+'"><b>'+E(d.name)+'</b><div class="meta">'+E(d.company||"-")+' &middot; '+inr(d.value)+'</div>'+
+     (d.next_follow_up?'<div class="meta">Follow-up: '+E(d.next_follow_up)+'</div>':'')+
+     '<select data-move="'+E(d.deal_id)+'">'+STAGES.map(x=>'<option value="'+x[0]+'"'+(x[0]===d.stage?" selected":"")+'>'+E(x[1])+'</option>').join("")+'</select>'+
+     '<button type="button" class="secondary edit" data-edit="'+E(d.deal_id)+'">Edit</button></div>';
+   }).join("")+'</div>';
+  }).join("");
+ }
+ $("crmBoard").addEventListener("change",async e=>{
+  const sel=e.target.closest("select[data-move]");if(!sel)return;
+  try{
+   const r=await api("/v1/crm/deals/"+encodeURIComponent(sel.dataset.move),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({stage:sel.value})});
+   const d=await r.json();if(!r.ok)throw Error(d.error||"Could not move the deal");
+   const i=deals.findIndex(x=>x.deal_id===d.deal_id);if(i>=0)deals[i]=d;render();
+  }catch(err){say($("crmBoardMsg"),err.message,false);load();}
+ });
+ $("crmBoard").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-edit]");if(!b)return;
+  const d=deals.find(x=>x.deal_id===b.dataset.edit);if(!d)return;
+  editing=d.deal_id;$("crmFormTitle").textContent="Edit deal";
+  $("cdName").value=d.name||"";$("cdCompany").value=d.company||"";$("cdContact").value=d.contact||"";
+  $("cdCat").value=d.category;$("cdStake").value=d.stakeholder;$("cdStage").value=d.stage;
+  $("cdValue").value=d.value||0;$("cdFollow").value=d.next_follow_up||"";$("cdNotes").value=d.notes||"";
+  showSub("form");
+ });
+ function clear(){editing=null;$("crmFormTitle").textContent="Add a deal";["cdName","cdCompany","cdContact","cdNotes","cdFollow"].forEach(i=>$(i).value="");$("cdValue").value=0;$("cdCat").selectedIndex=0;$("cdStake").value="Other";$("cdStage").selectedIndex=0;}
+ $("cdClear").addEventListener("click",()=>{clear();$("cdMsg").style.display="none";});
+ $("cdSave").addEventListener("click",async()=>{
+  const name=$("cdName").value.trim();
+  if(!name){say($("cdMsg"),"Enter the deal or project name.",false);return;}
+  const v=parseFloat($("cdValue").value||"0");
+  if(!(v>=0)){say($("cdMsg"),"Value must be 0 or more.",false);return;}
+  const body={name,company:$("cdCompany").value.trim(),contact:$("cdContact").value.trim(),category:$("cdCat").value,stakeholder:$("cdStake").value,stage:$("cdStage").value,value:v,next_follow_up:$("cdFollow").value||null,notes:$("cdNotes").value.trim()};
+  const btn=$("cdSave");btn.disabled=true;
+  try{
+   const r=await api(editing?"/v1/crm/deals/"+encodeURIComponent(editing):"/v1/crm/deals",{method:editing?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+   const d=await r.json();if(!r.ok)throw Error(d.error||"Could not save the deal");
+   say($("cdMsg"),"Deal saved.",true);clear();await load();showSub("board");
+  }catch(e){say($("cdMsg"),"Could not save: "+e.message,false);}
+  finally{btn.disabled=false;}
+ });
+ function clientOf(j){return String((j.project_context&&j.project_context.client)||"").trim();}
+ function renderClients(){
+  const map=new Map();
+  const get=n=>{const k=n.toLowerCase();if(!map.has(k))map.set(k,{name:n,deals:[],jobs:[]});return map.get(k);};
+  deals.forEach(d=>{const n=(d.company||"").trim();if(n)get(n).deals.push(d);});
+  (typeof cachedJobs!=="undefined"?cachedJobs:[]).forEach(j=>{const n=clientOf(j);if(n)get(n).jobs.push(j);});
+  const list=[...map.values()].sort((a,b)=>a.name.localeCompare(b.name));
+  const box=$("clList");
+  if(!list.length){box.innerHTML='<div class="empty">No clients yet. Add a deal with a company name, or enter a Client when you submit a request.</div>';$("clDetail").textContent="";return;}
+  if(!activeClient||!map.has(activeClient.toLowerCase()))activeClient=list[0].name;
+  box.innerHTML=list.map(c=>'<div class="cl'+(c.name.toLowerCase()===activeClient.toLowerCase()?" active":"")+'" data-cl="'+E(c.name)+'"><b>'+E(c.name)+'</b><span class="small">'+c.deals.length+' deal(s) &middot; '+c.jobs.length+' job(s)</span></div>').join("");
+  const c=map.get(activeClient.toLowerCase());
+  $("clDetail").innerHTML='<h3 style="margin:0 0 8px">'+E(c.name)+'</h3>'+
+   '<strong class="small">Deals</strong>'+(c.deals.length?c.deals.map(d=>'<div class="deal"><b>'+E(d.name)+'</b><div class="meta">'+E((STAGES.find(x=>x[0]===d.stage)||[0,d.stage])[1])+' &middot; '+inr(d.value)+(d.contact?' &middot; '+E(d.contact):'')+'</div></div>').join(""):'<div class="empty">None</div>')+
+   '<strong class="small" style="display:block;margin-top:10px">Engineering jobs</strong>'+(c.jobs.length?c.jobs.map(j=>'<div class="deal"><b>'+E((j.project_context&&j.project_context.project)||j.requested_skill_id||j.skill_id||"Job")+'</b><div class="meta">'+E(j.serial_no?("No. "+j.serial_no+" · "):"")+E(j.status)+'</div></div>').join(""):'<div class="empty">None</div>');
+ }
+ $("clList").addEventListener("click",e=>{const c=e.target.closest(".cl");if(c){activeClient=c.dataset.cl;renderClients();}});
+ document.getElementById("mainTabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b&&b.dataset.tab==="crm")load();});
+ if((location.hash||"")==="#crm"||(function(){try{return localStorage.getItem("mars.tab")==="crm"}catch(e){return false}})())load();
 })();
 </script>
 </body>
