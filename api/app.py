@@ -996,6 +996,7 @@ class APIApp:
                     next_follow_up=body.get("next_follow_up"),
                     notes=str(body.get("notes", "")),
                     engineering_job_id=body.get("engineering_job_id"),
+                    delivery=body.get("delivery") or {},
                 )
                 return self._json(start_response, "201 Created", deal.to_dict())
 

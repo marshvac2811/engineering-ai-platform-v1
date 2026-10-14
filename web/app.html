@@ -93,6 +93,14 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
 .cl{border:1px solid #e1e5eb;border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:#fff;font-size:13px}
 .cl.active{border-color:#1769e0;background:#f2f7ff}.cl .small{display:block}
 .illus{display:block;margin:6px auto;opacity:.9}
+.chip{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#eef2f7;color:#3a4558}
+.chip.paid{background:#e3f4ea;color:#176b3a}.chip.part_paid{background:#fff3d6;color:#8a5a00}.chip.invoiced{background:#fdecec;color:#a12626}
+.dv{border:1px solid #e1e5eb;border-radius:12px;margin-bottom:10px;background:#fff}
+.dv>summary{cursor:pointer;padding:12px 14px;font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dv .body{padding:0 14px 14px}
+.dv h4{margin:14px 0 6px;font-size:13px}
+.dv .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:12px}
+.dv .row input{width:auto;padding:7px;font-size:12px}
 </style>
 </head>
 <body>
@@ -128,10 +136,12 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
  <div class="kpi gold"><div class="n" id="kValue">-</div><div class="l">Open pipeline value</div></div>
  <div class="kpi warn"><div class="n" id="kDue">-</div><div class="l">Follow-ups due</div></div>
  <div class="kpi green"><div class="n" id="kWon">-</div><div class="l">Won value</div></div>
+ <div class="kpi warn"><div class="n" id="kOut">-</div><div class="l">Payments outstanding</div></div>
 </div>
 <div class="toolpick" id="crmPick">
  <button type="button" class="toolbtn active" data-crm="board">Pipeline</button>
  <button type="button" class="toolbtn" data-crm="form">Add / Edit Deal</button>
+ <button type="button" class="toolbtn" data-crm="delivery">Delivery &amp; Payments</button>
  <button type="button" class="toolbtn" data-crm="clients">Clients</button>
 </div>
 <div class="crmpanel" data-crmpanel="board">
@@ -156,6 +166,11 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
 <textarea id="cdNotes" rows="3"></textarea>
 <div class="actions"><button type="button" id="cdSave">Save deal</button><button type="button" class="secondary" id="cdClear">Clear form</button></div>
 <div id="cdMsg" class="msg"></div></section>
+</div>
+<div class="crmpanel" data-crmpanel="delivery" style="display:none">
+<section class="card"><h2>Delivery, revisions &amp; payments</h2>
+<p class="muted">For won deals: record when the work was delivered, each revision, the final submission, the invoice and every payment received. Outstanding amount and payment status are worked out for you.</p>
+<div id="dvList"></div><div id="dvMsg" class="msg"></div></section>
 </div>
 <div class="crmpanel" data-crmpanel="clients" style="display:none">
 <section class="card"><h2>Clients</h2>
@@ -1358,10 +1373,71 @@ loadAccount();loadJobs();
  const today=()=>new Date().toISOString().slice(0,10);
  const say=(el,t,ok)=>{el.className="msg "+(ok?"ok":"err");el.style.display="block";el.textContent=t;};
  $("cdStage").innerHTML=STAGES.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");
+
+ /* ---- Delivery, revisions, final submission and payments ---- */
+ const PAYLAB={not_invoiced:"Not invoiced",invoiced:"Invoiced",part_paid:"Part paid",paid:"Paid"};
+ const dvOf=d=>Object.assign({delivered_on:null,final_submitted_on:null,invoice_no:"",invoice_date:null,invoice_amount:0,revisions:[],payments:[],paid_total:0,outstanding:0,payment_status:"not_invoiced"},d.delivery||{});
+ const eligible=d=>d.stage==="won"||(d.delivery&&(d.delivery.invoice_amount>0||d.delivery.delivered_on));
+ let dvOpen=new Set();
+ function renderDelivery(){
+  const list=deals.filter(eligible);
+  const box=$("dvList");
+  if(!list.length){box.innerHTML='<div class="empty">No won deals yet. Move a deal to <strong>Closed - Won</strong> on the Pipeline and it will appear here.</div>';return;}
+  box.innerHTML=list.map(d=>{
+   const v=dvOf(d);
+   return '<details class="dv" data-id="'+E(d.deal_id)+'"'+(dvOpen.has(d.deal_id)?" open":"")+'><summary><b>'+E(d.name)+'</b><span class="small">'+E(d.company||"-")+'</span><span class="chip '+E(v.payment_status)+'">'+E(PAYLAB[v.payment_status]||v.payment_status)+'</span>'+
+    (v.outstanding>0?'<span class="small">Outstanding '+inr(v.outstanding)+'</span>':'')+(v.final_submitted_on?'<span class="chip">Final submitted</span>':v.delivered_on?'<span class="chip">Delivered</span>':'')+'</summary><div class="body">'+
+    '<div class="formgrid">'+
+    '<div><label>Delivered on</label><input type="date" data-f="delivered_on" value="'+E(v.delivered_on||"")+'"></div>'+
+    '<div><label>Final submitted on</label><input type="date" data-f="final_submitted_on" value="'+E(v.final_submitted_on||"")+'"></div>'+
+    '<div><label>Invoice no.</label><input type="text" data-f="invoice_no" value="'+E(v.invoice_no)+'"></div>'+
+    '<div><label>Invoice date</label><input type="date" data-f="invoice_date" value="'+E(v.invoice_date||"")+'"></div>'+
+    '<div><label>Invoice amount (INR)</label><input type="number" min="0" step="100" data-f="invoice_amount" value="'+E(v.invoice_amount||0)+'"></div></div>'+
+    '<h4>Revisions ('+v.revisions.length+')</h4>'+v.revisions.map((r,i)=>'<div class="row"><span class="chip">Rev '+r.no+'</span><span>'+E(r.date||"-")+'</span><span>'+E(r.note)+'</span><button type="button" class="secondary edit" data-delrev="'+i+'">Remove</button></div>').join("")+
+    '<div class="row"><input type="date" data-nr="date"><input type="text" data-nr="note" placeholder="What changed in this revision" style="min-width:220px"><button type="button" class="secondary edit" data-addrev="1">Add revision</button></div>'+
+    '<h4>Payments received &middot; paid '+inr(v.paid_total)+' of '+inr(v.invoice_amount)+'</h4>'+v.payments.map((p,i)=>'<div class="row"><span>'+E(p.date||"-")+'</span><b>'+inr(p.amount)+'</b><span>'+E(p.ref)+'</span><button type="button" class="secondary edit" data-delpay="'+i+'">Remove</button></div>').join("")+
+    '<div class="row"><input type="date" data-np="date"><input type="number" min="0" step="100" data-np="amount" placeholder="Amount"><input type="text" data-np="ref" placeholder="Reference / UTR"><button type="button" class="secondary edit" data-addpay="1">Add payment</button></div>'+
+    '<div class="actions"><button type="button" data-dvsave="1">Save</button></div></div></details>';
+  }).join("");
+ }
+ function collect(card,d){
+  const v=dvOf(d),out={revisions:v.revisions.map(r=>({date:r.date,note:r.note})),payments:v.payments.map(p=>({date:p.date,amount:p.amount,ref:p.ref}))};
+  card.querySelectorAll("[data-f]").forEach(i=>{out[i.dataset.f]=i.value===""?null:i.value;});
+  out.invoice_no=out.invoice_no||"";out.invoice_amount=parseFloat(out.invoice_amount||"0")||0;
+  return out;
+ }
+ async function saveDelivery(d,delivery,card){
+  const msg=$("dvMsg");
+  try{
+   const r=await api("/v1/crm/deals/"+encodeURIComponent(d.deal_id),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({delivery})});
+   const x=await r.json();if(!r.ok)throw Error(x.error||"Could not save");
+   const i=deals.findIndex(y=>y.deal_id===x.deal_id);if(i>=0)deals[i]=x;
+   say(msg,"Saved.",true);render();renderDelivery();
+  }catch(e){say(msg,"Could not save: "+e.message,false);}
+ }
+ $("dvList").addEventListener("toggle",e=>{const c=e.target.closest&&e.target.closest("details.dv");if(c){if(c.open)dvOpen.add(c.dataset.id);else dvOpen.delete(c.dataset.id);}},true);
+ $("dvList").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  const card=b.closest("details.dv");if(!card)return;
+  const d=deals.find(x=>x.deal_id===card.dataset.id);if(!d)return;
+  const dv=collect(card,d);
+  if(b.dataset.dvsave){saveDelivery(d,dv,card);return;}
+  if(b.dataset.addrev){
+   const dt=card.querySelector('[data-nr=date]').value,nt=card.querySelector('[data-nr=note]').value.trim();
+   if(!nt){say($("dvMsg"),"Write what changed in the revision.",false);return;}
+   dv.revisions.push({date:dt||today(),note:nt});saveDelivery(d,dv,card);return;}
+  if(b.dataset.delrev!==undefined){dv.revisions.splice(+b.dataset.delrev,1);saveDelivery(d,dv,card);return;}
+  if(b.dataset.addpay){
+   const dt=card.querySelector('[data-np=date]').value,am=parseFloat(card.querySelector('[data-np=amount]').value),rf=card.querySelector('[data-np=ref]').value.trim();
+   if(!(am>0)){say($("dvMsg"),"Enter the payment amount.",false);return;}
+   dv.payments.push({date:dt||today(),amount:am,ref:rf});saveDelivery(d,dv,card);return;}
+  if(b.dataset.delpay!==undefined){dv.payments.splice(+b.dataset.delpay,1);saveDelivery(d,dv,card);return;}
+ });
  function showSub(n){
   document.querySelectorAll("#crmPick .toolbtn").forEach(b=>b.classList.toggle("active",b.dataset.crm===n));
   document.querySelectorAll(".crmpanel").forEach(p=>p.style.display=p.dataset.crmpanel===n?"block":"none");
   if(n==="clients")renderClients();
+  if(n==="delivery")renderDelivery();
  }
  $("crmPick").addEventListener("click",e=>{const b=e.target.closest(".toolbtn");if(b)showSub(b.dataset.crm);});
  async function load(){
@@ -1377,6 +1453,7 @@ loadAccount();loadJobs();
   $("kValue").textContent=inr(open.reduce((a,d)=>a+Number(d.value||0),0));
   $("kDue").textContent=open.filter(d=>d.next_follow_up&&d.next_follow_up<=today()).length;
   $("kWon").textContent=inr(deals.filter(d=>d.stage==="won").reduce((a,d)=>a+Number(d.value||0),0));
+  $("kOut").textContent=inr(deals.reduce((a,d)=>a+Number((d.delivery&&d.delivery.outstanding)||0),0));
  }
  function render(){
   kpis();

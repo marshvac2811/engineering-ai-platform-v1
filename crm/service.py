@@ -33,8 +33,8 @@ class CRMService:
         return self.store.list(self._require_tenant(None))
 
     def update(self, deal_id: str, **updates: Any) -> CRMDeal:
-        deal = self.get(deal_id)
-        allowed = {"name", "category", "stakeholder", "contact", "company", "value", "stage", "next_follow_up", "notes", "engineering_job_id", "hubspot_object_id"}
+        deal = __import__('copy').deepcopy(self.get(deal_id))
+        allowed = {"name", "category", "stakeholder", "contact", "company", "value", "stage", "next_follow_up", "notes", "engineering_job_id", "hubspot_object_id", "delivery"}
         for key, value in updates.items():
             if key in allowed:
                 setattr(deal, key, value)

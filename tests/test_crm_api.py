@@ -31,3 +31,32 @@ def test_crm_api_tenant_isolation():
     deal_id=data['deal_id']
     status,data=call(app,'GET',f'/v1/crm/deals/{deal_id}',tenant='t2',user='u2')
     assert status=='404 Not Found'
+
+
+def test_crm_delivery_revisions_and_payments_tracking():
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
+    status,data=call(app,'POST','/v1/crm/deals', {'name':'Hotel retrofit','stage':'won','value':300000})
+    deal_id=data['deal_id']
+    assert data['delivery']['payment_status']=='not_invoiced'
+    status,data=call(app,'PATCH',f'/v1/crm/deals/{deal_id}', {'delivery':{
+        'delivered_on':'2026-12-01','final_submitted_on':'2026-12-20','invoice_no':'MES/001','invoice_amount':300000,
+        'revisions':[{'date':'2026-12-05','note':'Client changed tariff'},{'date':'2026-12-10','note':'Added solar option'}],
+        'payments':[{'date':'2026-12-22','amount':100000,'ref':'UTR1'}]}})
+    assert status=='200 OK'
+    d=data['delivery']
+    assert [r['no'] for r in d['revisions']]==[1,2]
+    assert d['paid_total']==100000 and d['outstanding']==200000 and d['payment_status']=='part_paid'
+    status,data=call(app,'PATCH',f'/v1/crm/deals/{deal_id}', {'delivery':{'invoice_amount':300000,'payments':[{'date':'2026-12-30','amount':300000}]}})
+    assert data['delivery']['payment_status']=='paid' and data['delivery']['outstanding']==0
+
+
+def test_crm_delivery_rejects_bad_values_and_keeps_old_record():
+    app=APIApp(store=InMemoryJobStore(), crm_store=InMemoryCRMStore(), integration_store=InMemoryIntegrationStore())
+    status,data=call(app,'POST','/v1/crm/deals', {'name':'X','delivery':{'invoice_amount':1000}})
+    deal_id=data['deal_id']
+    status,data=call(app,'PATCH',f'/v1/crm/deals/{deal_id}', {'delivery':{'invoice_amount':-5}})
+    assert status.startswith('4')
+    status,data=call(app,'PATCH',f'/v1/crm/deals/{deal_id}', {'delivery':{'delivered_on':'not-a-date'}})
+    assert status.startswith('4')
+    status,data=call(app,'GET',f'/v1/crm/deals/{deal_id}')
+    assert data['delivery']['invoice_amount']==1000

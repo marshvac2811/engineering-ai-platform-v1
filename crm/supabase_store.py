@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
@@ -25,6 +25,7 @@ class SupabaseCRMStore:
             "notes": deal.notes,
             "engineering_job_id": deal.engineering_job_id,
             "hubspot_object_id": deal.hubspot_object_id,
+            "delivery": deal.delivery or {},
             "created_at": deal.created_at,
             "updated_at": deal.updated_at,
         }
@@ -97,6 +98,7 @@ class SupabaseCRMStore:
                 else None
             ),
             hubspot_object_id=row.get("hubspot_object_id"),
+            delivery=row.get("delivery") or {},
             deal_id=str(row["deal_id"]),
             created_at=row.get("created_at") or "",
             updated_at=row.get("updated_at") or "",
