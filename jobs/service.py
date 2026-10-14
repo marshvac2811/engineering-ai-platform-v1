@@ -32,6 +32,20 @@ class JobService:
         self.tenant_id = tenant_id
         self.ingestion = ingestion_service or IngestionService()
         self.report_service = report_service
+        self.observers: list = []   # e.g. CRMLinker; called as observer.handle(event, job, **info); failures are ignored
+
+    def _notify(self, event: str, job: Job, **info: Any) -> None:
+        changed = False
+        for obs in self.observers:
+            try:
+                changed = bool(obs.handle(event, job, **info)) or changed
+            except Exception:  # a side system must never break the engineering lifecycle
+                pass
+        if changed:
+            try:
+                self.store.save(job)
+            except Exception:
+                pass
 
     def _assert_tenant(self, job: Job) -> None:
         if self.tenant_id is not None and job.tenant_id != self.tenant_id:
@@ -53,6 +67,7 @@ class JobService:
         self._assert_tenant(job)
         job.add_event("job_created", "Job received.", source=job.source, tenant_id=tenant_id)
         self.store.save(job)
+        self._notify("created", job)
         return job
 
 
@@ -258,6 +273,7 @@ class JobService:
             job.result["rework_parent_revision"] = previous_revision
         job.transition(JobStatus.REWORK, "Reviewer requested rework; approval invalidated.", reviewer=reviewer, comment=comment)
         self.store.save(job)
+        self._notify("rework", job, comment=comment)
         return job
 
     def resubmit_after_rework(self, job_id: str, actor: str, updates: Dict[str, Any] | None = None, note: str = "") -> Job:
@@ -538,6 +554,7 @@ class JobService:
         if job.result:
             job.result["evidence_bundle"] = refresh_evidence_bundle(job=job)
         self.store.save(job)
+        self._notify("dispatched", job)
         return job
 
     def list_jobs(self) -> list[Job]:

@@ -29,6 +29,7 @@ from orchestrator.provider import ProviderUnavailableError
 from api.auth import DevelopmentHeaderAuthenticator, ApiKeyAuthenticator, SupabaseJWTAuthenticator, EdgeVerifiedAuthenticator, AuthContext, AuthenticationError
 from api.security import InMemoryApiKeyStore, InMemoryUsageStore, SupabaseApiKeyStore, SupabaseUsageStore, UsageEvent
 from crm.service import CRMService
+from crm.linker import CRMLinker
 from crm.store import InMemoryCRMStore
 from crm.supabase_store import build_supabase_crm_store_from_env, SupabaseCRMStore
 from integrations.service import IntegrationService, InMemoryIntegrationStore
@@ -112,12 +113,16 @@ class APIApp:
         self.api_key_authenticator = ApiKeyAuthenticator(self.api_keys.lookup)
         # Lazy-load Supabase JWT verification so startup does not require Supabase env vars.
         self.supabase_jwt_authenticator = None
-        self.service_factory = service_factory or (lambda tenant: JobService(
-            self.store,
-            tenant_id=tenant,
-            ingestion_service=self.ingestion,
-            report_service=ReportService(self.report_store, tenant_id=tenant),
-        ))
+        def _default_service(tenant):
+            svc = JobService(
+                self.store,
+                tenant_id=tenant,
+                ingestion_service=self.ingestion,
+                report_service=ReportService(self.report_store, tenant_id=tenant),
+            )
+            svc.observers.append(CRMLinker(self.crm_store))   # jobs create/update CRM deals automatically
+            return svc
+        self.service_factory = service_factory or _default_service
 
     def _authenticate(self, environ) -> AuthContext:
         # Vercel Edge Middleware performs Supabase JWT signature verification
