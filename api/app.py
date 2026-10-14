@@ -56,6 +56,7 @@ from integrations.providers.gmail import (
     GMAIL_COMPOSE_SCOPES,
     exchange_code as gmail_exchange_code,
     normalize_message as normalize_gmail_message,
+    is_ignored_sender,
     GmailProviderError,
 )
 
@@ -269,7 +270,10 @@ class APIApp:
                 source_message=normalized.get("source_message"),
             )
             result = {"message_id": message_id, "created": created, "job_created": False}
-            if created:
+            ignored_by = is_ignored_sender(str(payload.get("from", ""))) if created else ""
+            if ignored_by:
+                result["ignored"] = f"Promotional sender ({ignored_by}); no job created"
+            elif created:
                 subject = str(payload.get("subject", ""))
                 message_text = str(payload.get("body_text", ""))
                 intake_message = (subject + "\n" + message_text).strip()

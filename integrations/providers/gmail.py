@@ -270,6 +270,23 @@ def build_reply_message(*, to: str, subject: str, body_text: str, in_reply_to: s
     return base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii")
 
 
+# Promotional/onboarding senders that are never client enquiries. Extend with GMAIL_IGNORE_SENDERS (comma separated domains or addresses).
+DEFAULT_IGNORED_SENDERS = ("announce.fiverr.com", "email.upwork.com", "marketing.upwork.com", "notifications.fiverr.com")
+
+
+def is_ignored_sender(sender: str) -> str:
+    """Return the matching ignore rule for a From header, or an empty string."""
+    addr = parseaddr(sender or "")[1].lower()
+    if not addr:
+        return ""
+    domain = addr.rsplit("@", 1)[-1]
+    extra = tuple(x.strip().lower() for x in os.getenv("GMAIL_IGNORE_SENDERS", "").split(",") if x.strip())
+    for rule in DEFAULT_IGNORED_SENDERS + extra:
+        if addr == rule or domain == rule or domain.endswith("." + rule):
+            return rule
+    return ""
+
+
 def html_to_text(html: str) -> str:
     """Plain text from an HTML email part (no external dependencies)."""
     import html as _html
