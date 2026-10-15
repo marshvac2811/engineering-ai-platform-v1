@@ -395,3 +395,5 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 - Recipe matching now token-based (any word order, e.g. 'gypsum board false ceiling').
 
 - Work Programme (client bonus): skills/commercial/boq_takeoff/programme.py. Days per item from crew output per gang-day (overridable via inputs productivity/gangs/working_days_per_week/start_date), staged sequence with 40% overlap, critical path, Gantt in PDF + Excel sheet "Work Programme". No prices anywhere.
+
+- Client file view (CRM > Clients): name variants merged (Ltd/Pvt Ltd/Limited), totals (quoted/invoiced/received/outstanding), documents folder per project with PDF/Excel downloads. Browser-tested with mocked API. Real client table in DB still not built (clients derived from names).
