@@ -141,6 +141,22 @@ def format_value(value: Any) -> str:
     return str(value)
 
 
+_LONG_TEXT = 500
+
+
+def shorten_for_report(key: str, value: Any) -> Any:
+    """Keep very long strings (an uploaded file as base64, a pasted schedule) out of single table cells.
+
+    A cell taller than a page makes PDF layout fail and Excel caps cells at 32,767 characters. The complete
+    value stays in the evidence record; the report shows a short note instead.
+    """
+    if not isinstance(value, str) or len(value) <= _LONG_TEXT:
+        return value
+    if str(key).lower().endswith(("_b64", "base64")) or " " not in value[:200]:
+        return f"(uploaded file content, {len(value):,} characters; kept in the evidence record)"
+    return value[:_LONG_TEXT].rstrip() + f" ... ({len(value):,} characters in total; full text kept in the evidence record)"
+
+
 def flatten_rows(data: Dict[str, Any], prefix: str = "", path: str = "") -> List[Tuple[str, Any, str]]:
     """Flatten a (possibly nested) dict into ``(label, value, unit)`` rows.
 
@@ -156,20 +172,20 @@ def flatten_rows(data: Dict[str, Any], prefix: str = "", path: str = "") -> List
         elif prefix:
             label = f"{prefix} - {label}"
         if is_scalar(value):
-            rows.append((label, value, unit))
+            rows.append((label, shorten_for_report(key, value), unit))
         elif isinstance(value, dict):
             rows.extend(flatten_rows(value, label, full))
         elif isinstance(value, (list, tuple)):
             if all(is_scalar(v) for v in value):
-                rows.append((label, ", ".join(format_value(v) for v in value) or "-", unit))
+                rows.append((label, shorten_for_report(key, ", ".join(format_value(v) for v in value) or "-"), unit))
             else:
                 for n, item in enumerate(value, 1):
                     if isinstance(item, dict):
                         rows.extend(flatten_rows(item, f"{label} {n}"))
                     else:
-                        rows.append((f"{label} {n}", str(item), unit))
+                        rows.append((f"{label} {n}", shorten_for_report(key, str(item)), unit))
         else:
-            rows.append((label, str(value), unit))
+            rows.append((label, shorten_for_report(key, str(value)), unit))
     return rows
 
 
