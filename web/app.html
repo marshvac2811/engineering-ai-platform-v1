@@ -657,6 +657,21 @@ async function provideInfo(jobId,fields){
 }
 
 function kv(k,v){return '<div style="margin-top:4px"><strong>'+esc(k)+':</strong> '+esc(v==null||v===""?"-":String(v))+'</div>';}
+function boqView(er){
+ er=er||{};
+ const bd=Array.isArray(er.boq_breakdown)?er.boq_breakdown:[], pr=Array.isArray(er.work_programme)?er.work_programme:[];
+ let h="";
+ if(bd.length){
+  h+='<h4 style="margin:12px 0 4px">Materials required for each BOQ item</h4>'+bd.map(b=>'<div class="json-result" style="margin-top:8px"><div style="background:#1f3a5f;color:#fff;padding:5px 8px;font-weight:600">Item '+esc(b.item_no)+' &middot; '+esc(b.boq_quantity)+' '+esc(b.boq_unit||"")+'</div>'+
+   '<div class="small" style="padding:5px 8px;background:#f3f6fa">'+esc(b.description||"")+'</div>'+
+   '<table><thead><tr><th>Material</th><th>Unit</th><th style="text-align:right">Qty</th></tr></thead><tbody>'+(b.materials||[]).map(m=>'<tr><td>'+esc(m.material_name)+'</td><td>'+esc(m.unit)+'</td><td style="text-align:right">'+esc(Number(m.quantity).toLocaleString(undefined,{maximumFractionDigits:2}))+'</td></tr>').join("")+'</tbody></table></div>').join("");
+ }
+ if(pr.length){
+  h+='<h4 style="margin:12px 0 4px">Indicative work programme</h4><div class="small">Estimated duration: '+esc(er.total_duration_days)+' working days (about '+esc(er.total_duration_weeks)+' weeks). Red = critical path.</div>'+
+   '<div class="json-result"><table><thead><tr><th>Item</th><th>Work</th><th>Trade</th><th>Days</th><th>From</th><th>To</th><th>After</th></tr></thead><tbody>'+pr.map(r=>'<tr'+(r.critical_path==="Yes"?' style="color:#b03020"':'')+'><td>'+esc(r.item_no)+'</td><td>'+esc(r.description)+'</td><td>'+esc(r.trade)+'</td><td>'+esc(r.duration_days)+'</td><td>'+esc(r.start_day)+'</td><td>'+esc(r.end_day)+'</td><td>'+esc(r.starts_after_item)+'</td></tr>').join("")+'</tbody></table></div>';
+ }
+ return h;
+}
 function summarizeArtifact(kind,d){
  const b=d.evidence_bundle||{}, m=b.manifest||{}, art=(b.delivery||{}).artifacts||{};
  const rep=d.report||{};
@@ -673,6 +688,7 @@ function summarizeArtifact(kind,d){
     return '<div style="margin-top:10px"><strong>'+esc(t.task_id||"task")+' — '+esc(t.capability_id||"")+'</strong>'+
       (t.objective?'<div class="small">'+esc(t.objective)+'</div>':"")+
       (rows.length?'<div class="json-result"><table><thead><tr><th>Result</th><th>Value</th></tr></thead><tbody>'+rows.map(([k,v])=>'<tr><td>'+esc(niceText(k))+'</td><td>'+esc(typeof v==="boolean"?(v?"Yes":"No"):String(v??""))+'</td></tr>').join("")+'</tbody></table></div>':"")+
+      boqView(t.engineering_result)+
       (t.warnings&&t.warnings.length?'<div class="small">Points to note: '+esc(t.warnings.join(" | "))+'</div>':"")+
       '</div>';
    }).join("");
@@ -687,7 +703,7 @@ function summarizeArtifact(kind,d){
     const rows=Object.entries(er).filter(([k,v])=>v===null||["string","number","boolean"].includes(typeof v));
     return '<div style="margin-top:10px"><strong>'+esc(item.skill_id||"Engineering task")+'</strong>'+
       (rows.length?'<div class="json-result"><table><thead><tr><th>Result</th><th>Value</th></tr></thead><tbody>'+rows.map(([k,v])=>'<tr><td>'+esc(niceText(k))+'</td><td>'+esc(typeof v==="boolean"?(v?"Yes":"No"):String(v??""))+'</td></tr>').join("")+'</tbody></table></div>':"")+
-      '</div>';
+      boqView(er)+'</div>';
    }).join("");
   } else h+='<div class="empty">The report metadata exists, but no engineering result rows were stored in this report version.</div>';
  }
