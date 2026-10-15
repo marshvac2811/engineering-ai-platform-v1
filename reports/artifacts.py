@@ -131,6 +131,12 @@ def _plain_results(task: Dict[str, Any]) -> Dict[str, Any]:
     return {k: v for k, v in (task.get("engineering_result") or {}).items() if k not in _NARRATIVE_KEYS}
 
 
+def _clip(value: Any, limit: int = 150) -> str:
+    """Long tender descriptions are shortened in the PDF table; the Excel evidence workbook keeps the full text."""
+    text = str(value if value not in (None, "") else "-")
+    return text if len(text) <= limit else text[: limit - 3].rstrip() + "..."
+
+
 def _results_rows(task: Dict[str, Any], request_inputs: Dict[str, Any]):
     inputs, results = split_inputs_and_results(_task_inputs(task, request_inputs), _plain_results(task))
     results, _tables = extract_tables(results)
@@ -222,7 +228,7 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         small_head = ParagraphStyle("small_head", parent=head_cell, fontSize=6.5, leading=8)
         data = [[Paragraph(h, small_head) for h in header]]
         for r in rows:
-            data.append([Paragraph(str(v if v not in (None, "") else "-").replace("&", "&amp;").replace("<", "&lt;"), small_cell) for v in r])
+            data.append([Paragraph(_clip(v).replace("&", "&amp;").replace("<", "&lt;"), small_cell) for v in r])
         t = Table(data, colWidths=widths, repeatRows=1)
         t.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), _ACCENT), ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c2cf")),
