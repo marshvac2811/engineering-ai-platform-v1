@@ -5,6 +5,7 @@ replace the in-memory store without changing the job contract.
 """
 from __future__ import annotations
 
+from jobs.compact import compact_large_values
 from typing import Any, Callable, Dict, Optional
 
 from orchestrator.engine import execute, SKILLS
@@ -80,9 +81,9 @@ class JobService:
             project_context=plan.project_context,
             standards_context=plan.standards_context,
             assumptions_context=plan.assumptions_context,
-            orchestration=plan.to_dict(),
+            orchestration=compact_large_values(plan.to_dict()),
         )
-        job.add_event("orchestration_plan", "Natural-language request classified by orchestrator.", plan=plan.to_dict())
+        job.add_event("orchestration_plan", "Natural-language request classified by orchestrator.", plan=compact_large_values(plan.to_dict()))
 
         if attachments:
             import base64
@@ -366,6 +367,7 @@ class JobService:
             assumptions_context=job.assumptions_context,
             request_id=job.job_id,
         )
+        workflow = compact_large_values(workflow)   # echoes of big uploads become markers; job.inputs keeps the only full copy
         job.orchestration["engineering_plan"] = workflow["engineering_plan"]
         consolidated = build_workflow_result(
             workflow=workflow,
@@ -374,6 +376,7 @@ class JobService:
             inputs=job.inputs,
             assumptions=job.assumptions_context,
         )
+        consolidated = compact_large_values(consolidated)
         report_revision = int((job.orchestration or {}).get("report_revision") or (job.result or {}).get("report_revision") or 1)
         job.result = {
             **consolidated,

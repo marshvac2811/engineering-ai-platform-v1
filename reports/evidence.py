@@ -11,6 +11,8 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from jobs.compact import compact_large_values
+
 
 def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str)
@@ -21,6 +23,8 @@ def sha256(value: Any) -> str:
 
 
 def build_evidence_bundle(*, job, workflow: Dict[str, Any], consolidated: Dict[str, Any]) -> Dict[str, Any]:
+    workflow = compact_large_values(workflow)
+    consolidated = compact_large_values(consolidated)
     results = list(workflow.get("engineering_results") or [])
     task_outputs = []
     for item in results:
@@ -77,11 +81,11 @@ def build_evidence_bundle(*, job, workflow: Dict[str, Any], consolidated: Dict[s
         "request": {
             "source": job.source,
             "requested_skill_id": job.requested_skill_id,
-            "inputs": job.inputs,
+            "inputs": compact_large_values(job.inputs),
             "project_context": job.project_context,
             "standards_context": job.standards_context,
             "assumptions_context": job.assumptions_context,
-            "orchestration": job.orchestration,
+            "orchestration": compact_large_values(job.orchestration),
         },
         "tasks": task_outputs,
         "workflow": {
