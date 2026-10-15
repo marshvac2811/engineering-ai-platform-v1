@@ -125,10 +125,34 @@ def _task_inputs(task: Dict[str, Any], request_inputs: Dict[str, Any]) -> Dict[s
 # Narrative keys that have their own report sections (Assumptions / Points to note); showing them
 # again as result rows duplicates them.
 _NARRATIVE_KEYS = {"assumptions", "limitations", "warnings"}
+# BOQ takeoff: the per-item material blocks replace these flat tables in the PDF and Excel.
+_BOQ_FLAT_KEYS = {"line_takeoff", "line_materials", "boq_breakdown"}
+
+
+def _boq_breakdown(task: Dict[str, Any]) -> list:
+    """Per-BOQ-item blocks: each item with its own material list (SiteTrack-style)."""
+    value = (task.get("engineering_result") or {}).get("boq_breakdown")
+    return [b for b in value if isinstance(b, dict)] if isinstance(value, list) else []
+
+
+def _qty_text(qty: Any, unit: Any) -> str:
+    """Site-friendly quantity: whole numbers for counts, two decimals otherwise."""
+    if not isinstance(qty, (int, float)):
+        return str(qty if qty not in (None, "") else "-")
+    if str(unit or "").strip().lower() in ("nos", "no", "pcs", "set", "sets", "each"):
+        import math
+        return f"{math.ceil(qty - 1e-9):,}"
+    return f"{qty:,.2f}"
+
+
+def _item_heading(b: Dict[str, Any]) -> str:
+    qty = b.get("boq_quantity")
+    qty_txt = f"{qty:,.2f}".rstrip("0").rstrip(".") if isinstance(qty, (int, float)) else str(qty or "")
+    return f"Item {b.get('item_no')}  |  {qty_txt} {b.get('boq_unit') or ''}".strip()
 
 
 def _plain_results(task: Dict[str, Any]) -> Dict[str, Any]:
-    return {k: v for k, v in (task.get("engineering_result") or {}).items() if k not in _NARRATIVE_KEYS}
+    return {k: v for k, v in (task.get("engineering_result") or {}).items() if k not in _NARRATIVE_KEYS and k not in _BOQ_FLAT_KEYS}
 
 
 def _clip(value: Any, limit: int = 150) -> str:
@@ -306,6 +330,35 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
             money_note = money_note or _has_money(res_rows)
         elif not _result_tables(task, request_inputs):
             story.append(Paragraph("No numeric results were produced for this task.", body))
+        breakdown = _boq_breakdown(task)
+        if breakdown:
+            story.append(Paragraph("Materials required for each BOQ item", task_h))
+            story.append(Paragraph("Each BOQ description is followed by the materials it needs (quantity includes wastage). Combined purchase quantities are in the Material Totals table.", small))
+            story.append(Spacer(1, 3))
+            item_head = ParagraphStyle("item_head", parent=cell_b, fontSize=8, leading=10, textColor=colors.white)
+            item_desc = ParagraphStyle("item_desc", parent=cell, fontSize=7.5, leading=9.5)
+            sub_head = ParagraphStyle("sub_head", parent=cell_b, fontSize=7.5, leading=9)
+            mat_cell = ParagraphStyle("mat_cell", parent=cell, fontSize=7.5, leading=9.5)
+            mat_num = ParagraphStyle("mat_num", parent=mat_cell, alignment=2)
+            esc = lambda v: str(v if v not in (None, "") else "-").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            for b in breakdown:
+                data = [[Paragraph(esc(_item_heading(b)), item_head), "", "", ""],
+                        [Paragraph(esc(_clip(b.get("description"), 400)), item_desc), "", "", ""],
+                        [Paragraph(h, sub_head) for h in ("Material", "Unit", "Qty", "Basis")]]
+                for m in b.get("materials") or []:
+                    qty = m.get("quantity")
+                    data.append([Paragraph(esc(m.get("material_name")), mat_cell), Paragraph(esc(m.get("unit")), mat_cell),
+                                 Paragraph(esc(_qty_text(qty, m.get("unit"))), mat_num), Paragraph(esc(m.get("basis")), ParagraphStyle("b", parent=mat_cell, fontSize=6.5, leading=8))])
+                t = Table(data, colWidths=[72 * mm, 14 * mm, 20 * mm, 74 * mm], repeatRows=0)
+                t.setStyle(TableStyle([
+                    ("SPAN", (0, 0), (-1, 0)), ("SPAN", (0, 1), (-1, 1)),
+                    ("BACKGROUND", (0, 0), (-1, 0), _ACCENT), ("BACKGROUND", (0, 1), (-1, 1), _STRIPE),
+                    ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#dde4ee")),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c2cf")),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ]))
+                story.append(KeepTogether([t, Spacer(1, 6)]) if len(data) <= 22 else t)
         for tbl in _result_tables(task, request_inputs):
             drop_prefixes = ("source calculation", "outdoor air basis", "load method", "cooling load (kw)", "duct friction", "room id")
             skip = {i for i, h in enumerate(tbl["headers"]) if h.lower().startswith(drop_prefixes)}
@@ -493,6 +546,30 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         for tbl in _input_tables(t, request_inputs) + _result_tables(t, request_inputs):
             sheet_name = f"{tbl['title']}"[:28] or "Schedule"
             styled(wb.create_sheet(sheet_name), tbl["headers"], tbl["rows"], [max(14, min(30, len(h) + 4)) for h in tbl["headers"]])
+    for index, t in enumerate(tasks, 1):
+        breakdown = _boq_breakdown(t)
+        if not breakdown:
+            continue
+        sh = wb.create_sheet("BOQ Item Materials")
+        sh.append(["Item / Material", "Unit", "Quantity (incl. wastage)", "Basis"])
+        for c in sh[1]:
+            c.fill, c.font, c.alignment = header_fill, header_font, wrap
+        item_fill = PatternFill("solid", fgColor="D9E1F2")
+        for b in breakdown:
+            sh.append([f"{_item_heading(b)}  -  {b.get('description') or ''}", b.get("boq_unit"), b.get("boq_quantity"), b.get("recipe_name")])
+            r = sh.max_row
+            for c in sh[r]:
+                c.fill, c.font, c.alignment = item_fill, Font(bold=True), wrap
+            for m in b.get("materials") or []:
+                sh.append(["    " + str(m.get("material_name")), m.get("unit"), (round(m["quantity"], 2) if isinstance(m.get("quantity"), (int, float)) else m.get("quantity")), m.get("basis")])
+                for c in sh[sh.max_row]:
+                    c.alignment = wrap
+                sh.cell(sh.max_row, 3).number_format = "#,##0.00"
+            sh.append([])
+        for col, w in zip("ABCD", (80, 12, 22, 60)):
+            sh.column_dimensions[col].width = w
+        sh.freeze_panes = "A2"
+        break
     styled(wb.create_sheet("Calculation Steps"), ["Task", "Step", "Calculation step", "Detail"], step_rows, [30, 8, 50, 40])
     styled(wb.create_sheet("Assumptions & Notes"), ["Task", "Type", "Detail"], note_rows, [30, 16, 100])
     cands = [(c.get("title"), c.get("authority"), c.get("edition") or "-", "Candidate - not verified") for c in governance.get("candidate_sources") or []]

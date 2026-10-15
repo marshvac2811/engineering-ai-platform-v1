@@ -80,17 +80,37 @@ def _recipes(custom: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
     return [r for r in base if r["id"] not in ids] + list(custom or [])
 
 
+_STOP = {"and", "or", "of", "the", "with", "for", "in", "to", "a", "an", "work", "works", "type", "board", "boards"}
+
+
+def _tokens(text: str) -> List[str]:
+    out = []
+    for w in re.findall(r"[a-z0-9]+", text.lower()):
+        if w in _STOP:
+            continue
+        out.append(w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w)
+    return out
+
+
 def _match(line: Dict[str, Any], recipes: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     rid = line.get("recipe_id")
     if rid:
         return next((r for r in recipes if r["id"] == rid), None)
-    text = _norm(str(line.get("description", "")))
-    best, best_len = None, 0
+    desc = str(line.get("description", ""))
+    text = _norm(desc)
+    have = set(_tokens(desc))
+    best, best_key = None, (0, 0)
     for r in recipes:
         for alias in [r.get("name", "")] + list(r.get("aliases", [])):
             a = _norm(alias)
-            if a and a in text and len(a) > best_len:
-                best, best_len = r, len(a)
+            if not a:
+                continue
+            toks = _tokens(alias)
+            # exact phrase, or every key word of the alias present (any order, "gypsum board false ceiling" = "gypsum false ceiling")
+            if a in text or (toks and all(t in have for t in toks)):
+                key = (len(toks), len(a))
+                if key > best_key:
+                    best, best_key = r, key
     return best
 
 
@@ -201,7 +221,7 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
                         "materials": mats})
     return {
         "line_count": len(lines), "matched_line_count": len(results), "unmatched_line_count": len(unmatched),
-        "line_takeoff": [{k: v for k, v in r.items() if k != "materials"} for r in results], "line_materials": flat, "material_totals": sorted(totals.values(), key=lambda r: r["material_name"].lower()),
+        "line_takeoff": [{k: v for k, v in r.items() if k != "materials"} for r in results], "line_materials": flat, "boq_breakdown": results, "material_totals": sorted(totals.values(), key=lambda r: r["material_name"].lower()),
         "unmatched_lines": unmatched, "unvalidated_recipes_used": sorted(used_unvalidated),
         **({"ai_drafted_items": drafted} if drafted else {}),
         "procure_as_specified_count": len(procure),
