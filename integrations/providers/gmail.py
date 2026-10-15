@@ -244,7 +244,7 @@ class GmailAPIClient:
 
 
 def build_reply_message(*, to: str, subject: str, body_text: str, in_reply_to: str | None = None,
-                        attachments: Iterable[tuple[str, str, bytes]] = ()) -> str:
+                        attachments: Iterable[tuple[str, str, bytes]] = (), reply_prefix: bool = True) -> str:
     """Build an RFC 822 reply and return it base64url-encoded for the Gmail API.
 
     ``attachments`` are ``(filename, mime_type, data)``. The recipient is reduced to the single bare
@@ -254,7 +254,7 @@ def build_reply_message(*, to: str, subject: str, body_text: str, in_reply_to: s
     if not address or "@" not in address or len(getaddresses([to])) != 1:
         raise ValueError("A single valid reply address is required")
     clean_subject = " ".join(str(subject or "").split())
-    if not clean_subject.lower().startswith("re:"):
+    if reply_prefix and not clean_subject.lower().startswith("re:"):
         clean_subject = f"Re: {clean_subject}".strip()
     msg = EmailMessage()
     msg["To"] = address

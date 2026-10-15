@@ -112,6 +112,7 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
  <button type="button" class="tab" data-tab="crm" role="tab">CRM &amp; Clients</button>
  <button type="button" class="tab" data-tab="tools" role="tab">Design &amp; Calculations</button>
  <button type="button" class="tab" data-tab="gmail" role="tab">Gmail Intake</button>
+ <button type="button" class="tab" data-tab="status" role="tab">Send Status Report</button>
 </nav>
 <main>
 <div id="tabToast" class="toast" role="status"></div>
@@ -336,6 +337,12 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
   <div id="dispatchedJobs" class="empty">Loading...</div>
 </div>
 </section>
+</div>
+<div class="tabpanel" data-panel="status">
+<section class="card"><h2>Send Status Report</h2>
+<p class="muted">One click sends the owner a short status summary of the platform: jobs waiting for review, follow-ups due, work delivered but not invoiced, and payments outstanding. It goes to the owner's email and WhatsApp. Only people who have been given a login can use this page.</p>
+<div class="actions"><button type="button" id="stSend">Send status report to the owner</button></div>
+<div id="stMsg" class="msg"></div></section>
 </div>
 <div class="tabpanel" data-panel="gmail">
 <section class="card" id="gmailCard">
@@ -1238,7 +1245,7 @@ loadAccount();loadJobs();
 <script>
 /* Tab navigation (isolated; the rest of the dashboard logic is unchanged and addresses elements by id). */
 (function(){
-  const TABS=["request","jobs","reports","crm","tools","gmail"], TOOLS=["design","layout","boq","energy","retrofit","trial"];
+  const TABS=["request","jobs","reports","crm","tools","gmail","status"], TOOLS=["design","layout","boq","energy","retrofit","trial"];
   const safeGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
   const safeSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
   function showTool(name){
@@ -1567,6 +1574,16 @@ loadAccount();loadJobs();
  }
  $("clList").addEventListener("click",e=>{const c=e.target.closest(".cl");if(c){activeClient=c.dataset.cl;renderClients();}});
  document.getElementById("mainTabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b&&b.dataset.tab==="crm")load();});
+ $("stSend").addEventListener("click",async()=>{
+  const btn=$("stSend"),box=$("stMsg");btn.disabled=true;say(box,"Sending...",true);
+  try{
+   const r=await api("/v1/status-report/send",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+   const d=await r.json();if(!r.ok)throw Error(d.error||"Could not send");
+   const line=(n,x)=>n+": "+(x.status==="sent"?"sent. "+(x.detail||""):x.status==="not_configured"?"not set up yet. "+(x.detail||""):"not sent. "+(x.detail||""));
+   say(box,line("Email",d.email||{})+"  |  "+line("WhatsApp",d.whatsapp||{}),(d.email||{}).status==="sent");
+  }catch(e){say(box,"Could not send: "+e.message,false);}
+  finally{setTimeout(()=>{btn.disabled=false;},3000);}
+ });
  if((location.hash||"")==="#crm"||(function(){try{return localStorage.getItem("mars.tab")==="crm"}catch(e){return false}})())load();
 })();
 </script>

@@ -104,6 +104,7 @@ class APIApp:
         self.upwork_token_store = TrialUpworkTokenStore()
         self.gmail_token_store = gmail_token_store or build_gmail_token_store(supabase_client)
         self.gmail_state_store = gmail_state_store or GmailOAuthStateStore()
+        self._status_report_last: dict = {}
         self.gmail_client = gmail_client or GmailAPIClient(
             client_id=os.getenv("GMAIL_CLIENT_ID", ""),
             client_secret=os.getenv("GMAIL_CLIENT_SECRET", ""),
@@ -902,6 +903,29 @@ class APIApp:
                               actor=ctx.user_id, **ref)
                 service.store.save(job)
                 return self._json(start_response, "200 OK", {"job_id": job.job_id, "mode": mode, "thread_id": thread_id, **ref})
+
+            if len(parts) == 3 and parts[0] == "v1" and parts[1] == "status-report" and parts[2] == "send" and method == "POST":
+                ctx.require_scope("jobs:read")
+                import time as _time
+                from reports.status_summary import build_status_summary
+                from integrations.whatsapp import send_whatsapp
+                last = self._status_report_last.get(tenant_id, 0.0)
+                if _time.time() - last < 120:
+                    return self._json(start_response, "429 Too Many Requests", {"error": "A status report was sent a moment ago. Please wait two minutes before asking again."})
+                self._status_report_last[tenant_id] = _time.time()
+                full, short = build_status_summary(service.list_jobs(), CRMService(self.crm_store, tenant_id=tenant_id).list(), requested_by=str(ctx.user_id or ""))
+                result = {}
+                try:
+                    to = os.environ.get("STATUS_REPORT_EMAIL", "").strip() or str(self.gmail_client.profile(tenant_id).get("emailAddress") or "")
+                    if not to:
+                        raise ValueError("no destination address")
+                    raw = gmail_build_reply_message(to=to, subject="Mars Engineering Solutions - platform status", body_text=full, reply_prefix=False)
+                    self.gmail_client.send_message(tenant_id, raw_b64url=raw)
+                    result["email"] = {"status": "sent", "detail": "Sent to " + to}
+                except Exception:
+                    result["email"] = {"status": "failed", "detail": "Email could not be sent. Check that Gmail is connected under the Gmail Intake tab."}
+                result["whatsapp"] = send_whatsapp(short)
+                return self._json(start_response, "200 OK", result)
 
             # External integrations / normalized inbound events
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "integrations" and method == "GET":

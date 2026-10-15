@@ -398,3 +398,4 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 
 - Client file view (CRM > Clients): name variants merged (Ltd/Pvt Ltd/Limited), totals (quoted/invoiced/received/outstanding), documents folder per project with PDF/Excel downloads. Browser-tested with mocked API. Real client table in DB still not built (clients derived from names).
 - CRM "Needs your attention" panel on Pipeline: follow-ups due, won-not-delivered, delivered-not-invoiced, payments outstanding (in-app only, no email/WhatsApp yet).
+- Send Status Report tab: POST /v1/status-report/send (jobs:read scope, 2-min rate limit) emails status summary via connected Gmail (to STATUS_REPORT_EMAIL or the Gmail account) and WhatsApp via Twilio when TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM, STATUS_REPORT_WHATSAPP_TO are set.
