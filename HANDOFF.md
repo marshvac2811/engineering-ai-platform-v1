@@ -393,3 +393,5 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 ## 2026-10-15 checkpoint: BOQ report grouped per item
 - PDF: each BOQ item is a block (heading, description, its materials with qty + basis), then Material Totals. Excel: sheet 'BOQ Item Materials' (item rows with materials under them); flat 'Line Takeoff'/'Line Materials' sheets removed (data stays in evidence JSON as line_takeoff/line_materials/boq_breakdown).
 - Recipe matching now token-based (any word order, e.g. 'gypsum board false ceiling').
+
+- Work Programme (client bonus): skills/commercial/boq_takeoff/programme.py. Days per item from crew output per gang-day (overridable via inputs productivity/gangs/working_days_per_week/start_date), staged sequence with 40% overlap, critical path, Gantt in PDF + Excel sheet "Work Programme". No prices anywhere.

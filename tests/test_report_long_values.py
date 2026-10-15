@@ -60,4 +60,7 @@ def test_boq_report_groups_materials_under_each_item():
     assert "BOQ Item Materials" in wb.sheetnames and "Line Materials" not in wb.sheetnames and "Line Takeoff" not in wb.sheetnames
     col = [r[0] for r in wb["BOQ Item Materials"].iter_rows(min_row=2, values_only=True) if r[0]]
     assert col[0].startswith("Item 1") and col[1].startswith("    ")
+    assert "Indicative work programme" in text and "critical path" in text.lower()
+    ws = wb["Work Programme"]
+    assert ws.cell(1, 8).value == "Duration (days)" and ws.cell(2, 8).value >= 1
     open("/tmp/boq_sample.pdf", "wb").write(pdf)

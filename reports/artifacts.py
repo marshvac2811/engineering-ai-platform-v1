@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 from openpyxl import Workbook
+import math
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -126,13 +128,18 @@ def _task_inputs(task: Dict[str, Any], request_inputs: Dict[str, Any]) -> Dict[s
 # again as result rows duplicates them.
 _NARRATIVE_KEYS = {"assumptions", "limitations", "warnings"}
 # BOQ takeoff: the per-item material blocks replace these flat tables in the PDF and Excel.
-_BOQ_FLAT_KEYS = {"line_takeoff", "line_materials", "boq_breakdown"}
+_BOQ_FLAT_KEYS = {"line_takeoff", "line_materials", "boq_breakdown", "work_programme"}
 
 
 def _boq_breakdown(task: Dict[str, Any]) -> list:
     """Per-BOQ-item blocks: each item with its own material list (SiteTrack-style)."""
     value = (task.get("engineering_result") or {}).get("boq_breakdown")
     return [b for b in value if isinstance(b, dict)] if isinstance(value, list) else []
+
+
+def _programme_rows(task: Dict[str, Any]) -> list:
+    value = (task.get("engineering_result") or {}).get("work_programme")
+    return [r for r in value if isinstance(r, dict)] if isinstance(value, list) else []
 
 
 def _qty_text(qty: Any, unit: Any) -> str:
@@ -260,6 +267,8 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         ]))
         return t
 
+    esc_ = lambda v: str(v if v not in (None, "") else "-").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
     def kv_table(rows):
         t = Table([[P(k, cell_b), P(v)] for k, v in rows], colWidths=[48 * mm, width - 48 * mm])
         t.setStyle(TableStyle([
@@ -359,6 +368,45 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
                     ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
                 ]))
                 story.append(KeepTogether([t, Spacer(1, 6)]) if len(data) <= 22 else t)
+        prog = _programme_rows(task)
+        if prog:
+            res_ = (task.get("engineering_result") or {})
+            story.append(Paragraph("Indicative work programme", task_h))
+            summ = f"Estimated site duration: {res_.get('total_duration_days')} working days (about {res_.get('total_duration_weeks')} weeks, {res_.get('programme_working_days_per_week')}-day week)"
+            if res_.get("programme_finish_date"):
+                summ += f", finishing {res_.get('programme_finish_date')}"
+            story.append(Paragraph(P(summ + ".", body).text, body))
+            story.append(Spacer(1, 3))
+            total_days = int(res_.get("total_duration_days") or 0)
+            wd_ = int(res_.get("programme_working_days_per_week") or 6)
+            plen = 1 if total_days <= 36 else wd_          # one column per day for short jobs, per week otherwise
+            unit_name = "day" if plen == 1 else "week"
+            n_weeks = max(1, math.ceil(total_days / plen))
+            bucket = max(1, math.ceil(n_weeks / 18))
+            n_cols = math.ceil(n_weeks / bucket)
+            story.append(Paragraph(f"Work is sequenced by stage; stages overlap where different gangs can work in different areas at the same time. Column numbers are {unit_name}s (each column is {bucket} {unit_name}{'s' if bucket > 1 else ''}). Red bars are the critical path: a delay there delays handover. This is an indicative programme for planning, to be confirmed with the site team.", small))
+            g_small = ParagraphStyle("g_small", parent=cell, fontSize=6.5, leading=8)
+            g_head = ParagraphStyle("g_head", parent=head_cell, fontSize=6.5, leading=8)
+            head = [Paragraph(h, g_head) for h in ("No.", "Work", "Trade", "Days", "From", "To")]
+            head += [Paragraph(str(c * bucket + 1), ParagraphStyle("g_wk", parent=g_head, fontSize=5.5, leading=6.5, alignment=1)) for c in range(n_cols)]
+            data = [head]
+            for r in prog:
+                data.append([Paragraph(esc_(r.get("item_no")), g_small), Paragraph(esc_(_clip(r.get("description"), 70)), g_small), Paragraph(esc_(r.get("trade")), g_small),
+                             Paragraph(esc_(r.get("duration_days")), g_small), Paragraph(esc_(r.get("start_day")), g_small), Paragraph(esc_(r.get("end_day")), g_small)] + [""] * n_cols)
+            fixed = [12 * mm, 46 * mm, 19 * mm, 11 * mm, 11 * mm, 11 * mm]
+            col_w = max(3.5 * mm, (width - sum(fixed)) / n_cols)
+            gt = Table(data, colWidths=fixed + [col_w] * n_cols, repeatRows=1)
+            style = [("BACKGROUND", (0, 0), (-1, 0), _ACCENT), ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c2cf")),
+                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                     ("LEFTPADDING", (6, 0), (-1, -1), 0), ("RIGHTPADDING", (6, 0), (-1, -1), 0)]
+            for i, r in enumerate(prog, 1):
+                w0, w1 = (int(r["start_day"]) - 1) // plen, (int(r["end_day"]) - 1) // plen
+                for c in range(n_cols):
+                    if w0 <= (c + 1) * bucket - 1 and w1 >= c * bucket:
+                        style.append(("BACKGROUND", (6 + c, i), (6 + c, i), colors.HexColor("#c0392b") if r.get("critical_path") == "Yes" else colors.HexColor("#4a78b5")))
+            gt.setStyle(TableStyle(style))
+            story.append(gt)
+            story.append(Spacer(1, 6))
         for tbl in _result_tables(task, request_inputs):
             drop_prefixes = ("source calculation", "outdoor air basis", "load method", "cooling load (kw)", "duct friction", "room id")
             skip = {i for i, h in enumerate(tbl["headers"]) if h.lower().startswith(drop_prefixes)}
@@ -569,6 +617,44 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         for col, w in zip("ABCD", (80, 12, 22, 60)):
             sh.column_dimensions[col].width = w
         sh.freeze_panes = "A2"
+        break
+    for index, t in enumerate(tasks, 1):
+        prog = _programme_rows(t)
+        if not prog:
+            continue
+        sh = wb.create_sheet("Work Programme")
+        heads = ["Item", "Work description", "Trade", "Stage", "Quantity", "Unit", "Gangs", "Duration (days)", "Start day", "End day", "Starts after item", "Critical path"]
+        has_dates = "start_date" in prog[0]
+        if has_dates:
+            heads += ["Start date", "End date"]
+        wd_ = int((t.get("engineering_result") or {}).get("programme_working_days_per_week") or 6)
+        total_days = int((t.get("engineering_result") or {}).get("total_duration_days") or 0)
+        plen = 1 if total_days <= 36 else wd_
+        n_weeks = max(1, math.ceil(total_days / plen))
+        base = len(heads)
+        sh.append(heads + [(f"D{w}" if plen == 1 else f"W{w}") for w in range(1, n_weeks + 1)])
+        for c in sh[1]:
+            c.fill, c.font, c.alignment = header_fill, header_font, wrap
+        for r in prog:
+            row = [r.get("item_no"), r.get("description"), r.get("trade"), r.get("stage"), r.get("quantity"), r.get("unit"), r.get("gangs"),
+                   r.get("duration_days"), r.get("start_day"), r.get("end_day"), r.get("starts_after_item"), r.get("critical_path")]
+            if has_dates:
+                row += [r.get("start_date"), r.get("end_date")]
+            sh.append(row + [""] * n_weeks)
+            w0, w1 = (int(r["start_day"]) - 1) // plen, (int(r["end_day"]) - 1) // plen
+            fill = PatternFill("solid", fgColor="C0392B" if r.get("critical_path") == "Yes" else "4A78B5")
+            for w in range(w0, w1 + 1):
+                sh.cell(sh.max_row, base + 1 + w).fill = fill
+            for c in sh[sh.max_row][:base]:
+                c.alignment = wrap
+        sh.append([])
+        sh.append(["Estimated site duration", f"{total_days} working days (about {(t.get('engineering_result') or {}).get('total_duration_weeks')} weeks, {wd_}-day week)"])
+        sh.append(["Basis", "Indicative programme for planning; red = critical path. To be confirmed with the site team."])
+        for i, w in enumerate((7, 50, 16, 24, 10, 8, 7, 11, 9, 9, 12, 10) + ((12, 12) if has_dates else ())):
+            sh.column_dimensions[sh.cell(1, i + 1).column_letter].width = w
+        for w in range(n_weeks):
+            sh.column_dimensions[sh.cell(1, base + 1 + w).column_letter].width = 4.5
+        sh.freeze_panes = "C2"
         break
     styled(wb.create_sheet("Calculation Steps"), ["Task", "Step", "Calculation step", "Detail"], step_rows, [30, 8, 50, 40])
     styled(wb.create_sheet("Assumptions & Notes"), ["Task", "Type", "Detail"], note_rows, [30, 16, 100])
