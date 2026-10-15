@@ -19,6 +19,10 @@ _STARTERS: Dict[str, tuple] = {
     "gypsum_false_ceiling": ("False ceiling", 5, 20), "gypsum_ceiling_tiles": ("False ceiling", 5, 40),
     "wall_tile_work": ("Tiling", 6, 10), "vitrified_tile_flooring": ("Tiling", 7, 12),
     "frameless_glass_partition": ("Glazing", 8, 8), "fire_rated_door": ("Doors", 8, 3),
+    # items measured from a services drawing
+    "drawing_plumbing_pipe": ("Plumbing / Piping", 2, 12), "drawing_fire_pipe": ("Fire fighting", 2, 10), "drawing_hvac_pipe": ("HVAC piping", 2, 10),
+    "drawing_hvac_duct": ("HVAC", 2, 15), "drawing_duct_insulation": ("HVAC", 3, 40), "drawing_conduit": ("Electrical", 2, 40),
+    "drawing_wiring": ("Electrical", 3, 150), "drawing_cable_tray": ("Electrical", 2, 40),
 }
 _PHASES = {1: "Civil / preparation", 2: "Services first fix", 3: "Insulation and HVAC fittings", 4: "Partitions", 5: "Ceilings",
            6: "Wall finishes", 7: "Floor finishes", 8: "Glazing, doors and joinery"}
@@ -43,7 +47,8 @@ def build_programme(breakdown: List[Dict[str, Any]], *, gangs: Optional[Dict[str
     items: List[Dict[str, Any]] = []
     skipped: List[str] = []
     for b in breakdown:
-        meta = _STARTERS.get(str(b.get("recipe_id")))
+        rid_ = str(b.get("recipe_id"))
+        meta = _STARTERS.get(rid_) or (("Fixtures and devices", 7, 8) if rid_.startswith("drawing_fixture_") else None)
         if meta is None:
             skipped.append(str(b.get("item_no")))
             continue

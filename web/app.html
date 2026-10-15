@@ -265,6 +265,9 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
 <p class="muted">Paste the BOQ as CSV (header: item_no, description, unit, quantity) or choose a .csv file. Each line is matched to a recipe and the materials needed are calculated with wastage. Lines with no recipe are listed, never guessed.</p>
 <input type="file" id="boqFile" accept=".csv,text/csv,.xlsx" style="width:100%">
 <textarea id="boqCsv" rows="6" style="width:100%;margin-top:8px" placeholder="item_no,description,unit,quantity&#10;1,Gypsum wall partition,sqm,100&#10;2,Vitrified tile flooring,sqft,500"></textarea>
+<div style="margin-top:10px"><label class="small" for="boqDrawing"><b>Services drawing (optional, DXF)</b> &mdash; pipes, ducts and conduits on this drawing are measured and used for the matching BOQ items, with elbows, tees and fixtures counted from it.</label>
+<input type="file" id="boqDrawing" accept=".dxf" style="width:100%;margin-top:4px">
+<div class="small muted" style="margin-top:3px">Layers should be named for the service (for example P-PIPE, M-DUCT, E-CONDUIT, F-PIPE) and sizes written beside the runs (DN50, 400x300). DWG and PDF drawings are not measured yet.</div></div>
 <details style="margin-top:8px"><summary class="small">Use my own recipes (SiteTrack work-library export, optional)</summary>
 <textarea id="boqRecipes" rows="4" style="width:100%;margin-top:6px" placeholder="work_type,work_unit,material_name,unit,consumption_per_unit,wastage_percent"></textarea></details>
 <div style="margin-top:8px"><button type="button" id="boqRun">Run BOQ takeoff</button></div>
@@ -671,7 +674,7 @@ function boqView(er){
  let h="";
  if(bd.length){
   h+='<h4 style="margin:12px 0 4px">Materials required for each BOQ item</h4>'+bd.map(b=>'<div class="json-result" style="margin-top:8px"><div style="background:#1f3a5f;color:#fff;padding:5px 8px;font-weight:600">Item '+esc(b.item_no)+' &middot; '+esc(b.boq_quantity)+' '+esc(b.boq_unit||"")+'</div>'+
-   '<div class="small" style="padding:5px 8px;background:#f3f6fa">'+esc(b.description||"")+'</div>'+
+   '<div class="small" style="padding:5px 8px;background:#f3f6fa">'+esc(b.description||"")+'</div>'+(b.drawing_note?'<div class="small" style="padding:5px 8px;background:#fff4d6"><b>From drawing:</b> '+esc(b.drawing_note)+'</div>':"")+
    '<table><thead><tr><th>Material</th><th>Unit</th><th style="text-align:right">Qty</th></tr></thead><tbody>'+(b.materials||[]).map(m=>'<tr><td>'+esc(m.material_name)+'</td><td>'+esc(m.unit)+'</td><td style="text-align:right">'+esc(Number(m.quantity).toLocaleString(undefined,{maximumFractionDigits:2}))+'</td></tr>').join("")+'</tbody></table></div>').join("");
  }
  if(pr.length){
@@ -1184,6 +1187,12 @@ loadAccount();loadJobs();
   const fail=(msg,t)=>{msg.className="msg err";msg.style.display="block";msg.textContent=t;};
   window.__submitForm=submit;
   /* ---- BOQ ---- */
+  let drawingB64="",drawingName="";
+  const dwg=document.getElementById("boqDrawing");
+  if(dwg)dwg.addEventListener("change",()=>{const f=dwg.files&&dwg.files[0];drawingB64="";drawingName="";if(!f)return;
+   if(!/\.dxf$/i.test(f.name)){fail(document.getElementById("boqMsg"),"Only DXF drawings can be measured. Export the drawing as DXF from CAD.");dwg.value="";return;}
+   if(f.size>5000000){fail(document.getElementById("boqMsg"),"Drawing is too large (max 5 MB).");dwg.value="";return;}
+   const rd=new FileReader();rd.onload=()=>{drawingB64=String(rd.result||"").split(",")[1]||"";drawingName=f.name;};rd.readAsDataURL(f);});
   let xlsxB64="";const csv=document.getElementById("boqCsv"),file=document.getElementById("boqFile"),bm=document.getElementById("boqMsg");
   if(csv&&file&&bm){
    file.addEventListener("change",()=>{const f=file.files&&file.files[0];if(!f)return;if(f.size>1000000){fail(bm,"File is too large (max 1 MB).");return;}xlsxB64="";const rd=new FileReader();if(/\.xlsx$/i.test(f.name)){rd.onload=()=>{xlsxB64=String(rd.result||"").split(",")[1]||"";csv.value="Excel BOQ loaded: "+f.name+" (it will be read when you run the takeoff)";};rd.readAsDataURL(f);}else{rd.onload=()=>{csv.value=String(rd.result||"");};rd.readAsText(f);}});
@@ -1193,6 +1202,7 @@ loadAccount();loadJobs();
     if(!xlsxB64&&text.split(/\r?\n/).length<2){fail(bm,"Add a header row and at least one BOQ line, or choose an Excel file.");return;}
     const inputs=xlsxB64?{boq_xlsx_b64:xlsxB64}:{boq_csv:text};
     const rc=document.getElementById("boqRecipes").value.trim();if(rc)inputs.recipes_csv=rc;
+    if(drawingB64){inputs.drawing_dxf_b64=drawingB64;inputs.drawing_filename=drawingName;}
     submit(bm,document.getElementById("boqRun"),{message:"Prepare the preliminary BOQ material takeoff",requested_skill_id:"boq_takeoff",inputs:inputs});
    });
   }

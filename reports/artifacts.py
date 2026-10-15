@@ -351,18 +351,23 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
             mat_num = ParagraphStyle("mat_num", parent=mat_cell, alignment=2)
             esc = lambda v: str(v if v not in (None, "") else "-").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             for b in breakdown:
+                note_ = b.get("drawing_note")
                 data = [[Paragraph(esc(_item_heading(b)), item_head), "", "", ""],
-                        [Paragraph(esc(_clip(b.get("description"), 400)), item_desc), "", "", ""],
+                        [Paragraph(esc(_clip(b.get("description"), 400)), item_desc), "", "", ""]]
+                if note_:
+                    data.append([Paragraph("<b>From drawing:</b> " + esc(note_), item_desc), "", "", ""])
+                data += [
                         [Paragraph(h, sub_head) for h in ("Material", "Unit", "Qty", "Basis")]]
                 for m in b.get("materials") or []:
                     qty = m.get("quantity")
                     data.append([Paragraph(esc(m.get("material_name")), mat_cell), Paragraph(esc(m.get("unit")), mat_cell),
                                  Paragraph(esc(_qty_text(qty, m.get("unit"))), mat_num), Paragraph(esc(m.get("basis")), ParagraphStyle("b", parent=mat_cell, fontSize=6.5, leading=8))])
                 t = Table(data, colWidths=[72 * mm, 14 * mm, 20 * mm, 74 * mm], repeatRows=0)
+                hdr_row = 3 if note_ else 2
                 t.setStyle(TableStyle([
-                    ("SPAN", (0, 0), (-1, 0)), ("SPAN", (0, 1), (-1, 1)),
+                    ("SPAN", (0, 0), (-1, 0)), ("SPAN", (0, 1), (-1, 1))] + ([("SPAN", (0, 2), (-1, 2)), ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#fff4d6"))] if note_ else []) + [
                     ("BACKGROUND", (0, 0), (-1, 0), _ACCENT), ("BACKGROUND", (0, 1), (-1, 1), _STRIPE),
-                    ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#dde4ee")),
+                    ("BACKGROUND", (0, hdr_row), (-1, hdr_row), colors.HexColor("#dde4ee")),
                     ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c2cf")),
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                     ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
@@ -608,6 +613,10 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
             r = sh.max_row
             for c in sh[r]:
                 c.fill, c.font, c.alignment = item_fill, Font(bold=True), wrap
+            if b.get("drawing_note"):
+                sh.append(["    From drawing: " + str(b["drawing_note"])])
+                sh.cell(sh.max_row, 1).font = Font(italic=True, color="7A5200")
+                sh.cell(sh.max_row, 1).alignment = wrap
             for m in b.get("materials") or []:
                 sh.append(["    " + str(m.get("material_name")), m.get("unit"), (round(m["quantity"], 2) if isinstance(m.get("quantity"), (int, float)) else m.get("quantity")), m.get("basis")])
                 for c in sh[sh.max_row]:
