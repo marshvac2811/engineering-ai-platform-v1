@@ -147,6 +147,7 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
 <div class="crmpanel" data-crmpanel="board">
 <section class="card"><h2>Deal pipeline</h2>
 <p class="muted">Move a deal along the stages with the drop-down on its card. Deals with a follow-up date today or earlier are highlighted.</p>
+<div id="crmAttn"></div>
 <div id="crmBoard" class="board"></div><div id="crmBoardMsg" class="msg"></div></section>
 </div>
 <div class="crmpanel" data-crmpanel="form" style="display:none">
@@ -1471,8 +1472,21 @@ loadAccount();loadJobs();
   $("kWon").textContent=inr(deals.filter(d=>d.stage==="won").reduce((a,d)=>a+Number(d.value||0),0));
   $("kOut").textContent=inr(deals.reduce((a,d)=>a+Number((d.delivery&&d.delivery.outstanding)||0),0));
  }
+ function attention(){
+  const t=today(),items=[];
+  const days=(a,b)=>Math.round((new Date(b)-new Date(a))/864e5);
+  deals.forEach(d=>{
+   const v=dvOf(d);
+   if(OPEN(d.stage)&&d.next_follow_up&&d.next_follow_up<=t)items.push(["Follow-up due",d,d.next_follow_up<t?days(d.next_follow_up,t)+" day(s) overdue":"due today"]);
+   if(d.stage==="won"&&!v.delivered_on&&!v.final_submitted_on)items.push(["Won, not delivered yet",d,"deliver and record the date in Delivery & Payments"]);
+   if((v.delivered_on||v.final_submitted_on)&&!(v.invoice_amount>0))items.push(["Delivered, not invoiced",d,"raise the invoice and enter it"]);
+   if(v.invoice_amount>0&&v.outstanding>0){const since=v.invoice_date||v.final_submitted_on||v.delivered_on;items.push(["Payment outstanding",d,inr(v.outstanding)+(since?" &middot; "+days(since,t)+" day(s) since invoice":"")]);}
+  });
+  const box=$("crmAttn");
+  box.innerHTML=items.length?'<div class="card" style="border-left:4px solid #c0392b;margin:0 0 12px"><h3 style="margin:0 0 6px">Needs your attention ('+items.length+')</h3>'+items.map(([k,d,n])=>'<div class="row small"><b>'+E(k)+'</b><span>'+E(d.name)+(d.company?' &middot; '+E(d.company):'')+'</span><span>'+n+'</span></div>').join("")+'</div>':"";
+ }
  function render(){
-  kpis();
+  kpis();attention();
   if(!deals.length){
    $("crmBoard").style.display="block";
    $("crmBoard").innerHTML='<div class="empty" style="text-align:center"><svg class="illus" width="120" height="80" viewBox="0 0 120 80" aria-hidden="true"><rect x="10" y="30" width="30" height="45" fill="#dbe4f1"/><rect x="45" y="12" width="32" height="63" fill="#c3d2e8"/><rect x="82" y="38" width="28" height="37" fill="#dbe4f1"/><circle cx="98" cy="16" r="9" fill="#e0a93b"/><path d="M4 75h112" stroke="#14233c" stroke-width="3"/></svg>No deals yet. Use <strong>Add / Edit Deal</strong> to record your first enquiry.</div>';
