@@ -70,7 +70,17 @@ class BoqTakeoffSkill:
                 try:
                     import base64 as _b64
                     meas = measure_dxf(fname, _b64.b64decode(b64, validate=True), units=request.inputs.get("drawing_units"))
-                    res = apply_drawing(res, boq_lines, meas, factors=request.inputs.get("drawing_factors") if isinstance(request.inputs.get("drawing_factors"), dict) else None)
+                    try:
+                        repeat = float(request.inputs.get("drawing_repeat") or 1)
+                    except (TypeError, ValueError):
+                        repeat = 1.0
+                    if repeat > 1:
+                        meas.repeated(repeat)
+                        meas.warnings.append(f"The drawing was drawn once and its lengths, fittings and devices were multiplied by {repeat:g} (identical floors / blocks).")
+                        res["drawing_repeat"] = repeat
+                    schematic = any("schematic" in w.lower() for w in meas.warnings)
+                    res = apply_drawing(res, boq_lines, meas, factors=request.inputs.get("drawing_factors") if isinstance(request.inputs.get("drawing_factors"), dict) else None,
+                                        show_variance=not (schematic and repeat <= 1))
                     res["drawing_measurements"] = meas.rows()
                     if meas.devices:
                         res["drawing_devices"] = [{"device": k.replace("_", " "), "count": v} for k, v in sorted(meas.devices.items())]

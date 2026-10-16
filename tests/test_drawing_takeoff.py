@@ -36,8 +36,8 @@ def test_size_parsing():
 
 def test_measurement_lengths_fittings_devices():
     m = measure_dxf("s.dxf", _services_dxf())
-    assert abs(m.length("plumbing_pipe", "50") - 15.0) < 0.01 and abs(m.length("plumbing_pipe", "25") - 3.0) < 0.01
-    fc = m.fitting_counts("plumbing_pipe")
+    assert abs(m.length("plumbing_supply", "50") - 15.0) < 0.01 and abs(m.length("plumbing_supply", "25") - 3.0) < 0.01
+    fc = m.fitting_counts("plumbing_supply")
     assert fc["elbow_90"] == 1 and fc["tee"] == 1
     assert abs(m.length("hvac_duct", "400x300") - 8.0) < 0.01 and m.fitting_counts("hvac_duct")["elbow_90"] == 1
     assert abs(m.length("conduit", "25") - 20.0) < 0.01
@@ -45,7 +45,7 @@ def test_measurement_lengths_fittings_devices():
 
 
 def test_boq_lines_are_classified():
-    assert classify_line("Supply and fixing 50 mm dia CPVC pipe")["category"] == "plumbing_pipe"
+    assert classify_line("Supply and fixing 50 mm dia CPVC pipe")["category"] == "plumbing_supply"
     assert classify_line("GI sheet metal rectangular ducting")["category"] == "hvac_duct"
     assert classify_line("Thermal insulation of ducts")["kind"] == "duct_insulation"
     assert classify_line("25 mm PVC conduit concealed")["kind"] == "conduit"
@@ -110,3 +110,15 @@ def test_report_shows_drawing_measurements_in_pdf_and_excel():
     wb = openpyxl.load_workbook(BytesIO(build_evidence_xlsx(job=j, evidence_bundle=bundle)))
     col = [r[0] for r in wb["BOQ Item Materials"].iter_rows(values_only=True) if r[0]]
     assert any("From drawing" in str(c) for c in col)
+
+
+def test_condensate_is_not_domestic_water_and_rivals_are_not_split_blindly():
+    assert classify_line("Condensate drain piping incl. fittings")["category"] == "hvac_pipe"
+    assert classify_line("Black steel fire pipe incl. fittings/supports")["category"] == "fire_pipe"
+    assert classify_line("uPVC soil/waste/vent piping")["category"] == "plumbing_drain"
+    assert classify_line("Water closets with cistern", "Nos")["kind"] == "fixture"
+    lines = [{"item_no": "16", "description": "Cold water CPVC piping", "unit": "m", "quantity": "100"},
+             {"item_no": "17", "description": "Hot water PPR piping", "unit": "m", "quantity": "50"}]
+    res = apply_drawing(takeoff(lines), lines, measure_dxf("s.dxf", _services_dxf()))
+    assert not res.get("boq_breakdown") or all(b["recipe_source"] != "drawing" for b in res["boq_breakdown"])
+    assert any("not split" in n for n in res["drawing_notes"])

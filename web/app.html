@@ -267,6 +267,8 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
 <textarea id="boqCsv" rows="6" style="width:100%;margin-top:8px" placeholder="item_no,description,unit,quantity&#10;1,Gypsum wall partition,sqm,100&#10;2,Vitrified tile flooring,sqft,500"></textarea>
 <div style="margin-top:10px"><label class="small" for="boqDrawing"><b>Services drawing (optional, DXF)</b> &mdash; pipes, ducts and conduits on this drawing are measured and used for the matching BOQ items, with elbows, tees and fixtures counted from it.</label>
 <input type="file" id="boqDrawing" accept=".dxf" style="width:100%;margin-top:4px">
+<label class="small" for="boqRepeat" style="display:block;margin-top:6px">Number of identical floors/blocks this drawing represents (leave 1 if it shows the whole building)</label>
+<input type="number" id="boqRepeat" min="1" step="1" value="1" style="width:120px">
 <div class="small muted" style="margin-top:3px">Layers should be named for the service (for example P-PIPE, M-DUCT, E-CONDUIT, F-PIPE) and sizes written beside the runs (DN50, 400x300). DWG and PDF drawings are not measured yet.</div></div>
 <details style="margin-top:8px"><summary class="small">Use my own recipes (SiteTrack work-library export, optional)</summary>
 <textarea id="boqRecipes" rows="4" style="width:100%;margin-top:6px" placeholder="work_type,work_unit,material_name,unit,consumption_per_unit,wastage_percent"></textarea></details>
@@ -1202,7 +1204,7 @@ loadAccount();loadJobs();
     if(!xlsxB64&&text.split(/\r?\n/).length<2){fail(bm,"Add a header row and at least one BOQ line, or choose an Excel file.");return;}
     const inputs=xlsxB64?{boq_xlsx_b64:xlsxB64}:{boq_csv:text};
     const rc=document.getElementById("boqRecipes").value.trim();if(rc)inputs.recipes_csv=rc;
-    if(drawingB64){inputs.drawing_dxf_b64=drawingB64;inputs.drawing_filename=drawingName;}
+    if(drawingB64){inputs.drawing_dxf_b64=drawingB64;inputs.drawing_filename=drawingName;const rp=parseFloat(document.getElementById("boqRepeat").value||"1");if(rp>1)inputs.drawing_repeat=rp;}
     submit(bm,document.getElementById("boqRun"),{message:"Prepare the preliminary BOQ material takeoff",requested_skill_id:"boq_takeoff",inputs:inputs});
    });
   }

@@ -16,17 +16,19 @@ Pt = Tuple[float, float]
 
 # (category, layer regex). First match wins. Device layers are listed separately.
 CATEGORY_LAYERS: List[Tuple[str, re.Pattern]] = [
-    ("fire_pipe", re.compile(r"(fire|f-pipe|sprink|hydrant|fhc|ff-|fpipe)", re.I)),
+    ("fire_pipe", re.compile(r"(fire|f-pipe|f-main|f-riser|f-branch|sprink|hydrant|fhc|ff-|fpipe)", re.I)),
     ("hvac_duct", re.compile(r"(duct|m-duct|hvac-d|sad|rad|exh|supply-air|return-air|fresh-air)", re.I)),
-    ("hvac_pipe", re.compile(r"(chw|chilled|cdw|cooling|refrig|m-pipe|condens|hvac-p)", re.I)),
+    ("hvac_pipe", re.compile(r"(chw|chilled|cdw|cooling|refrig|m-pipe|condens|hvac-p|ac-drain|vrf)", re.I)),
     ("cable_tray", re.compile(r"(tray|trunking|e-tray)", re.I)),
     ("conduit", re.compile(r"(conduit|e-cond|e-wir|wiring|e-pow|e-light|elec|e-line|cable)", re.I)),
-    ("plumbing_pipe", re.compile(r"(plumb|p-pipe|p-wat|p-san|p-drain|pipe|water|dcw|dhw|domestic|drain|soil|waste|swr|sanit|sewer|cpvc|upvc|ppr)", re.I)),
+    ("plumbing_drain", re.compile(r"(drain|soil|waste|swr|sewer|sanit|vent|rain|storm)", re.I)),
+    ("plumbing_supply", re.compile(r"(plumb|p-pipe|p-wat|water|dcw|dhw|domestic|cpvc|ppr|pipe|supply|p-cw|p-hw|cold|hot)", re.I)),
 ]
 DEVICE_LAYERS: List[Tuple[str, re.Pattern]] = [
     ("sprinkler_head", re.compile(r"(spkl|sprinkler|f-head)", re.I)),
     ("diffuser", re.compile(r"(diff|grille|m-air|m-terminal)", re.I)),
-    ("light_point", re.compile(r"(e-lite|light-fix|lighting-fix|e-lgt)", re.I)),
+    ("light_point", re.compile(r"(e-lite|e-light|light-fix|lighting-fix|e-lgt)", re.I)),
+    ("pipe_riser", re.compile(r"(p-riser|riser)", re.I)),
 ]
 DEVICE_BLOCKS: List[Tuple[str, re.Pattern]] = [
     ("water_closet", re.compile(r"(wc|water.?closet|ewc|iwc|commode)", re.I)),
@@ -50,7 +52,7 @@ _UNITS = {"mm": 0.001, "cm": 0.01, "m": 1.0, "in": 0.0254, "ft": 0.3048}
 _INCH_TO_DN = {0.5: 15, 0.75: 20, 1: 25, 1.25: 32, 1.5: 40, 2: 50, 2.5: 65, 3: 80, 4: 100, 5: 125, 6: 150, 8: 200}
 SNAP = 0.02            # metres: endpoints closer than this are the same node
 LABEL_RADIUS = 1.0     # metres: a size label this close to a run labels that run
-_FAMILY = {"m": {"hvac_duct", "hvac_pipe"}, "h": {"hvac_duct", "hvac_pipe"}, "f": {"fire_pipe"}, "p": {"plumbing_pipe"}, "e": {"conduit", "cable_tray"}}
+_FAMILY = {"m": {"hvac_duct", "hvac_pipe"}, "h": {"hvac_duct", "hvac_pipe"}, "f": {"fire_pipe"}, "p": {"plumbing_supply", "plumbing_drain"}, "e": {"conduit", "cable_tray"}}
 
 
 def _label_allowed(label_layer: str, category: str) -> bool:
@@ -127,6 +129,13 @@ class Measurement:
     layers_used: Dict[str, str] = field(default_factory=dict)                    # layer -> category
     layers_ignored: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+
+    def repeated(self, n: float) -> "Measurement":
+        """Scale the measurement for n identical floors / typical blocks drawn once."""
+        self.lengths = {k: v * n for k, v in self.lengths.items()}
+        self.fittings = {k: int(round(v * n)) for k, v in self.fittings.items()}
+        self.devices = {k: int(round(v * n)) for k, v in self.devices.items()}
+        return self
 
     def categories(self) -> List[str]:
         return sorted({c for c, _s in self.lengths})
@@ -227,6 +236,9 @@ def measure_dxf(filename: str, data: bytes, *, units: Optional[str] = None) -> M
     extent = max((max(xs) - min(xs)) if xs else 0, (max(ys) - min(ys)) if ys else 0)
     factor, unit_note, warns = _units_factor(doc, units, extent)
     m = Measurement(source_file=filename, units_note=unit_note, warnings=list(warns))
+    alltext = " ".join(t for t, _p, _l in labels).lower()
+    if re.search(r"(not to scale|schematic|concept)", alltext):
+        m.warnings.append("The drawing says it is schematic / not to scale or a concept. Lengths measured from it are indicative only and must not be used as site quantities until measured from a scaled, coordinated drawing.")
     if skipped_splines:
         m.warnings.append(f"{skipped_splines} spline(s) were not measured; redraw them as polylines or arcs if they are pipes or ducts.")
 

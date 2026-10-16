@@ -16,8 +16,8 @@ DEFAULTS: Dict[str, float] = {
 _FIXTURE_WORDS: List[Tuple[str, re.Pattern]] = [
     ("water_closet", re.compile(r"(water\s*closet|\bwc\b|\bewc\b|\biwc\b)", re.I)), ("wash_basin", re.compile(r"(wash\s*basin|lavatory)", re.I)),
     ("urinal", re.compile(r"urinal", re.I)), ("shower", re.compile(r"shower", re.I)), ("floor_drain", re.compile(r"(floor\s*drain|gully)", re.I)),
-    ("sprinkler_head", re.compile(r"sprinkler\s*head", re.I)), ("smoke_detector", re.compile(r"(smoke|heat)\s*detector", re.I)),
-    ("diffuser", re.compile(r"(diffuser|grille)", re.I)), ("light_point", re.compile(r"(light\s*fitting|luminaire|light\s*point|downlight)", re.I)),
+    ("sprinkler_head", re.compile(r"sprinkler\s*head", re.I)), ("smoke_detector", re.compile(r"(smoke|heat)(/(smoke|heat))?\s*detector", re.I)),
+    ("diffuser", re.compile(r"(diffuser|grille)", re.I)), ("light_point", re.compile(r"(light\s*fitting|lighting\s*fixture|light\s*fixture|luminaire|light\s*point|downlight)", re.I)),
     ("socket", re.compile(r"(socket|power\s*outlet)", re.I)), ("switch", re.compile(r"\bswitch\b", re.I)), ("sink", re.compile(r"\bsink\b", re.I)),
 ]
 _METRIC_UNITS = {"m", "rm", "rmt", "rmtr", "mtr", "mtrs", "meter", "meters", "metre", "metres", "mt"}
@@ -27,16 +27,36 @@ _PROGRAMME = {  # recipe id used so the work programme can schedule drawing-base
 }
 
 
-def classify_line(description: str) -> Optional[Dict[str, Any]]:
+_LINEAR = {"m", "rm", "rmt", "rmtr", "mtr", "mtrs", "meter", "meters", "metre", "metres", "mt", "rft", "ft"}
+_AREA_OR_WEIGHT = _LINEAR | {"sqm", "m2", "sqmt", "sq.m", "kg", "sqft", "sft"}
+
+
+def classify_line(description: str, unit: str = "") -> Optional[Dict[str, Any]]:
+    """Classify a BOQ line; services measured in metres need a linear unit, so lots, sets and pumps are never taken as pipe."""
+    out = _classify_line(description, unit)
+    if out is None or out["kind"] == "fixture":
+        return out
+    u = re.sub(r"[\s.]+", "", str(unit or "").lower())
+    if u and out["kind"] in ("duct", "duct_insulation"):
+        return out if u in _AREA_OR_WEIGHT else None
+    if u and u not in _LINEAR:
+        return None
+    return out
+
+
+def _classify_line(description: str, unit: str = "") -> Optional[Dict[str, Any]]:
     d = str(description or "").lower()
+    count_unit = re.sub(r"[\s.]+", "", str(unit or "").lower()) in ("nos", "no", "each", "ea", "pcs", "pc", "points", "point", "doors", "set", "sets", "unit", "units")
     size = parse_size(description)
-    if any(rx.search(d) for _k, rx in _FIXTURE_WORDS) and re.search(r"(supply|provid|fix|install|fitting)", d):
+    if any(rx.search(d) for _k, rx in _FIXTURE_WORDS) and (count_unit or re.search(r"(supply|provid|fix|install|fitting)", d)):
         for kind, rx in _FIXTURE_WORDS:
             if rx.search(d):
                 return {"kind": "fixture", "device": kind, "size": None}
     if re.search(r"(insulat)", d) and re.search(r"\bduct", d):
         return {"kind": "duct_insulation", "category": "hvac_duct", "size": size}
-    if re.search(r"(sprinkler|fire\s*fight|fire\s*hydrant|hydrant|fire\s*main|fire\s*protection)", d) and re.search(r"(pipe|piping|main|riser|header)", d):
+    if re.search(r"insulat", d):
+        return None            # pipe / equipment insulation is not pipe
+    if re.search(r"(sprinkler|fire\s*fight|fire\s*hydrant|hydrant|fire\s*main|fire\s*protection|fire\s*pipe|fire\s*water)", d) and re.search(r"(pipe|piping|main|riser|header)", d):
         return {"kind": "pipe", "category": "fire_pipe", "size": size}
     if re.search(r"\bduct(ing|s)?\b", d) and not re.search(r"(cable|conduit)", d):
         return {"kind": "duct", "category": "hvac_duct", "size": size}
@@ -46,10 +66,12 @@ def classify_line(description: str) -> Optional[Dict[str, Any]]:
         return {"kind": "wiring", "category": "conduit", "size": None}
     if re.search(r"conduit", d):
         return {"kind": "conduit", "category": "conduit", "size": size}
-    if re.search(r"(chilled|condenser|chw|refrigerant)", d) and re.search(r"(pipe|piping)", d):
+    if re.search(r"(chilled|condenser|chw|refrigerant|condensate)", d) and re.search(r"(pipe|piping)", d):
         return {"kind": "pipe", "category": "hvac_pipe", "size": size}
-    if re.search(r"(pipe|piping|cpvc|upvc|ppr|swr|water\s*supply|soil|waste|drainage)", d) and not re.search(r"(duct|cable)", d):
-        return {"kind": "pipe", "category": "plumbing_pipe", "size": size}
+    if re.search(r"(soil|waste|vent|sewer|drainage|downpipe|rainwater|upvc|swr)", d) and re.search(r"(pipe|piping)", d) and not re.search(r"(duct|cable)", d):
+        return {"kind": "pipe", "category": "plumbing_drain", "size": size}
+    if re.search(r"(pipe|piping|cpvc|ppr|water\s*supply|cold\s*water|hot\s*water)", d) and not re.search(r"(duct|cable)", d):
+        return {"kind": "pipe", "category": "plumbing_supply", "size": size}
     return None
 
 
@@ -83,13 +105,13 @@ def materials_for(kind: str, category: str, sizes: List[str], meas: Measurement,
     """Returns (materials, main quantity, main unit)."""
     mats: List[Dict[str, Any]] = []
     main, main_unit = 0.0, "m"
-    label = {"plumbing_pipe": "Pipe", "fire_pipe": "Fire pipe", "hvac_pipe": "HVAC pipe", "conduit": "Conduit", "cable_tray": "Cable tray", "hvac_duct": "Duct"}[category]
+    label = {"plumbing_supply": "Pipe", "plumbing_drain": "Drain pipe", "fire_pipe": "Fire pipe", "hvac_pipe": "HVAC pipe", "conduit": "Conduit", "cable_tray": "Cable tray", "hvac_duct": "Duct"}[category]
     for sz in sizes:
         L = meas.length(category, sz)
         if L <= 0:
             continue
         fc = meas.fitting_counts(category, sz)
-        tag = f" DN{sz}" if category.endswith("pipe") and sz != "unsized" else (f" {sz} mm" if sz != "unsized" else " (size not labelled)")
+        tag = f" DN{sz}" if ("pipe" in category or category.startswith("plumbing")) and sz != "unsized" else (f" {sz} mm" if sz != "unsized" else " (size not labelled)")
         e90, e45, tee, cross, red, end = (fc.get(k, 0) for k in ("elbow_90", "elbow_45", "tee", "cross", "reducer", "end"))
         if kind in ("pipe",):
             w = f["pipe_wastage_pct"]
@@ -152,7 +174,7 @@ def materials_for(kind: str, category: str, sizes: List[str], meas: Measurement,
     return mats, main, main_unit
 
 
-def apply_drawing(result: Dict[str, Any], lines: List[Dict[str, Any]], meas: Measurement, *, factors: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def apply_drawing(result: Dict[str, Any], lines: List[Dict[str, Any]], meas: Measurement, *, factors: Optional[Dict[str, Any]] = None, show_variance: bool = True) -> Dict[str, Any]:
     f = dict(DEFAULTS)
     for k, v in (factors or {}).items():
         try:
@@ -166,7 +188,7 @@ def apply_drawing(result: Dict[str, Any], lines: List[Dict[str, Any]], meas: Mea
     claims: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
     for n, line in enumerate(lines, 1):
         item = str(line.get("item_no") or n)
-        cl = classify_line(str(line.get("description", "")))
+        cl = classify_line(str(line.get("description", "")), str(line.get("unit") or ""))
         if cl:
             claims.append((item, line, cl))
     # which measured sizes are claimed by a size-specific BOQ line
@@ -175,6 +197,11 @@ def apply_drawing(result: Dict[str, Any], lines: List[Dict[str, Any]], meas: Mea
         cat = cl.get("category")
         if cat and cl.get("size") and cl["size"] in meas.sizes(cat):
             claimed.setdefault(cat, set()).add(cl["size"])
+    # several BOQ lines asking for the same service with no size to tell them apart: the drawing cannot say which is which
+    rivals: Dict[str, List[str]] = {}
+    for item, line, cl in claims:
+        if cl["kind"] not in ("fixture",) and not cl.get("size") and cl["kind"] in ("pipe", "conduit", "tray", "duct", "wiring"):
+            rivals.setdefault("svc:" + cl["kind"] + ":" + cl["category"], []).append(item)
     taken: Dict[str, str] = {}     # kind key -> item that already took off the remaining sizes
     covered: List[str] = []
     for item, line, cl in claims:
@@ -194,7 +221,7 @@ def apply_drawing(result: Dict[str, Any], lines: List[Dict[str, Any]], meas: Mea
             taken[key] = item
             mats = [_mat(desc[:90], "nos", n, f"{n} symbol(s) counted on the drawing")]
             row = _row(item, line, qty, unit, f"drawing_fixture_{cl['device']}", "Counted from drawing", n, "nos", mats)
-            row["drawing_note"] = f"Counted on drawing: {n} nos; BOQ quantity {qty:g} {unit}" + _variance(qty, float(n))
+            row["drawing_note"] = f"Counted on drawing: {n} nos; BOQ quantity {qty:g} {unit}" + (_variance(qty, float(n)) if show_variance else "")
         else:
             cat = cl["category"]
             sizes_all = meas.sizes(cat)
@@ -208,15 +235,20 @@ def apply_drawing(result: Dict[str, Any], lines: List[Dict[str, Any]], meas: Mea
                     continue
             else:
                 key = "svc:" + cl["kind"] + ":" + cat
-                if key in taken:
-                    notes.append(f"Item {item}: the unsized {cat.replace('_', ' ')} on the drawing was already taken off at item {taken[key]}; add a size to this item to split them.")
+                if len(rivals.get(key, [])) > 1:
+                    if key not in taken:
+                        taken[key] = "ambiguous"
+                        notes.append(f"Items {', '.join(rivals[key])} all ask for {cat.replace('_', ' ')} with no size, and the drawing shows one {cat.replace('_', ' ')} total ({meas.length(cat):.0f} m). It was not split between them; give each item a size, or draw them on separate layers (for example P-CW and P-HW), to measure each.")
                     continue
                 taken[key] = item
                 sizes = [s for s in sizes_all if s not in claimed.get(cat, set())] or sizes_all
+            if cl["kind"] in ("duct", "duct_insulation") and all(meas.length(cat, sz_) <= 0 or sz_ == "unsized" for sz_ in sizes):
+                notes.append(f"Item {item}: the ducts on the drawing carry no size labels (for example 400x300), so sheet and insulation area cannot be worked out. The catalogue recipe (if any) was used.")
+                continue
             mats, main, main_unit = materials_for(cl["kind"], cat, sizes, meas, f)
             if not mats:
                 continue
-            rid = {"pipe": {"plumbing_pipe": "drawing_plumbing_pipe", "fire_pipe": "drawing_fire_pipe", "hvac_pipe": "drawing_hvac_pipe"}.get(cat),
+            rid = {"pipe": {"plumbing_supply": "drawing_plumbing_pipe", "plumbing_drain": "drawing_plumbing_pipe", "fire_pipe": "drawing_fire_pipe", "hvac_pipe": "drawing_hvac_pipe"}.get(cat),
                    "duct": "drawing_hvac_duct", "duct_insulation": "drawing_duct_insulation", "conduit": "drawing_conduit", "wiring": "drawing_wiring", "tray": "drawing_cable_tray"}[cl["kind"]]
             row = _row(item, line, qty, unit, rid, "Measured from drawing", main, main_unit, mats)
             L = sum(meas.length(cat, s) for s in sizes)
@@ -224,9 +256,9 @@ def apply_drawing(result: Dict[str, Any], lines: List[Dict[str, Any]], meas: Mea
             if cl["kind"] in ("duct_insulation",) or (cl["kind"] == "duct" and main_unit == "sqm"):
                 txt = f"Measured on drawing: {L:.1f} m of run ({main:.1f} sqm of duct surface); sizes {', '.join(sizes)}"
                 cmp_ = None if re.sub(r"\s+", "", unit.lower()) not in ("sqm", "m2", "sqmt", "sq.m") else main
-                txt += f"; BOQ quantity {qty:g} {unit}" + (_variance(qty, cmp_) if cmp_ else "")
+                txt += f"; BOQ quantity {qty:g} {unit}" + (_variance(qty, cmp_) if cmp_ and show_variance else "")
             else:
-                txt = f"Measured on drawing: {L:.1f} m ({', '.join(sizes)}); BOQ quantity {qty:g} {unit}" + (_variance(comp, L) if comp is not None else "")
+                txt = f"Measured on drawing: {L:.1f} m ({', '.join(sizes)}); BOQ quantity {qty:g} {unit}" + (_variance(comp, L) if comp is not None and show_variance else "")
             row["drawing_note"] = txt
         covered.append(item)
         if item in by_item:
@@ -266,6 +298,8 @@ def _variance(boq: Optional[float], meas: Optional[float]) -> str:
     if not boq or meas is None:
         return ""
     pct = (meas - boq) / boq * 100
+    if abs(pct) < 0.5:
+        return "; drawing matches the BOQ"
     return f"; drawing is {abs(pct):.0f}% {'more' if pct > 0 else 'less'} than the BOQ"
 
 
