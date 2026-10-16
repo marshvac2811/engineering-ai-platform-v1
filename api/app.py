@@ -1441,6 +1441,10 @@ class APIApp:
                     ctx.require_scope("jobs:dispatch")
                     ctx.require_scope_role("dispatch")
                     job = service.dispatch(job_id)
+                elif action == "retry-dispatch":
+                    ctx.require_scope("jobs:dispatch")
+                    ctx.require_scope_role("dispatch")
+                    job = service.retry_dispatch(job_id)
                 else:
                     return self._json(start_response, "404 Not Found", {"error": "Unknown job action"})
                 return self._json(start_response, "200 OK", job.to_dict())

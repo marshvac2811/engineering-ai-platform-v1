@@ -523,11 +523,28 @@ class JobService:
         self.store.save(job)
         return job
 
+    def retry_dispatch(self, job_id: str) -> Job:
+        """Re-run dispatch for a job whose dispatch failed after approval."""
+        job = self._get(job_id)
+        if job.status != JobStatus.FAILED:
+            raise ValueError("Only failed jobs can be retried")
+        failed_dispatch = any(
+            e.event_type == "status_change" and e.status == "failed" and e.message == "Dispatch failed."
+            for e in job.events
+        )
+        if not failed_dispatch:
+            raise ValueError("Only jobs whose dispatch failed can be retried; this job failed earlier in processing")
+        job.add_event("dispatch_retry", "Dispatch retry requested.")
+        return self._run_dispatch(job, "Dispatch retry started.")
+
     def dispatch(self, job_id: str) -> Job:
         job = self._get(job_id)
         if job.status != JobStatus.APPROVED:
             raise ValueError("Only approved jobs can be dispatched")
-        job.transition(JobStatus.DISPATCHING, "Dispatch started.")
+        return self._run_dispatch(job, "Dispatch started.")
+
+    def _run_dispatch(self, job: Job, start_message: str) -> Job:
+        job.transition(JobStatus.DISPATCHING, start_message)
         self.store.save(job)
         try:
             if not hasattr(self.store, "create_dispatch_artifacts"):

@@ -403,3 +403,6 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 ## 2026-10-16: drawing-based BOQ takeoff
 - engineering/services_takeoff/measure.py: reads DXF only; measures runs by service layer + size label, counts elbows/tees/crosses/reducers from geometry, devices from blocks/symbols. boq_link.py: classifies BOQ lines (plumbing/fire/hvac pipe, duct, duct insulation, conduit, wiring, tray, fixtures), builds materials (pipe, fittings, couplings, supports; duct sheet area, joints, hangers; conduit bends, boxes, saddles; wire = conduit x wires), notes drawing vs BOQ variance. Inputs drawing_dxf_b64, drawing_filename, drawing_units, drawing_factors. Not done: DWG (needs Docker), PDF/scans, per-size branch labelling is only as good as the drawing labels.
 - Hotel BOQ+schematic DXF trial (2026-10-16): fixed fire/lighting layer names, noun-style fixture lines, linear-unit gate for pipe items, condensate=HVAC, rival unsized items not split, schematic warning, drawing_repeat multiplier (floors).
+
+## Checkpoint 2026-10-16 (night)
+- Added "Retry dispatch" for jobs whose dispatch failed (service.retry_dispatch, POST /v1/jobs/{id}/retry-dispatch, button on failed job cards). 539 tests passing.
