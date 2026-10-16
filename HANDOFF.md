@@ -406,3 +406,4 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 
 ## Checkpoint 2026-10-16 (night)
 - Added "Retry dispatch" for jobs whose dispatch failed (service.retry_dispatch, POST /v1/jobs/{id}/retry-dispatch, button on failed job cards). 539 tests passing.
+- Added optional preliminary duct sizing from diffuser airflow for unsized duct runs (engineering/services_takeoff/autosize.py; input drawing_cmh_per_diffuser; BOQ form field). Plant position is ASSUMED (far end of unsized network) and disclosed. 542 tests passing.

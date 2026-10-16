@@ -129,6 +129,8 @@ class Measurement:
     layers_used: Dict[str, str] = field(default_factory=dict)                    # layer -> category
     layers_ignored: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+    device_points: Dict[str, List[Pt]] = field(default_factory=dict)             # device -> positions in metres
+    autosized_m: float = 0.0                                                      # duct length sized from diffuser airflow
 
     def repeated(self, n: float) -> "Measurement":
         """Scale the measurement for n identical floors / typical blocks drawn once."""
@@ -176,7 +178,7 @@ def _device_layer(layer: str) -> Optional[str]:
     return None
 
 
-def measure_dxf(filename: str, data: bytes, *, units: Optional[str] = None) -> Measurement:
+def measure_dxf(filename: str, data: bytes, *, units: Optional[str] = None, duct_cmh_per_diffuser: Optional[float] = None) -> Measurement:
     import ezdxf
     from shapely.geometry import LineString, Point
     from shapely.strtree import STRtree
@@ -193,8 +195,9 @@ def measure_dxf(filename: str, data: bytes, *, units: Optional[str] = None) -> M
     # raw collection (drawing units)
     raw_runs: List[Tuple[Pt, Pt, str, bool]] = []
     labels: List[Tuple[str, Pt, str]] = []
-    inserts: List[Tuple[str, str]] = []
+    inserts: List[Tuple[str, str, Pt]] = []
     dev_circles: Dict[str, int] = {}
+    dev_circle_pts: Dict[str, List[Pt]] = {}
     xs: List[float] = []
     ys: List[float] = []
     ignored: Dict[str, int] = {}
@@ -225,11 +228,12 @@ def measure_dxf(filename: str, data: bytes, *, units: Optional[str] = None) -> M
             dl = _device_layer(layer)
             if dl:
                 dev_circles[dl] = dev_circles.get(dl, 0) + 1
+                dev_circle_pts.setdefault(dl, []).append((e.dxf.center.x, e.dxf.center.y))
         elif t in ("TEXT", "MTEXT"):
             txt = e.dxf.text if t == "TEXT" else re.sub(r"\\[A-Za-z][^;]*;|[{}]", "", e.text).replace("\\P", " ")
             labels.append((str(txt), (e.dxf.insert.x, e.dxf.insert.y), layer))
         elif t == "INSERT":
-            inserts.append((str(e.dxf.name), layer))
+            inserts.append((str(e.dxf.name), layer, (e.dxf.insert.x, e.dxf.insert.y)))
         elif t == "SPLINE":
             skipped_splines += 1
 
@@ -260,13 +264,15 @@ def measure_dxf(filename: str, data: bytes, *, units: Optional[str] = None) -> M
     m.layers_ignored = sorted(l for l in ignored if not re.search(r"(wall|a-|g-|dim|text|anno|hatch|tag|note|title|room|sched|defpoints|grid|door|window|furn|tile|^0$)", l, re.I))
 
     # --- devices
-    for name, layer in inserts:
+    for name, layer, ip in inserts:
         for kind, rx in DEVICE_BLOCKS:
             if rx.search(name):
                 m.devices[kind] = m.devices.get(kind, 0) + 1
+                m.device_points.setdefault(kind, []).append((ip[0] * factor, ip[1] * factor))
                 break
     for kind, n in dev_circles.items():
         m.devices[kind] = m.devices.get(kind, 0) + n
+        m.device_points.setdefault(kind, []).extend((x * factor, y * factor) for x, y in dev_circle_pts.get(kind, []))
 
     if not runs:
         m.warnings.append("No pipe, duct or conduit lines were found on recognisable service layers (looked for names such as PLUMB, PIPE, DUCT, CONDUIT, FIRE, TRAY).")
@@ -291,14 +297,14 @@ def measure_dxf(filename: str, data: bytes, *, units: Optional[str] = None) -> M
     for r in runs:
         by_cat.setdefault(r.category, []).append(r)
     for cat, rs in by_cat.items():
-        _topology(cat, rs, m, LineString, Point, STRtree)
+        _topology(cat, rs, m, LineString, Point, STRtree, duct_cmh_per_diffuser if cat == "hvac_duct" else None)
     unsized = sum(v for (c, s), v in m.lengths.items() if s == "unsized")
     if unsized > 0:
         m.warnings.append(f"{unsized:.1f} m of run has no size label or size in its layer name, so it is listed as 'unsized'. Label the sizes (for example DN50 or 300x200) to get size-wise quantities.")
     return m
 
 
-def _topology(cat: str, runs: List[Run], m: Measurement, LineString, Point, STRtree) -> None:
+def _topology(cat: str, runs: List[Run], m: Measurement, LineString, Point, STRtree, cmh_per_diffuser: Optional[float] = None) -> None:
     # 1. split runs where another run's endpoint touches them mid-way (T-junctions drawn as separate lines)
     lines = [LineString([r.a, r.b]) for r in runs]
     tree = STRtree(lines)
@@ -374,6 +380,9 @@ def _topology(cat: str, runs: List[Run], m: Measurement, LineString, Point, STRt
                     changed = True
         if not changed:
             break
+    if cmh_per_diffuser and cat == "hvac_duct":
+        from engineering.services_takeoff.autosize import autosize_unsized_ducts
+        autosize_unsized_ducts(segs, m, float(cmh_per_diffuser))
     # 4. lengths
     for s in segs:
         key = (cat, s.size)

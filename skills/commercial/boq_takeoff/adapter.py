@@ -69,7 +69,11 @@ class BoqTakeoffSkill:
             else:
                 try:
                     import base64 as _b64
-                    meas = measure_dxf(fname, _b64.b64decode(b64, validate=True), units=request.inputs.get("drawing_units"))
+                    try:
+                        _cmh = float(request.inputs.get("drawing_cmh_per_diffuser") or 0) or None
+                    except (TypeError, ValueError):
+                        _cmh = None
+                    meas = measure_dxf(fname, _b64.b64decode(b64, validate=True), units=request.inputs.get("drawing_units"), duct_cmh_per_diffuser=_cmh)
                     try:
                         repeat = float(request.inputs.get("drawing_repeat") or 1)
                     except (TypeError, ValueError):
