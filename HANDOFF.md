@@ -407,3 +407,9 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 ## Checkpoint 2026-10-16 (night)
 - Added "Retry dispatch" for jobs whose dispatch failed (service.retry_dispatch, POST /v1/jobs/{id}/retry-dispatch, button on failed job cards). 539 tests passing.
 - Added optional preliminary duct sizing from diffuser airflow for unsized duct runs (engineering/services_takeoff/autosize.py; input drawing_cmh_per_diffuser; BOQ form field). Plant position is ASSUMED (far end of unsized network) and disclosed. 542 tests passing.
+
+## Checkpoint 2026-10-17 (morning)
+- Cause of stuck jobs: Render OOM kill (512 MB) at 00:51Z while dispatching the RITES job; job left in dispatching/processing.
+- Added: JobService.recover_interrupted (runs on GET /v1/jobs; fails jobs stuck >10 min), JobService.retry + POST /v1/jobs/{id}/retry + dashboard "Retry" button on failed jobs; api/memory.py (glibc arena cap=2, malloc_trim after each request, [memory] log line when rss>=300MB); WSGI workers 10 -> 4.
+- Local profile of the RITES BOQ (process+PDF+Excel) peaks ~75 MB, so the Render memory growth is in the Supabase path (per-thread clients / big row JSON). Watch Render logs for "[memory]" lines to confirm.
+- Catalog: supporting materials (fasteners, flanges/gaskets, electrodes, paint, adhesive, tapes, glands, lugs, ties, anchors, sealants, hardware) added to the MEP recipes; names containing commas must be quoted in YAML flow mappings (test added).

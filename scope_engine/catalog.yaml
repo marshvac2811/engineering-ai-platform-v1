@@ -86,22 +86,33 @@ recipes:
     name: GI Duct Fabrication
     verticals: [hvac]
     validated: false
+    notes: Starter factors for flanges, bolts, rivets, gasket, sealant and hangers. Confirm against your shop-drawing practice.
     base_unit: sqm
     aliases: [gi duct, galvanised duct, galvanized duct, gi sheet metal duct, rectangular duct, sheet metal duct]
     quantity_patterns:
       - '(\d[\d,.]*)\s*(?:sqm|sq\.?\s*m|m2)'
     materials:
       - {name: GI Sheet (duct surface area), unit: sqm, consumption_per_unit: 1.0, wastage_percent: 8}
+      - {name: Flange Angle / Slip Joints, unit: rft, consumption_per_unit: 1.2, wastage_percent: 5}
+      - {name: "Nuts, Bolts and Washers", unit: nos, consumption_per_unit: 4, wastage_percent: 5}
+      - {name: Rivets, unit: nos, consumption_per_unit: 6, wastage_percent: 5}
+      - {name: Duct Gasket / Sealing Tape, unit: rft, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Duct Sealant, unit: kg, consumption_per_unit: 0.05, wastage_percent: 5}
+      - {name: Duct Hangers (threaded rod and angle), unit: nos, consumption_per_unit: 0.3, wastage_percent: 5}
   - id: duct_thermal_insulation
     name: Duct Thermal Insulation
     verticals: [hvac]
     validated: false
+    notes: Starter factors for adhesive, joint tape and fixing pins. Confirm against the insulation maker's guidance.
     base_unit: sqm
     aliases: [duct insulation, thermal insulation of duct, duct lagging, duct thermal insulation, duct thermal & acoustic insulation, nitrile rubber insulation, acoustic lining]
     quantity_patterns:
       - '(\d[\d,.]*)\s*(?:sqm|sq\.?\s*m|m2)'
     materials:
       - {name: Insulation Material (surface area), unit: sqm, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Insulation Adhesive, unit: ltr, consumption_per_unit: 0.25, wastage_percent: 5}
+      - {name: Aluminium Foil Tape / Joint Tape, unit: m, consumption_per_unit: 1.5, wastage_percent: 5}
+      - {name: Insulation Fixing Pins / Clips, unit: nos, consumption_per_unit: 2, wastage_percent: 5}
   # Standard-practice starter factors (not company-validated): confirm or replace via recipes_csv. Assumptions are in `notes`.
   - id: gypsum_false_ceiling
     name: Gypsum False Ceiling
@@ -175,11 +186,16 @@ recipes:
     name: MV Armoured Cable
     verticals: [electrical]
     validated: false
-    notes: Cable by size plus 3% cutting wastage. Glands, lugs and trenching are not included.
+    notes: Cable by size plus 3% cutting wastage. Glands, lugs, tags and sleeves assume an average run of about 50 m with two ends. Trenching is not included.
     base_unit: m
     aliases: [mv cable, armoured cable, pvc sheathed, xlpe insulated, power cable, control cable]
     materials:
       - {name: "Armoured cable {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 3}
+      - {name: Cable Glands (double compression), unit: nos, consumption_per_unit: 0.04, wastage_percent: 0}
+      - {name: Cable Lugs / Terminals, unit: nos, consumption_per_unit: 0.04, wastage_percent: 0}
+      - {name: Cable Ties / Clamps, unit: nos, consumption_per_unit: 2, wastage_percent: 5}
+      - {name: Cable Identification Tags, unit: nos, consumption_per_unit: 0.04, wastage_percent: 0}
+      - {name: Insulation Tape / Heat-shrink Sleeves, unit: nos, consumption_per_unit: 0.04, wastage_percent: 0}
   - id: cable_tray
     name: Cable Tray
     verticals: [electrical]
@@ -191,6 +207,10 @@ recipes:
       - {name: "Cable tray {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 3}
       - {name: Tray Supports/Brackets, unit: nos, consumption_per_unit: 0.67, wastage_percent: 0}
       - {name: Tray Coupler Plates, unit: nos, consumption_per_unit: 0.34, wastage_percent: 0}
+      - {name: "Nuts, Bolts and Washers (couplers and supports)", unit: nos, consumption_per_unit: 2.7, wastage_percent: 5}
+      - {name: Anchor Fasteners (supports), unit: nos, consumption_per_unit: 1.34, wastage_percent: 5}
+      - {name: Earthing Link / Continuity Strap, unit: nos, consumption_per_unit: 0.34, wastage_percent: 0}
+      - {name: Cable Ties / Clamps, unit: nos, consumption_per_unit: 1.5, wastage_percent: 5}
   - id: flexible_conduit
     name: Flexible Conduit
     verticals: [electrical]
@@ -201,16 +221,23 @@ recipes:
     materials:
       - {name: GI Flexible Conduit, unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
       - {name: Conduit Saddles/Clamps, unit: nos, consumption_per_unit: 0.67, wastage_percent: 5}
+      - {name: Conduit Glands / Connectors, unit: nos, consumption_per_unit: 0.2, wastage_percent: 0}
+      - {name: Screws and Wall Plugs / Anchors, unit: nos, consumption_per_unit: 1.34, wastage_percent: 5}
   - id: ms_condenser_water_pipe
     name: MS Condenser Water Pipe
     verticals: [hvac]
     validated: false
-    notes: MS pipe with clamps/supports about every 2 m. Insulation, painting, flanges and valves are separate BOQ items.
+    notes: MS pipe with clamps/supports about every 2 m, a flange pair about every 6 m and fittings about one per 7 m. Valves, insulation and finish painting are separate BOQ items.
     base_unit: m
     aliases: [condenser water pipe, chilled water pipe, ms pipe, ms c class]
     materials:
       - {name: "MS pipe {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
       - {name: Pipe Clamps/Supports, unit: nos, consumption_per_unit: 0.5, wastage_percent: 5}
+      - {name: Fittings (elbows/tees/reducers), unit: nos, consumption_per_unit: 0.15, wastage_percent: 0}
+      - {name: Flange Pairs with Gasket, unit: nos, consumption_per_unit: 0.17, wastage_percent: 0}
+      - {name: Nuts and Bolts (flange sets), unit: nos, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Welding Electrodes, unit: kg, consumption_per_unit: 0.05, wastage_percent: 10}
+      - {name: Anti-corrosive Primer / Paint, unit: ltr, consumption_per_unit: 0.03, wastage_percent: 5}
   - id: gi_drain_pipe
     name: GI Drain Piping
     verticals: [hvac]
@@ -222,6 +249,8 @@ recipes:
       - {name: "GI pipe {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
       - {name: Fittings (bends/tees/unions/sockets), unit: nos, consumption_per_unit: 0.25, wastage_percent: 0}
       - {name: Pipe Clamps/Supports, unit: nos, consumption_per_unit: 0.5, wastage_percent: 5}
+      - {name: PTFE Thread Seal Tape, unit: nos, consumption_per_unit: 0.05, wastage_percent: 5}
+      - {name: Wall Plugs and Screws (clamps), unit: nos, consumption_per_unit: 1.0, wastage_percent: 5}
   - id: underdeck_insulation
     name: Under-deck Insulation
     verticals: [hvac]
@@ -230,6 +259,9 @@ recipes:
     aliases: [under deck insulation, underdeck insulation, expanded polystyrene, phenotherm]
     materials:
       - {name: Under-deck Insulation (TF EPS/phenotherm), unit: sqm, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Fixing Adhesive / Mortar, unit: kg, consumption_per_unit: 0.4, wastage_percent: 5}
+      - {name: Fixing Pins / Anchors, unit: nos, consumption_per_unit: 4, wastage_percent: 5}
+      - {name: Joint Tape / Finishing, unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
   - id: fresh_air_louvers
     name: Fresh Air Louvers
     verticals: [hvac]
@@ -238,6 +270,9 @@ recipes:
     aliases: [fresh air louvers, louvers with vcd, extruded aluminium louver]
     materials:
       - {name: Aluminium Louver with VCD and Bird Screen, unit: sqm, consumption_per_unit: 1.0, wastage_percent: 0}
+      - {name: Fixing Frame / MS Angle, unit: rmt, consumption_per_unit: 3.0, wastage_percent: 5}
+      - {name: Anchor Fasteners, unit: nos, consumption_per_unit: 6, wastage_percent: 5}
+      - {name: PU / Silicone Sealant, unit: kg, consumption_per_unit: 0.1, wastage_percent: 5}
   - id: non_return_damper
     name: Non-return Damper
     verticals: [hvac]
@@ -246,6 +281,10 @@ recipes:
     aliases: [non return damper]
     materials:
       - {name: GS Non-return Damper, unit: sqm, consumption_per_unit: 1.0, wastage_percent: 0}
+      - {name: Flange Angle Frame, unit: rmt, consumption_per_unit: 3.5, wastage_percent: 5}
+      - {name: "Nuts, Bolts and Washers", unit: nos, consumption_per_unit: 8, wastage_percent: 5}
+      - {name: Gasket / Sealing Tape, unit: rmt, consumption_per_unit: 3.5, wastage_percent: 5}
+      - {name: Duct Sealant, unit: kg, consumption_per_unit: 0.05, wastage_percent: 5}
   - id: fire_rated_door
     name: Fire Rated Steel Door
     verticals: [interiors]
@@ -254,3 +293,7 @@ recipes:
     aliases: [fire rated steel fire door, fire door and frame, fire rated door]
     materials:
       - {name: Fire Rated Steel Door and Frame, unit: sqm, consumption_per_unit: 1.0, wastage_percent: 0}
+      - {name: "Hardware Set (hinges, closer, lock, handle)", unit: set, consumption_per_unit: 0.5, wastage_percent: 0}
+      - {name: Frame Anchor Fasteners, unit: nos, consumption_per_unit: 3, wastage_percent: 5}
+      - {name: Intumescent Sealant, unit: kg, consumption_per_unit: 0.1, wastage_percent: 5}
+      - {name: Door Seals / Smoke Gasket, unit: rmt, consumption_per_unit: 2.0, wastage_percent: 5}

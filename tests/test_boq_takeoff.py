@@ -52,7 +52,11 @@ def test_csv_input_and_skill_warnings():
     assert len(parse_boq_csv(csv_text)) == 2
     res = run(boq_csv=csv_text)
     assert res.status == "draft_ready"
-    assert res.engineering_result["material_totals"][0]["quantity"] == pytest.approx(216.0)
+    totals = {m["material_name"]: m for m in res.engineering_result["material_totals"]}
+    assert totals["GI Sheet (duct surface area)"]["quantity"] == pytest.approx(216.0)
+    # supporting materials come with the main material
+    for name in ("Nuts, Bolts and Washers", "Rivets", "Duct Sealant", "Duct Gasket / Sealing Tape"):
+        assert name in totals
     assert any("unvalidated" in w for w in res.warnings) and any("procure" in w.lower() for w in res.warnings)
 
 
@@ -75,3 +79,12 @@ def test_recipe_csv_rejects_bad_rows():
     from skills.commercial.boq_takeoff import parse_recipes_csv
     with pytest.raises(ValueError):
         parse_recipes_csv("work_type,work_unit,material_name,unit,consumption_per_unit,wastage_percent\nX,sqft,,nos,1,0\n")
+
+
+def test_catalog_materials_are_well_formed():
+    import yaml, pathlib
+    cat = yaml.safe_load(pathlib.Path("scope_engine/catalog.yaml").read_text())
+    for r in cat["recipes"]:
+        assert len(r["materials"]) >= 1
+        for m in r["materials"]:
+            assert set(m) == {"name", "unit", "consumption_per_unit", "wastage_percent"}, (r["id"], m)

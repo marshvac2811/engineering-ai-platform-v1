@@ -808,6 +808,10 @@ async function retryDispatch(jobId){
  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/retry-dispatch",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
  const d=await r.json();if(!r.ok){alert(d.error||"Retry failed");return;}await loadJobs();
 }
+async function rerunJob(jobId){
+ const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/retry",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+ const d=await r.json();if(!r.ok){alert(d.error||"Retry failed");return;}await loadJobs();
+}
 async function dispatch(jobId){
  const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/dispatch",{
   method:"POST",headers:{"Content-Type":"application/json"},body:"{}"
@@ -920,7 +924,7 @@ function jobHtml(j){
    '<div class="actions"><button onclick="resubmitRework(\''+id+'\',\''+fields.map(f=>esc(f)).join(",")+'\')">Resubmit for Review</button></div><div id="rwmsg-'+id+'" class="small" style="color:#a12626;margin-top:4px"></div></div>';
  }
  if(status==="approved")html+='<div class="actions"><button onclick="dispatch(\''+id+'\')">Dispatch</button></div>';
- if(status==="failed"&&(j.events||[]).some(e=>e.message==="Dispatch failed."))html+='<div class="actions"><button onclick="retryDispatch(\''+id+'\')">Retry dispatch</button></div>';
+ if(status==="failed")html+='<div class="actions"><button onclick="rerunJob(\''+id+'\')">Retry</button></div>';
  if(["human_review","approved","dispatching","dispatched","completed"].includes(status)){
   const done=["dispatched","completed"].includes(status);
   html+='<div class="actions">'+(primaryActions?primaryActions.replace('<div class="actions">','').replace(/<\/div>$/,''):'')+'<button class="'+(review?'secondary':'')+'" onclick="viewArtifact(\''+id+'\',\'report\')">View Report</button><button class="secondary" onclick="viewArtifact(\''+id+'\',\'evidence\')">View Evidence</button>'+

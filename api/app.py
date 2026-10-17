@@ -1047,6 +1047,10 @@ class APIApp:
 
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "jobs" and method == "GET":
                 ctx.require_scope("jobs:read")
+                try:
+                    service.recover_interrupted()
+                except Exception:
+                    pass  # recovery is best-effort and must never block the job list
                 if hasattr(service.store, "list_summaries"):
                     jobs = list(service.store.list_summaries(tenant_id=service.tenant_id))
                 else:
@@ -1441,6 +1445,9 @@ class APIApp:
                     ctx.require_scope("jobs:dispatch")
                     ctx.require_scope_role("dispatch")
                     job = service.dispatch(job_id)
+                elif action == "retry":
+                    ctx.require_scope("jobs:write")
+                    job = service.retry(job_id)
                 elif action == "retry-dispatch":
                     ctx.require_scope("jobs:dispatch")
                     ctx.require_scope_role("dispatch")
@@ -1464,8 +1471,11 @@ class APIApp:
             return self._json(start_response, "500 Internal Server Error", {"error": str(exc)})
 
 from uvicorn.middleware.wsgi import WSGIMiddleware
+from api.memory import MemoryGuard, tune_allocator
 
-app = WSGIMiddleware(APIApp())
+tune_allocator(2)   # before any worker thread starts: stops per-thread memory arenas piling up on the 512 MB instance
+# Few worker threads (default is 10) keep memory bounded; each extra thread brings its own Supabase connections.
+app = WSGIMiddleware(MemoryGuard(APIApp()), workers=4)
 
 
 

@@ -523,6 +523,60 @@ class JobService:
         self.store.save(job)
         return job
 
+    _STUCK = ("processing", "input_validation", "engineering_validation", "dispatching")
+
+    def recover_interrupted(self, max_age_seconds: int = 600) -> list:
+        """Fail jobs left half-finished (server restarted or ran out of memory mid-request), so they can be retried."""
+        from datetime import datetime, timezone
+        summ = getattr(self.store, "list_summaries", None)
+        rows = list(summ(tenant_id=self.tenant_id)) if summ else [j.to_dict() for j in self.list_jobs()]
+        now, fixed = datetime.now(timezone.utc), []
+        for r in rows:
+            if str(r.get("status")) not in self._STUCK:
+                continue
+            try:
+                age = (now - datetime.fromisoformat(str(r.get("updated_at")).replace("Z", "+00:00"))).total_seconds()
+            except (TypeError, ValueError):
+                continue
+            if age < max_age_seconds:
+                continue
+            job = self._get(str(r["job_id"]))
+            if job.status.value not in self._STUCK:
+                continue
+            if job.status == JobStatus.DISPATCHING:
+                msg = "Dispatch failed."
+                why = "Dispatch was interrupted (the server restarted or ran out of memory). Use Retry dispatch."
+            else:
+                msg = "Processing interrupted."
+                why = "Processing was interrupted (the server restarted or ran out of memory). Use Re-run."
+            job.errors.append(why)
+            job.transition(JobStatus.FAILED, msg, error=why)
+            self.store.save(job)
+            fixed.append(job.job_id)
+        return fixed
+
+    def retry(self, job_id: str) -> Job:
+        """Retry a failed job: re-dispatch if dispatch failed, re-run if processing was interrupted."""
+        job = self._get(job_id)
+        if job.status == JobStatus.FAILED:
+            last = next((e.message for e in reversed(job.events) if e.event_type == "status_change" and e.status == "failed"), "")
+            if last == "Dispatch failed.":
+                return self.retry_dispatch(job.job_id)
+            if last == "Processing interrupted.":
+                return self.retry_processing(job.job_id)
+        raise ValueError("This job cannot be retried automatically; create a new request or ask for rework")
+
+    def retry_processing(self, job_id: str) -> Job:
+        """Re-run a job whose processing was interrupted."""
+        job = self._get(job_id)
+        if job.status != JobStatus.FAILED or not any(e.message == "Processing interrupted." for e in job.events):
+            raise ValueError("Only jobs whose processing was interrupted can be re-run")
+        job.errors = []
+        job.transition(JobStatus.RETRY, "Re-run requested after interruption.")
+        job.transition(JobStatus.QUEUED, "Job returned to queue.")
+        self.store.save(job)
+        return self.process(job.job_id)
+
     def retry_dispatch(self, job_id: str) -> Job:
         """Re-run dispatch for a job whose dispatch failed after approval."""
         job = self._get(job_id)
