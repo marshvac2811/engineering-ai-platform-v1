@@ -101,9 +101,51 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
 .dv h4{margin:14px 0 6px;font-size:13px}
 .dv .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:12px}
 .dv .row input{width:auto;padding:7px;font-size:12px}
+
+/* live progress */
+@keyframes marsStripe{from{background-position:0 0}to{background-position:28px 0}}
+@keyframes marsSpin{to{transform:rotate(360deg)}}
+.runbox{margin-top:10px;border:1px solid #bcd3f5;background:#f1f6ff;border-radius:10px;padding:10px 12px}
+.runbox .rb-top{display:flex;align-items:center;gap:8px;font-weight:700;color:#174a9c}
+.spin{width:14px;height:14px;border:2px solid #bcd3f5;border-top-color:#1769e0;border-radius:50%;animation:marsSpin .8s linear infinite;flex:none}
+.rb-bar{height:8px;border-radius:6px;margin-top:8px;overflow:hidden;background:#dbe7fb}
+.rb-bar i{display:block;height:100%;width:100%;background:repeating-linear-gradient(45deg,#1769e0 0 10px,#5a98f0 10px 20px);background-size:28px 28px;animation:marsStripe .7s linear infinite}
+.rb-steps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.rb-steps span{font-size:11px;padding:2px 8px;border-radius:10px;background:#e4ecfa;color:#5a6b86}
+.rb-steps span.done{background:#d9f2e3;color:#176b3a}
+.rb-steps span.now{background:#1769e0;color:#fff;font-weight:700}
+.rb-note{font-size:12px;color:#5a6b86;margin-top:6px}
+#activityBar{position:fixed;right:14px;bottom:14px;z-index:50;display:flex;flex-direction:column;gap:8px;max-width:340px}
+#activityBar .act{background:#fff;border:1px solid #bcd3f5;border-left:4px solid #1769e0;border-radius:10px;padding:9px 12px;box-shadow:0 6px 20px rgba(23,50,100,.18);font-size:13px}
+#activityBar .act .rb-top{font-size:13px}
 </style>
 </head>
 <body>
+<div id="activityBar" aria-live="polite"></div>
+<script>
+/* Live activity boxes: every save/submit/approve/dispatch call shows a running box, whichever part of the page made it. */
+(function(){
+ const LABELS=[[/\/intake/,"Reading your request and preparing the draft"],[/\/approve/,"Approving the report"],[/\/dispatch/,"Creating the PDF and Excel files and dispatching (this can take a minute)"],[/\/retry/,"Retrying the job"],[/\/resubmit/,"Re-running the job with your changes"],[/\/rework/,"Sending the rework request"],[/\/v1\/jobs$/,"Submitting the request and calculating"],[/status-report/,"Sending the status report"],[/sync/,"Checking Gmail"]];
+ const items=new Map();let seq=0;
+ const esc2=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+ function render(){
+  const box=document.getElementById("activityBar");if(!box)return;
+  box.innerHTML=[...items.values()].map(a=>{const sec=Math.floor((Date.now()-a.t)/1000);
+   return '<div class="act"><div class="rb-top"><span class="spin"></span><span>'+esc2(a.label)+'</span></div><div class="rb-bar"><i></i></div><div class="rb-note">Working... '+sec+' s. Please keep this page open.'+(sec>45?' The free server is slow, this is normal.':'')+'</div></div>';}).join("");
+ }
+ setInterval(()=>{if(items.size)render();},1000);
+ const orig=window.fetch.bind(window);
+ window.fetch=function(input,init){
+  const url=typeof input==="string"?input:(input&&input.url)||"";
+  const method=String((init&&init.method)||(input&&input.method)||"GET").toUpperCase();
+  const track=method!=="GET"&&/\/v1\//.test(url)&&!/supabase\.co/.test(url);
+  if(!track)return orig(input,init);
+  const id=++seq;items.set(id,{label:(LABELS.find(x=>x[0].test(url))||[0,"Working on your request"])[1],t:Date.now()});render();
+  return orig(input,init).finally(()=>{items.delete(id);render();});
+ };
+})();
+</script>
+
 <header><div class="bar"><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Mars Engineering Solutions"><rect width="100" height="100" rx="18" fill="#14233c"/><path d="M20 76V28L50 60L80 28V76" fill="none" stroke="#fff" stroke-width="8.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="76" cy="20" r="9.5" fill="#c8442b"/><line x1="20" y1="87" x2="80" y2="87" stroke="#e0a93b" stroke-width="4.5" stroke-linecap="round"/></svg><div><h1>Mars Engineering Solutions</h1><div class="tag">Engineering Operations</div><div class="strap">HVAC &middot; MEP &middot; Energy &middot; Retrofit &middot; BOQ &mdash; calculations, drawings and reports with disclosed assumptions and engineer review</div></div></div><div id="user" class="user">Authenticated</div></div><svg class="hero-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 170" preserveAspectRatio="xMaxYMax meet" aria-hidden="true"><defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c4a78" stop-opacity=".55"/><stop offset="1" stop-color="#14233c" stop-opacity="0"/></linearGradient></defs><circle cx="560" cy="44" r="26" fill="#e0a93b" opacity=".85"/><g fill="url(#hg)" stroke="#6f8fbf" stroke-opacity=".55" stroke-width="1.2"><rect x="330" y="60" width="62" height="110"/><rect x="396" y="30" width="54" height="140"/><rect x="454" y="78" width="70" height="92"/><rect x="528" y="52" width="48" height="118"/><rect x="580" y="88" width="60" height="82"/></g><g stroke="#9db6dc" stroke-opacity=".6" stroke-width="1.4" fill="none"><path d="M340 78h42M340 96h42M340 114h42M340 132h42M406 48h34M406 66h34M406 84h34M406 102h34M406 120h34M464 96h50M464 114h50M464 132h50M538 70h28M538 88h28M538 106h28"/></g><g fill="#c8442b" opacity=".9"><rect x="462" y="68" width="26" height="10" rx="2"/><rect x="498" y="68" width="18" height="10" rx="2"/></g><g stroke="#e0a93b" stroke-width="2" fill="none" stroke-linecap="round" opacity=".85"><path d="M20 150h120a8 8 0 0 0 8-8v-30h110"/><path d="M20 160h250"/></g><g fill="#6f8fbf" opacity=".55"><rect x="64" y="118" width="38" height="24" rx="3"/><rect x="108" y="124" width="24" height="18" rx="3"/></g></svg></header>
 <nav class="tabs" id="mainTabs" role="tablist" aria-label="Dashboard sections">
  <button type="button" class="tab active" data-tab="request" role="tab">New Request</button>
@@ -398,7 +440,7 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
     const requests={hvac_decarbonisation:"Perform a complete HVAC energy saving, decarbonisation, asset-life and scenario assessment using the supplied plant data.",energy_payback:"Assess the energy, financial and lifecycle payback of the proposed equipment retrofit using the supplied plant data.",vfd_energy_savings:"Calculate VFD energy savings and economic impact for the supplied motor/system data."};
     const payload={message:requests[skill]||"Perform an energy engineering assessment using the supplied plant data.",requested_skill_id:skill,inputs:input};
     try{
-      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),60000);
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),240000);
       const r=await fetch("/v1/intake",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify(payload),signal:controller.signal});
       const raw=await r.text();clearTimeout(timer);let d={};try{d=raw?JSON.parse(raw):{};}catch(e){}
       if(!r.ok)throw Error(d.error||d.message||("Trial failed (HTTP "+r.status+")"));
@@ -437,7 +479,7 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
         if(rd.refresh_token)localStorage.setItem("engineering_ai_refresh_token",rd.refresh_token);
       }catch(_){msg.className="msg err";msg.textContent="Session expired. Please sign in again.";btn.disabled=false;return;}
     }
-    const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),60000);
+    const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),240000);
     try{
       const r=await fetch("/v1/intake",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({message}),signal:controller.signal});
       const raw=await r.text();
@@ -479,17 +521,55 @@ async function refresh(){
 
 async function api(url,opt={}){
  let h=Object.assign({},opt.headers||{},{"Authorization":"Bearer "+token});
+ const method=String(opt.method||"GET").toUpperCase(), isAction=method!=="GET";
  const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),30000);
+ const timeout=setTimeout(()=>controller.abort(),isAction?240000:30000);
  try{
   let r=await fetch(url,Object.assign({},opt,{headers:h,signal:controller.signal}));
   if(r.status===401){await refresh();h.Authorization="Bearer "+token;r=await fetch(url,Object.assign({},opt,{headers:h,signal:controller.signal}));}
   return r;
  }catch(e){
-  if(e?.name==="AbortError") throw Error("API request timed out after 30 seconds (the server may be waking up; try again): "+url);
+  if(e?.name==="AbortError") throw Error("The server took too long to answer ("+(isAction?"4 minutes":"30 seconds")+"). It may still be working: open Review & Jobs and refresh in a minute: "+url);
   throw e;
  }finally{clearTimeout(timeout);}
 }
+const RUN_STAGES={
+ received:["Received","Queued","Calculating","Draft ready"],queued:["Received","Queued","Calculating","Draft ready"],
+ processing:["Received","Queued","Calculating","Draft ready"],input_validation:["Received","Queued","Calculating","Draft ready"],
+ engineering_validation:["Received","Queued","Calculating","Draft ready"],draft_ready:["Received","Queued","Calculating","Draft ready"],
+ approved:["Approved","Creating PDF and Excel","Dispatching","Completed"],dispatching:["Approved","Creating PDF and Excel","Dispatching","Completed"]};
+const RUN_AT={received:0,queued:1,processing:2,input_validation:2,engineering_validation:2,draft_ready:3,approved:0,dispatching:1};
+function runBoxHtml(j){
+ const st=String(j.status||"");const steps=RUN_STAGES[st];if(!steps)return"";
+ const at=RUN_AT[st]||0;
+ const since=j.updated_at||j.created_at||"";
+ const label=st==="dispatching"?"Creating the PDF and Excel files and dispatching":st==="approved"?"Approved - waiting to be dispatched":"Calculating the draft report";
+ const spinning=st!=="approved";
+ return '<div class="runbox"><div class="rb-top">'+(spinning?'<span class="spin"></span>':'')+'<span>'+esc(label)+'</span></div>'+
+  (spinning?'<div class="rb-bar"><i></i></div>':'')+
+  '<div class="rb-steps">'+steps.map((x,i)=>'<span class="'+(i<at?'done':i===at?'now':'')+'">'+(i<at?'&#10003; ':'')+esc(x)+'</span>').join("")+'</div>'+
+  '<div class="rb-note" data-since="'+esc(since)+'" data-st="'+esc(st)+'"></div></div>';
+}
+function tickRunNotes(){
+ document.querySelectorAll(".rb-note[data-since]").forEach(el=>{
+  const t=Date.parse(el.dataset.since);if(!t)return;const sec=Math.max(0,Math.floor((Date.now()-t)/1000));
+  const m=Math.floor(sec/60),txt=m?m+" min "+(sec%60)+" s":sec+" s";
+  el.textContent="Running for "+txt+(sec>600?". This is taking longer than normal. It will be marked Failed automatically so you can press Retry.":sec>90?". The free server is slow; this page refreshes by itself.":". This page refreshes by itself.");
+ });
+}
+let pollSig="";
+async function pollRunning(){
+ if(document.hidden)return;
+ const running=(cachedJobs||[]).some(j=>RUN_STAGES[String(j.status||"")]&&String(j.status)!=="approved");
+ if(!running)return;
+ try{
+  const r=await api("/v1/jobs");if(!r.ok)return;const d=await r.json();
+  const sig=(d.jobs||[]).map(j=>j.job_id+":"+j.status).join("|");
+  if(sig!==pollSig){pollSig=sig;await loadJobs();}
+ }catch(e){}
+}
+setInterval(tickRunNotes,1000);
+setInterval(pollRunning,6000);
 
 const selectedPlantFiles=[];
 const fileInput=document.getElementById("plantFiles");
@@ -867,6 +947,7 @@ function jobHtml(j){
  const mailFrom=String(j.project_context?.from||"").trim(), mailSubject=String(j.project_context?.subject||"").trim();
  let html='<div class="job '+(review?"review":"")+'" style="'+(isLatestTrial?"border:2px solid #1769e0;box-shadow:0 0 0 2px rgba(23,105,224,.08);":"")+'"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>Engineering Request'+(isLatestTrial?' <span style="font-size:11px;color:#1769e0">CURRENT TRIAL</span>':"")+'</strong><span class="small">'+(j.serial_no?'<strong>Serial '+esc(j.serial_no)+'</strong> &middot; ':'')+'Job '+esc(rawId.slice(0,8))+'</span></div>'+
   '<div style="margin-top:7px">Status: <span class="status">'+esc(status.replaceAll("_"," "))+'</span></div>'+
+  runBoxHtml(j)+
   (skillText?'<div class="small" style="margin-top:5px"><strong>Capability:</strong> '+esc(skillText)+'</div>':"")+
   (project?'<div class="small" style="margin-top:5px"><strong>Project:</strong> '+esc(project)+'</div>':"")+
   (client?'<div class="small" style="margin-top:5px"><strong>Client:</strong> '+esc(client)+'</div>':"")+
