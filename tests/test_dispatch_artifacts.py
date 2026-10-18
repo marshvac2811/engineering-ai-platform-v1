@@ -58,7 +58,7 @@ def test_evidence_workbook_is_valid_xlsx():
     with ZipFile(BytesIO(data)) as archive:
         assert "xl/workbook.xml" in archive.namelist()
         workbook = archive.read("xl/workbook.xml")
-        assert b"Tasks" in workbook
+        assert b"Tasks" not in workbook   # internal records are not written to the client workbook
         assert b"Manifest" in workbook
 
 
@@ -75,7 +75,7 @@ def test_pdf_shows_tables_not_raw_json():
 def test_workbook_has_readable_result_sheets():
     from openpyxl import load_workbook
     wb = load_workbook(BytesIO(build_evidence_xlsx(job=_job(), evidence_bundle=_bundle())))
-    for name in ("Summary", "Inputs", "Results", "Calculation Steps", "Assumptions & Notes", "Compliance"):
+    for name in ("Summary", "Inputs", "Results", "Assumptions & Notes", "Compliance"):
         assert name in wb.sheetnames, name
     rows = list(wb["Results"].iter_rows(values_only=True))
     assert rows[0] == ("Task", "Result", "Value", "Unit")

@@ -39,9 +39,9 @@ def _tokens(key: str) -> List[str]:
 # Currency is deliberately not assumed: values are in the currency of the tariff supplied.
 _DISPLAY_OVERRIDES: Dict[str, Tuple[str, str]] = {
     "motor_kw": ("Motor power", "kW"),
-    "block_load_tr": ("Block cooling load (after diversity)", "TR"),
-    "block_load_kw": ("Block cooling load (after diversity)", "kW"),
-    "sum_of_room_loads_tr": ("Sum of room loads (before diversity)", "TR"),
+    "block_load_tr": ("Block cooling load", "TR"),
+    "block_load_kw": ("Block cooling load", "kW"),
+    "sum_of_room_loads_tr": ("Sum of room loads", "TR"),
     "total_area_m2": ("Total conditioned area", "m²"),
     "total_supply_airflow_m3h": ("Total supply airflow", "m³/hr"),
     "diversity_factor_pct": ("Diversity factor", "%"),

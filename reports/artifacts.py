@@ -303,7 +303,6 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         ("Report date", _fmt_dt(datetime.now(timezone.utc).isoformat())),
         ("Report revision", str((getattr(job, "result", {}) or {}).get("report_revision") or (getattr(job, "orchestration", {}) or {}).get("report_revision") or 1)),
         ("Skill version", ", ".join(str(t.get("skill_version") or "-") for t in tasks) or "-"),
-        ("Source revision", ", ".join(str(t.get("source_revision") or "-") for t in tasks) or "-"),
     ]
     story.append(kv_table(header_rows))
 
@@ -351,7 +350,7 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         breakdown = _boq_breakdown(task)
         if breakdown:
             story.append(Paragraph("Materials required for each BOQ item", task_h))
-            story.append(Paragraph("Each BOQ description is followed by the materials it needs (quantity includes wastage). Combined purchase quantities are in the Material Totals table.", small))
+            story.append(Paragraph("Each BOQ description is followed by the materials it needs. Combined purchase quantities are in the Material Totals table.", small))
             story.append(Spacer(1, 3))
             item_head = ParagraphStyle("item_head", parent=cell_b, fontSize=8, leading=10, textColor=colors.white)
             item_desc = ParagraphStyle("item_desc", parent=cell, fontSize=7.5, leading=9.5)
@@ -386,7 +385,7 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         if totals_:
             story.append(PageBreak())   # the consolidated list is a stand-alone page for purchasing
             story.append(Paragraph("Consolidated material list (all BOQ items together)", task_h))
-            story.append(Paragraph("Each material is added up across every BOQ item, grouped by trade, so it can be used as one purchase list. Quantities include wastage. Supporting materials (fasteners, adhesives, tapes, sealants and similar) are indicative and to be confirmed by the engineer.", small))
+            story.append(Paragraph("Each material is added up across every BOQ item, grouped by trade, so it can be used as one purchase list. Supporting materials (fasteners, adhesives, tapes, sealants and similar) are indicative and to be confirmed by the engineer.", small))
             story.append(Spacer(1, 3))
             c_cell = ParagraphStyle("c_cell", parent=cell, fontSize=7.5, leading=9.5)
             c_num = ParagraphStyle("c_num", parent=c_cell, alignment=2)
@@ -645,7 +644,6 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         ("Approved by", approval["by"]), ("Approval date", approval["at"]),
         ("Evidence record SHA-256", manifest.get("bundle_sha256")), ("Evidence schema", manifest.get("schema_version")),
         ("Skill version", ", ".join(str(t.get("skill_version") or "-") for t in tasks) or "-"),
-        ("Source revision", ", ".join(str(t.get("source_revision") or "-") for t in tasks) or "-"),
         ("Limitations", "; ".join(str(x) for t in tasks for x in ((t.get("limitations") or []) + (t.get("warnings") or []))) or "-"),
         ("Generated", _fmt_dt(datetime.now(timezone.utc).isoformat())),
     ]
@@ -676,7 +674,7 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         if not breakdown:
             continue
         sh = wb.create_sheet("BOQ Item Materials")
-        sh.append(["Item / Material", "Unit", "Quantity (incl. wastage)"])
+        sh.append(["Item / Material", "Unit", "Quantity"])
         for c in sh[1]:
             c.fill, c.font, c.alignment = header_fill, header_font, wrap
         item_fill = PatternFill("solid", fgColor="D9E1F2")
@@ -704,7 +702,7 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         if not totals_:
             continue
         sh = wb.create_sheet("Consolidated Materials")
-        sh.append(["No.", "Trade", "Material", "Unit", "Total quantity (incl. wastage)", "Type", "BOQ items using it"])
+        sh.append(["No.", "Trade", "Material", "Unit", "Total quantity", "Type", "BOQ items using it"])
         for c in sh[1]:
             c.fill, c.font, c.alignment = header_fill, header_font, wrap
         for n, r in enumerate(totals_, 1):
@@ -774,7 +772,8 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
             sh.column_dimensions[sh.cell(1, base + 1 + w).column_letter].width = 4.5
         sh.freeze_panes = "C2"
         break
-    styled(wb.create_sheet("Calculation Steps"), ["Task", "Step", "Calculation step", "Detail"], step_rows, [30, 8, 50, 40])
+    if step_rows:
+        styled(wb.create_sheet("Calculation Steps"), ["Task", "Step", "Calculation step", "Detail"], step_rows, [30, 8, 50, 40])
     styled(wb.create_sheet("Assumptions & Notes"), ["Task", "Type", "Detail"], note_rows, [30, 16, 100])
     cands = [(c.get("title"), c.get("authority"), c.get("edition") or "-", "Candidate - not verified") for c in governance.get("candidate_sources") or []]
     if check_rows:
@@ -805,21 +804,9 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         sh.column_dimensions["B"].width = 100
         return sh
 
-    add_json_sheet("Manifest", manifest)
-    add_json_sheet("Request", request)
-    add_json_sheet("Workflow", evidence_bundle.get("workflow", {}))
-    add_json_sheet("Result", evidence_bundle.get("result", {}))
-    add_json_sheet("QA", evidence_bundle.get("qa", {}))
-    add_json_sheet("Governance", governance)
-    add_json_sheet("Review", evidence_bundle.get("review", {}))
-
-    sh = wb.create_sheet("Tasks")
-    sh.append(["Task ID", "Capability", "Status", "Objective", "Inputs", "Engineering Result", "Calculation Trace", "Assumptions", "Warnings", "Compliance"])
-    for t in tasks:
-        sh.append([t.get("task_id"), t.get("capability_id"), t.get("status"), t.get("objective"), _text(t.get("inputs")), _text(t.get("engineering_result")),
-                   _text(t.get("calculation_trace")), _text(t.get("assumptions")), _text(t.get("warnings")), _text(t.get("compliance"))])
-    for col in range(1, 11):
-        sh.column_dimensions[chr(64 + col)].width = 24
+    # Internal records (request routing, workflow, governance, review events, per-task raw data) stay in the stored
+    # evidence file and are NOT written to the client workbook: they describe how the platform works.
+    add_json_sheet("Manifest", {k: v for k, v in manifest.items() if "assumption" not in str(k).lower()})
 
     from branding import brand, footer_line
     b = brand()

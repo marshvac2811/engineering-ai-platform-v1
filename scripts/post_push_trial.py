@@ -34,7 +34,7 @@ Open office | 250 sqm | 60 people
 Conference room | 40 sqm | 20 people
 Pantry | 30 sqm | 10 people"""),
 ]
-LEAK = re.compile(r"recipe|unvalidated default|sqm_per|persons_per|starter norm|consumption per unit", re.I)
+LEAK = re.compile(r"recipe|unvalidated default|sqm_per|persons_per|starter norm|consumption per unit|rule.of.thumb|benchmark|wastage|diversity|cfm per|per tr\b|calculation step|how the result was calculated|ai_boundary|orchestrat|internal-governed|deterministic", re.I)
 
 
 def run(expected: str, text: str) -> list[str]:
@@ -58,13 +58,22 @@ def run(expected: str, text: str) -> list[str]:
     import openpyxl
     wb = openpyxl.load_workbook(io.BytesIO(xlsx))
     for ws in wb:
-        if ws.title in ("Workflow", "Request", "Result", "Tasks"):
+        if ws.title in ("Workflow", "Request", "Result", "Tasks", "QA", "Governance", "Review"):
+            problems.append(f"internal sheet {ws.title} is in the client workbook")
             continue
         for row in ws.iter_rows(values_only=True):
             t = " ".join(str(c) for c in row if c is not None)
             if LEAK.search(t):
                 problems.append(f"calculation-basis wording in sheet {ws.title}: {t[:80]}")
                 break
+    import subprocess, tempfile
+    with tempfile.NamedTemporaryFile(suffix=".pdf") as fh:
+        fh.write(pdf); fh.flush()
+        text = subprocess.run(["pdftotext", "-layout", fh.name, "-"], capture_output=True, text=True).stdout
+    for line in text.splitlines():
+        if LEAK.search(line):
+            problems.append(f"calculation-basis wording in PDF: {line.strip()[:80]}")
+            break
     return problems
 
 
