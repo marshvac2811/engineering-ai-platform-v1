@@ -433,3 +433,6 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 - Design: HVAC per floor via hvac design package, plus preliminary plumbing, fire and electrical counts from starter norms (NORMS in design.py, all unvalidated). Run lengths estimated from floor area, no routing.
 - BOQ: ~28 generated lines taken off with the existing recipes plus new ones (fire sprinkler pipe, water supply pipe, uPVC drain pipe, conduit and wiring). Equipment lines go to the consolidated procure list. Client PDF/Excel hide the norms (client_safe covers mep_building_package).
 - NOT built: layout drawings on the real plan (stage 4), PDF plan reading, dashboard form/upload for plans, heating load, fire tank/pump sizing, electrical cable sizing per circuit.
+
+## 2026-10-19: thumb rule
+- CLAUDE.md now holds the rule: trial after every push. `python scripts/post_push_trial.py` runs the standard requests end to end (routing, job, approval, PDF, Excel, basis-leak check). Add a case whenever a request type is added.

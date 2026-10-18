@@ -1,0 +1,86 @@
+"""Trial run after every push: sends the standard requests through the real pipeline and fails loudly.
+
+Usage: python scripts/post_push_trial.py
+Each case: request text -> routing -> job -> approval -> PDF + Excel. Checks the right skill was chosen,
+the job reached review, and the documents contain no calculation-basis words.
+"""
+from __future__ import annotations
+
+import io
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from jobs.service import JobService
+from jobs.store import InMemoryJobStore
+from orchestrator.intake import build_plan
+from reports.artifacts import build_approved_pdf, build_evidence_xlsx
+from reports.service import ReportService
+from reports.store import InMemoryReportStore
+
+CASES = [
+    ("hvac_design_package", """HVAC design package, room by room load, airflow, duct sizing and equipment schedule for an office building in New Delhi.
+Design conditions: outdoor 43 C DB / 23 C WB summer, indoor 24 C and 50% RH.
+Rooms:
+Reception, 60 sqm, 10 people
+Open office, 250 sqm, 60 people
+Server room, 30 sqm, 2 people
+Select chiller or VRF with standby, chilled water pump head, duct sizes and AHU/FCU schedule."""),
+    ("mep_building_package", """Generate MEP BOQ and layout for a 5 floor office building in Delhi.
+Floor: Typical floor x5
+Open office | 250 sqm | 60 people
+Conference room | 40 sqm | 20 people
+Pantry | 30 sqm | 10 people"""),
+]
+LEAK = re.compile(r"recipe|unvalidated default|sqm_per|persons_per|starter norm|consumption per unit", re.I)
+
+
+def run(expected: str, text: str) -> list[str]:
+    problems = []
+    plan = build_plan(text)
+    got = [w.skill_id for w in plan.work_items]
+    if got != [expected]:
+        return [f"routed to {got}, expected [{expected}]"]
+    if plan.status != "ready_for_execution":
+        return [f"plan status {plan.status}, missing {plan.missing_inputs}"]
+    svc = JobService(InMemoryJobStore(), tenant_id="t1", report_service=ReportService(InMemoryReportStore(), tenant_id="t1"))
+    job = svc.create_from_plan(plan)
+    if job.status.value != "human_review":
+        return [f"job ended in {job.status.value}"]
+    job = svc.approve(job.job_id, "trial", "ok")
+    bundle = job.result["evidence_bundle"]
+    pdf = build_approved_pdf(job=job, evidence_bundle=bundle)
+    xlsx = build_evidence_xlsx(job=job, evidence_bundle=bundle)
+    if len(pdf) < 5000 or len(xlsx) < 5000:
+        problems.append("PDF or Excel is suspiciously small")
+    import openpyxl
+    wb = openpyxl.load_workbook(io.BytesIO(xlsx))
+    for ws in wb:
+        if ws.title in ("Workflow", "Request", "Result", "Tasks"):
+            continue
+        for row in ws.iter_rows(values_only=True):
+            t = " ".join(str(c) for c in row if c is not None)
+            if LEAK.search(t):
+                problems.append(f"calculation-basis wording in sheet {ws.title}: {t[:80]}")
+                break
+    return problems
+
+
+def main() -> int:
+    failed = 0
+    for expected, text in CASES:
+        try:
+            problems = run(expected, text)
+        except Exception as exc:  # noqa: BLE001 - a trial must report any failure
+            problems = [f"{type(exc).__name__}: {exc}"]
+        print(("PASS " if not problems else "FAIL ") + expected)
+        for p in problems:
+            print("   -", p)
+        failed += bool(problems)
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
