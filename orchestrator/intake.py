@@ -949,6 +949,9 @@ def build_plan(
             bt = infer_building_type(text)
             if bt:
                 merged = {**merged, "building_type": bt}
+        if skill_id == "hvac_design_package":
+            from engineering.building.prose_inputs import design_conditions
+            merged = {**design_conditions(text), **merged}
         if skill_id == "hvac_design_package" and not (merged.get("rooms") or merged.get("rooms_text")):
             rt = rooms_text_from_prose(text)
             if rt and extract_room_schedule(rt)["rooms"]:

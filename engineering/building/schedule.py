@@ -176,6 +176,10 @@ def infer_building_type(text: str) -> str:
 
 def rooms_text_from_prose(text: str) -> str:
     """Turn 'a 120 m2 open office and a 30 m2 meeting room' into one 'name | area unit | n people' row per room."""
+    from engineering.building.prose_inputs import room_rows_from_lines
+    line_rows = room_rows_from_lines(text)
+    if line_rows:
+        return line_rows
     segs = re.split(r"\s*(?:,|;|\band\b|\bplus\b|\n)\s*", text or "", flags=re.I)
     rows: List[str] = []
     for seg in segs:
