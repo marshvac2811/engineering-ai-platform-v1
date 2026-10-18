@@ -422,3 +422,7 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 ## 2026-10-18 evening: trade secret + consolidated procure list
 - Client PDF/Excel no longer show calculation basis: Basis columns, recipe names, recipe factors, programme basis, calculation steps and unvalidated-defaults note are stripped by `reports/client_safe.py` (applied at the start of build_approved_pdf / build_evidence_xlsx). Stored job record and owner data are unchanged.
 - Procure-as-specified lines are merged (same description+unit, qty summed, item numbers listed) and grouped by equipment category (`skills/commercial/boq_takeoff/procure.py`); new PDF page and Excel sheet "Procure As Specified".
+
+## 2026-10-18 night: routing fix
+- A full "HVAC design package ... duct sizing ..." request was routed to the single duct_sizing calculator (job fc511cdf asked for airflow). Added an explicit design-package rule ahead of the single-calculator rules in orchestrator/intake.py.
+- Known gaps seen in the local run: the design package uses benchmark loads and ignored the typed envelope/design-condition values; room names came out as "Space N"; only the listed rooms are counted (515 sqm, not the 12,000 sqm building).

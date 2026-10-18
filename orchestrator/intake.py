@@ -570,6 +570,11 @@ class RuleBasedIntentProvider:
             if any(marker in t for marker in markers):
                 return skill_id, [IntentCandidate(skill_id, 100, [rationale])], 0.99
 
+        # A full design-package request names duct sizing, chillers, pumps and so on as parts of one job.
+        # It must stay one design package and not be taken over by a single-calculator phrase.
+        if any(m in t for m in ("hvac design package", "design package", "room by room load", "room-by-room load")):
+            return "hvac_design_package", [IntentCandidate("hvac_design_package", 100, ["Explicit HVAC design-package objective."])], 0.99
+
         # Phrasing-tolerant explicit objectives ("Size the BMS controllers", "Size a
         # rectangular supply air duct", "Calculate the facade U-factor"). A sizing/
         # calculation verb next to the specific equipment noun is an unambiguous
