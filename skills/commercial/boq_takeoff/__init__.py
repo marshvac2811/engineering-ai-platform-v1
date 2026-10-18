@@ -146,6 +146,10 @@ def _clean_draft(d: Dict[str, Any], desc: str, unit: str) -> Optional[Dict[str, 
             "validated": False, "source": "ai_draft", "assumptions": list(d.get("assumptions", []))}
 
 
+_TRADE_NAMES = {"hvac": "HVAC", "electrical": "Electrical", "plumbing": "Plumbing", "firefighting": "Fire fighting", "interiors": "Interiors / Finishing",
+                "civil": "Civil", "bms": "BMS / Controls"}
+
+
 def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str, Any]]] = None,
             draft_fn: Optional[Any] = None) -> Dict[str, Any]:
     """draft_fn(description, unit) -> recipe dict, used only for lines no stored recipe matches.
@@ -204,14 +208,18 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
         mats = []
         spec = str(line.get("spec") or line.get("description", ""))[:90]
         spec = re.sub(r"^[A-Za-z]{1,4}[\s-]*\d+(?:\.\d+)?\s*(?:\([A-Za-z]\)\s*)?", "", spec).strip() or spec
-        for m in recipe.get("materials", []):
+        group = _TRADE_NAMES.get((recipe.get("verticals") or ["general"])[0], "General")
+        for mi, m in enumerate(recipe.get("materials", [])):
             mname = str(m["name"]).replace("{spec}", spec)
             cons, waste = float(m.get("consumption_per_unit", 0)), float(m.get("wastage_percent", 0))
             q = base_qty * cons * (1 + waste / 100.0)
             mats.append({"material_name": mname, "unit": m["unit"], "quantity": round(q, 3),
                          "basis": f"{base_qty:g} {recipe['base_unit']} x {cons:g} {m['unit']}/{recipe['base_unit']} + {waste:g}% wastage"})
             key = (mname.strip().lower(), m["unit"].strip().lower())
-            cur = totals.setdefault(key, {"material_name": mname, "unit": m["unit"], "quantity": 0.0, "source_items": ""})
+            cur = totals.setdefault(key, {"material_name": mname, "unit": m["unit"], "quantity": 0.0, "source_items": "",
+                                          "trade": group, "type": "Main material" if mi == 0 else "Supporting material"})
+            if mi == 0:
+                cur["type"] = "Main material"
             cur["quantity"] = round(cur["quantity"] + q, 3)
             cur["source_items"] = (cur["source_items"] + ", " + item) if cur["source_items"] else item
         flat.extend({"item_no": item, "recipe_name": recipe["name"], **mm} for mm in mats)
@@ -221,7 +229,7 @@ def takeoff(lines: List[Dict[str, Any]], custom_recipes: Optional[List[Dict[str,
                         "materials": mats})
     return {
         "line_count": len(lines), "matched_line_count": len(results), "unmatched_line_count": len(unmatched),
-        "line_takeoff": [{k: v for k, v in r.items() if k != "materials"} for r in results], "line_materials": flat, "boq_breakdown": results, "material_totals": sorted(totals.values(), key=lambda r: r["material_name"].lower()),
+        "line_takeoff": [{k: v for k, v in r.items() if k != "materials"} for r in results], "line_materials": flat, "boq_breakdown": results, "material_totals": sorted(totals.values(), key=lambda r: (r["trade"], r["type"] != "Main material", r["material_name"].lower())),
         "unmatched_lines": unmatched, "unvalidated_recipes_used": sorted(used_unvalidated),
         **({"ai_drafted_items": drafted} if drafted else {}),
         "procure_as_specified_count": len(procure),

@@ -88,3 +88,15 @@ def test_catalog_materials_are_well_formed():
         assert len(r["materials"]) >= 1
         for m in r["materials"]:
             assert set(m) == {"name", "unit", "consumption_per_unit", "wastage_percent"}, (r["id"], m)
+
+
+def test_consolidated_totals_are_grouped_and_in_reports():
+    from skills.commercial.boq_takeoff import takeoff
+    r = takeoff([{"item_no": "1", "description": "GI duct 24G", "unit": "sqm", "quantity": 100},
+                 {"item_no": "2", "description": "Cable tray Width 150 mm perforated type", "unit": "m", "quantity": 50}], None, None)
+    tot = r["material_totals"]
+    assert {t["trade"] for t in tot} == {"HVAC", "Electrical"}
+    assert all(t["type"] in ("Main material", "Supporting material") for t in tot)
+    assert any(t["type"] == "Supporting material" for t in tot)
+    from reports.artifacts import _material_totals
+    assert len(_material_totals({"engineering_result": r})) == len(tot)

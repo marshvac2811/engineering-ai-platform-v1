@@ -414,3 +414,7 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 - Local profile of the RITES BOQ (process+PDF+Excel) peaks ~75 MB, so the Render memory growth is in the Supabase path (per-thread clients / big row JSON). Watch Render logs for "[memory]" lines to confirm.
 - Catalog: supporting materials (fasteners, flanges/gaskets, electrodes, paint, adhesive, tapes, glands, lugs, ties, anchors, sealants, hardware) added to the MEP recipes; names containing commas must be quoted in YAML flow mappings (test added).
 - 2026-10-17: Dashboard live progress: animated run box + stage steps + elapsed timer on In Progress job cards (auto-refresh every 6 s while a job runs), and a bottom-right activity box for every save/submit/approve/dispatch call (global fetch wrapper); action timeouts raised from 30/60 s to 240 s.
+
+## Checkpoint 2026-10-18
+- Download fix: the page opened the signed file URL with window.open after a ~20 s wait, which Chrome blocks as a pop-up (server logs showed 200 OK). downloadArtifact now downloads in the same tab via an anchor and also shows a visible link. Artifact endpoint no longer loads the whole job, and selects only file columns (faster).
+- Consolidated material list: material_totals now carries trade + Main/Supporting type; PDF has a stand-alone "Consolidated material list" page (grouped by trade), Excel has a "Consolidated Materials" sheet, dashboard BOQ view shows the table. 548 tests passing.

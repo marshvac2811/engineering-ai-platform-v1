@@ -754,12 +754,19 @@ async function provideInfo(jobId,fields){
 function kv(k,v){return '<div style="margin-top:4px"><strong>'+esc(k)+':</strong> '+esc(v==null||v===""?"-":String(v))+'</div>';}
 function boqView(er){
  er=er||{};
- const bd=Array.isArray(er.boq_breakdown)?er.boq_breakdown:[], pr=Array.isArray(er.work_programme)?er.work_programme:[];
+ const bd=Array.isArray(er.boq_breakdown)?er.boq_breakdown:[], pr=Array.isArray(er.work_programme)?er.work_programme:[], mt=Array.isArray(er.material_totals)?er.material_totals:[];
  let h="";
  if(bd.length){
   h+='<h4 style="margin:12px 0 4px">Materials required for each BOQ item</h4>'+bd.map(b=>'<div class="json-result" style="margin-top:8px"><div style="background:#1f3a5f;color:#fff;padding:5px 8px;font-weight:600">Item '+esc(b.item_no)+' &middot; '+esc(b.boq_quantity)+' '+esc(b.boq_unit||"")+'</div>'+
    '<div class="small" style="padding:5px 8px;background:#f3f6fa">'+esc(b.description||"")+'</div>'+(b.drawing_note?'<div class="small" style="padding:5px 8px;background:#fff4d6"><b>From drawing:</b> '+esc(b.drawing_note)+'</div>':"")+
    '<table><thead><tr><th>Material</th><th>Unit</th><th style="text-align:right">Qty</th></tr></thead><tbody>'+(b.materials||[]).map(m=>'<tr><td>'+esc(m.material_name)+'</td><td>'+esc(m.unit)+'</td><td style="text-align:right">'+esc(Number(m.quantity).toLocaleString(undefined,{maximumFractionDigits:2}))+'</td></tr>').join("")+'</tbody></table></div>').join("");
+ }
+ if(mt.length){
+  let last="",n=0;
+  h+='<h4 style="margin:12px 0 4px">Consolidated material list (all items together)</h4><div class="small">Every material added up across all BOQ items, grouped by trade. Quantities include wastage. This list is also a separate page in the PDF and a sheet in the Excel.</div>'+
+   '<div class="json-result"><table><thead><tr><th>No.</th><th>Material</th><th>Unit</th><th style="text-align:right">Total qty</th><th>Type</th><th>BOQ items</th></tr></thead><tbody>'+
+   mt.map(r=>{let row="";const tr=String(r.trade||"General");if(tr!==last){last=tr;row+='<tr><td colspan="6" style="background:#dde4ee;font-weight:700">'+esc(tr.toUpperCase())+'</td></tr>';}n++;
+    return row+'<tr><td>'+n+'</td><td>'+esc(r.material_name)+'</td><td>'+esc(r.unit)+'</td><td style="text-align:right">'+esc(Number(r.quantity).toLocaleString(undefined,{maximumFractionDigits:2}))+'</td><td>'+(r.type==="Main material"?"Main":"Supporting")+'</td><td class="small">'+esc(String(r.source_items||"").slice(0,60))+'</td></tr>';}).join("")+'</tbody></table></div>';
  }
  if(pr.length){
   h+='<h4 style="margin:12px 0 4px">Indicative work programme</h4><div class="small">Estimated duration: '+esc(er.total_duration_days)+' working days (about '+esc(er.total_duration_weeks)+' weeks). Red = critical path.</div>'+
@@ -824,13 +831,16 @@ async function downloadDrawingArtifact(jobId,kind){
 }
 async function downloadArtifact(jobId,kind){
  const msg=document.getElementById("dlmsg-"+jobId)||document.getElementById("regMsg");
- if(msg)msg.textContent="Preparing download...";
+ const label=kind==="xlsx"?"Excel":"PDF";
+ if(msg)msg.textContent="Preparing the "+label+" download... (the free server can take up to a minute)";
  try{
   const r=await api("/v1/jobs/"+encodeURIComponent(jobId)+"/artifacts/"+kind);
   const d=await r.json();
   if(!r.ok)throw Error(d.error||"Download unavailable");
-  if(msg)msg.textContent="";
-  window.open(d.url,"_blank","noopener");
+  // A link opened after waiting is blocked by the browser as a pop-up, so download in the same tab and also show a link.
+  const a=document.createElement("a");a.href=d.url;a.download=d.filename||"";a.rel="noopener";a.style.display="none";
+  document.body.appendChild(a);a.click();a.remove();
+  if(msg){msg.textContent="";const l=document.createElement("a");l.href=d.url;l.textContent="Download "+label+" again (click here if nothing downloaded)";l.target="_blank";l.rel="noopener";l.style.fontWeight="700";l.style.color="#1769e0";msg.appendChild(l);}
  }catch(e){if(msg)msg.textContent="Could not download: "+e.message;}
 }
 

@@ -1243,7 +1243,7 @@ class APIApp:
                 if kind not in {"pdf", "xlsx"}:
                     return self._json(start_response, "404 Not Found", {"error": "Unknown artifact type; use pdf or xlsx"})
                 try:
-                    service._get(job_id)
+                    job_id = service._resolve_job_id(job_id)   # cheap prefix/serial lookup; no need to load the whole job
                 except KeyError:
                     return self._json(start_response, "404 Not Found", {"error": "Job not found"})
                 getter = getattr(service.store, "get_artifact_download", None)

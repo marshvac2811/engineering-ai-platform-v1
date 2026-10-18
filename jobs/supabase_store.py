@@ -399,8 +399,8 @@ class SupabaseJobStore(JobStore):
             "dispatched_at": job.updated_at,
         }).eq("report_id", report_id).eq("job_id", job.job_id).execute()
 
-    def get_report_artifact(self, job_id: str, *, tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        query = self.client.table("engineering_report_artifacts").select("*").eq("job_id", job_id).order("version", desc=True).limit(1)
+    def get_report_artifact(self, job_id: str, *, tenant_id: Optional[str] = None, columns: str = "*") -> Optional[Dict[str, Any]]:
+        query = self.client.table("engineering_report_artifacts").select(columns).eq("job_id", job_id).order("version", desc=True).limit(1)
         if tenant_id:
             query = query.eq("tenant_id", tenant_id)
         response = query.execute()
@@ -479,7 +479,10 @@ class SupabaseJobStore(JobStore):
         """
         if kind not in {"pdf", "xlsx"}:
             raise ValueError("kind must be 'pdf' or 'xlsx'")
-        artifact = self.get_report_artifact(job_id, tenant_id=tenant_id)
+        # Only the file columns: the full row carries the whole report JSON, which makes the download click slow.
+        artifact = self.get_report_artifact(
+            job_id, tenant_id=tenant_id,
+            columns="report_id,version,pdf_storage_path,pdf_filename,pdf_sha256,xlsx_storage_path,xlsx_filename,xlsx_sha256")
         if not artifact:
             return None
         path = artifact.get(f"{kind}_storage_path")

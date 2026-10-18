@@ -128,13 +128,20 @@ def _task_inputs(task: Dict[str, Any], request_inputs: Dict[str, Any]) -> Dict[s
 # again as result rows duplicates them.
 _NARRATIVE_KEYS = {"assumptions", "limitations", "warnings"}
 # BOQ takeoff: the per-item material blocks replace these flat tables in the PDF and Excel.
-_BOQ_FLAT_KEYS = {"line_takeoff", "line_materials", "boq_breakdown", "work_programme"}
+_BOQ_FLAT_KEYS = {"line_takeoff", "line_materials", "boq_breakdown", "work_programme", "material_totals"}
 
 
 def _boq_breakdown(task: Dict[str, Any]) -> list:
     """Per-BOQ-item blocks: each item with its own material list (SiteTrack-style)."""
     value = (task.get("engineering_result") or {}).get("boq_breakdown")
     return [b for b in value if isinstance(b, dict)] if isinstance(value, list) else []
+
+
+def _material_totals(task: Dict[str, Any]) -> list:
+    """Consolidated purchase list: every material summed across all BOQ items, grouped by trade."""
+    value = (task.get("engineering_result") or {}).get("material_totals")
+    rows = [r for r in value if isinstance(r, dict)] if isinstance(value, list) else []
+    return sorted(rows, key=lambda r: (str(r.get("trade") or "General"), str(r.get("type") or "") != "Main material", str(r.get("material_name") or "").lower()))
 
 
 def _programme_rows(task: Dict[str, Any]) -> list:
@@ -373,6 +380,37 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
                     ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
                 ]))
                 story.append(KeepTogether([t, Spacer(1, 6)]) if len(data) <= 22 else t)
+        totals_ = _material_totals(task)
+        if totals_:
+            story.append(PageBreak())   # the consolidated list is a stand-alone page for purchasing
+            story.append(Paragraph("Consolidated material list (all BOQ items together)", task_h))
+            story.append(Paragraph("Each material is added up across every BOQ item, grouped by trade, so it can be used as one purchase list. Quantities include wastage. Supporting materials (fasteners, adhesives, tapes, sealants and similar) use standard starter factors to be confirmed by the engineer.", small))
+            story.append(Spacer(1, 3))
+            c_cell = ParagraphStyle("c_cell", parent=cell, fontSize=7.5, leading=9.5)
+            c_num = ParagraphStyle("c_num", parent=c_cell, alignment=2)
+            c_head = ParagraphStyle("c_head", parent=cell_b, fontSize=7.5, leading=9, textColor=colors.white)
+            c_trade = ParagraphStyle("c_trade", parent=cell_b, fontSize=8, leading=10)
+            esc3 = lambda v: str(v if v not in (None, "") else "-").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            data = [[Paragraph(h, c_head) for h in ("No.", "Material", "Unit", "Total qty", "Type", "BOQ items")]]
+            style = [("BACKGROUND", (0, 0), (-1, 0), _ACCENT), ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c2cf")),
+                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]
+            last_trade, n = None, 0
+            for r in totals_:
+                trade = str(r.get("trade") or "General")
+                if trade != last_trade:
+                    data.append([Paragraph(esc3(trade.upper()), c_trade), "", "", "", "", ""])
+                    style += [("SPAN", (0, len(data) - 1), (-1, len(data) - 1)), ("BACKGROUND", (0, len(data) - 1), (-1, len(data) - 1), colors.HexColor("#dde4ee")),
+                              ("NOSPLIT", (0, len(data) - 1), (-1, len(data)))]   # keep a trade heading with its first material row
+                    last_trade = trade
+                n += 1
+                data.append([Paragraph(str(n), c_cell), Paragraph(esc3(_clip(r.get("material_name"), 90)), c_cell), Paragraph(esc3(r.get("unit")), c_cell),
+                             Paragraph(esc3(_qty_text(r.get("quantity"), r.get("unit"))), c_num),
+                             Paragraph("Main" if r.get("type") == "Main material" else "Supporting", c_cell),
+                             Paragraph(esc3(_clip(r.get("source_items"), 60)), ParagraphStyle("c_src", parent=c_cell, fontSize=6.5, leading=8))])
+            ct = Table(data, colWidths=[9 * mm, 66 * mm, 13 * mm, 22 * mm, 20 * mm, 50 * mm], repeatRows=1)
+            ct.setStyle(TableStyle(style))
+            story.append(ct)
+            story.append(Spacer(1, 6))
         prog = _programme_rows(task)
         if prog:
             res_ = (task.get("engineering_result") or {})
@@ -626,6 +664,26 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         for col, w in zip("ABCD", (80, 12, 22, 60)):
             sh.column_dimensions[col].width = w
         sh.freeze_panes = "A2"
+        break
+    for index, t in enumerate(tasks, 1):
+        totals_ = _material_totals(t)
+        if not totals_:
+            continue
+        sh = wb.create_sheet("Consolidated Materials")
+        sh.append(["No.", "Trade", "Material", "Unit", "Total quantity (incl. wastage)", "Type", "BOQ items using it"])
+        for c in sh[1]:
+            c.fill, c.font, c.alignment = header_fill, header_font, wrap
+        for n, r in enumerate(totals_, 1):
+            q = r.get("quantity")
+            sh.append([n, r.get("trade") or "General", r.get("material_name"), r.get("unit"), (round(q, 2) if isinstance(q, (int, float)) else q),
+                       "Main" if r.get("type") == "Main material" else "Supporting", r.get("source_items")])
+            for c in sh[sh.max_row]:
+                c.alignment = wrap
+            sh.cell(sh.max_row, 5).number_format = "#,##0.00"
+        for col, w in zip("ABCDEFG", (6, 20, 60, 10, 22, 12, 40)):
+            sh.column_dimensions[col].width = w
+        sh.freeze_panes = "A2"
+        sh.auto_filter.ref = f"A1:G{sh.max_row}"
         break
     for index, t in enumerate(tasks, 1):
         prog = _programme_rows(t)
