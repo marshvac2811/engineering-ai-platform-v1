@@ -297,3 +297,55 @@ recipes:
       - {name: Frame Anchor Fasteners, unit: nos, consumption_per_unit: 3, wastage_percent: 5}
       - {name: Intumescent Sealant, unit: kg, consumption_per_unit: 0.1, wastage_percent: 5}
       - {name: Door Seals / Smoke Gasket, unit: rmt, consumption_per_unit: 2.0, wastage_percent: 5}
+  - id: gi_sprinkler_pipe
+    name: Fire Sprinkler Pipe
+    verticals: [firefighting]
+    validated: false
+    notes: Heavy-class steel pipe with fittings, clamps and paint; hydrant, sprinkler and riser pipe.
+    base_unit: m
+    aliases: [fire sprinkler pipe, sprinkler pipework, fire hydrant pipe, fire riser pipe]
+    materials:
+      - {name: "Fire Fighting Steel Pipe {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Pipe Clamps/Supports, unit: nos, consumption_per_unit: 0.4, wastage_percent: 5}
+      - {name: "Fittings (elbows/tees/reducers)", unit: nos, consumption_per_unit: 0.2, wastage_percent: 0}
+      - {name: Flange Pairs with Gasket, unit: nos, consumption_per_unit: 0.1, wastage_percent: 0}
+      - {name: Nuts and Bolts (flange sets), unit: nos, consumption_per_unit: 0.6, wastage_percent: 5}
+      - {name: Anti-corrosive Primer / Paint, unit: ltr, consumption_per_unit: 0.05, wastage_percent: 5}
+  - id: cpvc_water_supply_pipe
+    name: Water Supply Pipe
+    verticals: [plumbing]
+    validated: false
+    notes: CPVC or GI water supply pipe with fittings and clamps.
+    base_unit: m
+    aliases: [water supply pipe, cpvc pipe, domestic water supply pipe]
+    materials:
+      - {name: "Water Supply Pipe {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Pipe Clamps/Supports, unit: nos, consumption_per_unit: 0.5, wastage_percent: 5}
+      - {name: "Fittings (elbows/tees/couplings)", unit: nos, consumption_per_unit: 0.3, wastage_percent: 0}
+      - {name: Solvent Cement / Jointing Compound, unit: kg, consumption_per_unit: 0.01, wastage_percent: 10}
+      - {name: Screws and Wall Plugs / Anchors, unit: nos, consumption_per_unit: 1.0, wastage_percent: 5}
+  - id: upvc_drain_pipe
+    name: Soil and Waste Drain Pipe
+    verticals: [plumbing]
+    validated: false
+    notes: uPVC soil and waste pipe with fittings and clamps.
+    base_unit: m
+    aliases: [soil and waste pipe, soil waste pipe, upvc drain pipe, uPVC soil pipe]
+    materials:
+      - {name: "uPVC Soil and Waste Pipe {spec}", unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Pipe Clamps/Supports, unit: nos, consumption_per_unit: 0.4, wastage_percent: 5}
+      - {name: "Fittings (bends/tees/couplings)", unit: nos, consumption_per_unit: 0.25, wastage_percent: 0}
+      - {name: Solvent Cement / Jointing Compound, unit: kg, consumption_per_unit: 0.01, wastage_percent: 10}
+  - id: pvc_conduit_wiring
+    name: Conduit and Wiring
+    verticals: [electrical]
+    validated: false
+    notes: Concealed or surface PVC conduit with copper wire for lights and sockets.
+    base_unit: m
+    aliases: [conduit and wiring, pvc conduit wiring, point wiring]
+    materials:
+      - {name: FRLS Copper Wire, unit: m, consumption_per_unit: 2.5, wastage_percent: 5}
+      - {name: PVC Conduit, unit: m, consumption_per_unit: 1.0, wastage_percent: 5}
+      - {name: Conduit Saddles/Clamps, unit: nos, consumption_per_unit: 0.67, wastage_percent: 5}
+      - {name: Junction Boxes and Accessories, unit: nos, consumption_per_unit: 0.2, wastage_percent: 0}
+      - {name: Cable Ties and Insulation Tape, unit: set, consumption_per_unit: 0.02, wastage_percent: 0}

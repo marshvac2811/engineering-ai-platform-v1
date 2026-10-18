@@ -70,6 +70,9 @@ _COVERAGE: Dict[str, Tuple[StandardsCandidate, ...]] = {
         StandardsCandidate("bee_ecbc_2017", "Energy-code context for commercial HVAC design where applicable.", ("jurisdiction", "building_type")),
         StandardsCandidate("ashrae_90_1_2025", "Energy-performance reference where applicable.", ("jurisdiction", "contractual_standard")),
     ),
+    "mep_building_package": (
+        StandardsCandidate("bis_nbc_2016", "Building-services scope reference (HVAC, plumbing, fire, electrical); quantities here are a preliminary model.", ("jurisdiction", "building_type")),
+    ),
     "fire_water_storage": (),
     "plumbing_water_demand": (),
     "psychrometric_properties": (),

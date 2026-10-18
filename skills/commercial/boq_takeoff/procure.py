@@ -6,6 +6,10 @@ from typing import Any, Dict, Iterable, List
 
 # Ordered rules: the first group whose pattern matches the item title wins.
 _GROUPS = [
+    ("Fire protection devices and systems", r"sprinkler|smoke detector|extinguisher|landing valve|hose reel|fire pump|fire alarm"),
+    ("Plumbing fixtures, tanks and pumps", r"water closet|urinal|wash basin|water storage tank|transfer pump"),
+    ("Lighting, power and distribution", r"light fitting|led panel light|socket outlet|distribution board|lt panel"),
+    ("Chilled water plant", r"chilled water plant"),
     ("Controls, BMS and instrumentation", r"controller|automation|automatic control|control.{0,3}optimi|\bbms\b|\bddc\b|sensor|actuator|thermostat"),
     ("VFDs, starters and electrical panels", r"^[^|]{0,30}\bvfd\b|variable frequency|starter|\bpanel|\bmcc\b|switchgear"),
     ("Chillers, heat pumps and cooling towers", r"chiller|cooling tower|fouling factor|heat pump"),

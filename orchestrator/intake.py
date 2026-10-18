@@ -125,6 +125,7 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
     "energy_optimisation_study": ("energy optimisation study", "energy optimization study", "energy study", "energy saving measures", "decarbonisation roadmap", "decarbonization roadmap", "energy audit measures", "ranked energy measures"),
     "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance", "deviates on", "technical deviation"),
     "fire_water_storage": ("fire water storage", "fire tank volume", "fire reserve", "fire water requirement"),
+    "mep_building_package": ("mep boq for", "mep package for", "mep design for", "boq and layout", "mep boq from plan", "mep boq and layout", "mep boq for building", "generate mep boq", "mep boq", "mep layout drawings"),
     "hvac_design_package": ("hvac design package", "room by room load", "equipment schedule", "design the hvac", "hvac design for", "room-by-room",
                             "design hvac", "hvac design", "design an hvac", "design air conditioning", "air conditioning design", "design ac for", "design the air conditioning"),
     "plumbing_water_demand": ("plumbing water demand", "fixture demand", "domestic water demand", "plumbing flow"),
@@ -956,6 +957,21 @@ def build_plan(
             rt = rooms_text_from_prose(text)
             if rt and extract_room_schedule(rt)["rooms"]:
                 merged = {**merged, "rooms_text": rt}
+    if skill_id == "mep_building_package":
+        from engineering.building.schedule import infer_building_type
+        from engineering.building_mep.schedule import floors_from_text
+        from engineering.building.prose_inputs import design_conditions
+        if not merged.get("building_type"):
+            bt = infer_building_type(text)
+            if bt:
+                merged = {**merged, "building_type": bt}
+        fm = re.search(r"(?i)\b(\d{1,3})\s*[- ]?\s*(?:floors?|storey|storeys|stories|levels?)\b", text or "")
+        if fm and not merged.get("floor_count"):
+            merged = {**merged, "floor_count": int(fm.group(1))}
+        if not (merged.get("floors") or merged.get("floors_text") or merged.get("plan_image_b64")):
+            if floors_from_text(text, int(merged.get("floor_count") or 1)):
+                merged = {**merged, "floors_text": text}
+        merged = {**design_conditions(text), **merged}
     from skills.calculators.prose import extract_catalogue_inputs
     prose_inputs = extract_catalogue_inputs(skill_id, text) if skill_id else {}
     if prose_inputs:

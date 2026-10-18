@@ -11,6 +11,7 @@ from typing import Any
 
 _SECRET_KEYS = {"recipe_id", "recipe_name", "recipe_source", "recipe_quantity", "recipe_unit", "unvalidated_recipes_used"}
 _DROP_ASSUMPTIONS = {"recipe_factors", "work_programme_basis"}
+_TRACE_SKILLS = ("boq_takeoff", "mep_building_package")   # capabilities whose method notes and norms are not shown to clients
 
 
 def _text(v: Any) -> str:
@@ -37,7 +38,7 @@ def _scrub_assumptions(items: list) -> list:
     for a in items:
         if isinstance(a, dict):
             name = _text(a.get("name") or a.get("assumption")).lower().replace(" ", "_")
-            if name in _DROP_ASSUMPTIONS:
+            if name in _DROP_ASSUMPTIONS or "starter norm" in _text(a.get("basis")).lower() or "plant cop" in _text(a.get("value")).lower():
                 continue
         out.append(a)
     return out
@@ -51,12 +52,12 @@ def _scrub(obj: Any, parent_capability: str = "") -> Any:
         for k, v in obj.items():
             if k in _SECRET_KEYS or (k == "basis" and material_row):
                 continue
-            if k in ("calculation_trace", "calculations") and cap == "boq_takeoff":
+            if k in ("calculation_trace", "calculations") and cap in _TRACE_SKILLS:
                 out[k] = []
             elif k in ("warnings", "risks_warnings") and isinstance(v, list):
                 out[k] = _scrub_warnings(v)
             elif k == "assumptions" and isinstance(v, list):
-                out[k] = _scrub_assumptions(v)
+                out[k] = [] if cap == "mep_building_package" else _scrub_assumptions(v)
             elif k == "procure_as_specified" and isinstance(v, list):
                 from skills.commercial.boq_takeoff.procure import consolidate_procure
                 out[k] = consolidate_procure(v) if v and "group" not in (v[0] or {}) else v

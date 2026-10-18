@@ -39,6 +39,7 @@ IMPLEMENTATION_BINDINGS: Tuple[ImplementationBinding, ...] = (
     ImplementationBinding("bms_alarm_evaluation", "skills.bms.alarm.adapter", "BMSAlarmEvaluationSkill"),
     ImplementationBinding("fire_water_storage", "skills.fire.preliminary_water_storage.adapter", "FireWaterStorageSkill"),
     ImplementationBinding("hvac_design_package", "skills.hvac.design_package.adapter", "HVACDesignPackageSkill"),
+    ImplementationBinding("mep_building_package", "skills.mep.building_package.adapter", "MEPBuildingPackageSkill"),
     ImplementationBinding("plumbing_water_demand", "skills.plumbing.preliminary_water_demand.adapter", "PlumbingWaterDemandSkill"),
     ImplementationBinding("psychrometric_properties", "skills.calculators.adapters", "PsychrometricPropertiesSkill"),
     ImplementationBinding("cooling_coil_load", "skills.calculators.adapters", "CoolingCoilLoadSkill"),

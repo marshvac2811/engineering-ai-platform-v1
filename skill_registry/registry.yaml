@@ -1707,6 +1707,46 @@ skills:
   - "water storage tank"
   - "sump size"
 
+- skill_id: mep_building_package
+  version: 1.0.0
+  domain: MEP
+  source_repository: internal-governed
+  source_path: skills/mep/building_package
+  execution: deterministic_python
+  classification: preliminary
+  integration_status: integrated
+  human_review_required: true
+  required_inputs:
+  - name: building_type
+    data_type: string
+    description: Building type, for example office, hospital or retail.
+  optional_inputs:
+  - name: floors
+    data_type: array
+    description: Floors as {name, count, rooms:[{name, area_m2, occupancy}]}. Supply this, floors_text or a plan image.
+  - name: floors_text
+    data_type: string
+    description: 'Room schedule as text: a line such as Floor: Typical floor x5, then one room per line with area and unit.'
+  - name: floor_count
+    data_type: number
+    description: Number of identical floors when only one room list is given.
+  - name: floor_height_m
+    data_type: number
+    description: Floor-to-floor height in metres (default 3.6).
+  - name: climate_zone
+    data_type: string
+    description: Project climate zone (default composite).
+  - name: plan_image_b64
+    data_type: string
+    description: Plan or sketch image (PNG or JPG, base64) read by AI into a draft room schedule that an engineer must confirm.
+  conditional_inputs: []
+  implementation_binding: skills.mep.building_package.adapter:MEPBuildingPackageSkill
+  routing_terms:
+  - mep boq for building
+  - mep package for building
+  - mep design for building
+  - boq and layout for building
+  - mep boq from plan
 crm_pipeline:
   domain: COMMERCIAL
   source: marshvac2811/pipeline/pipeline.html
