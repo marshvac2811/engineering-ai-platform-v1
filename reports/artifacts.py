@@ -128,7 +128,7 @@ def _task_inputs(task: Dict[str, Any], request_inputs: Dict[str, Any]) -> Dict[s
 # again as result rows duplicates them.
 _NARRATIVE_KEYS = {"assumptions", "limitations", "warnings"}
 # BOQ takeoff: the per-item material blocks replace these flat tables in the PDF and Excel.
-_BOQ_FLAT_KEYS = {"line_takeoff", "line_materials", "boq_breakdown", "work_programme", "material_totals"}
+_BOQ_FLAT_KEYS = {"line_takeoff", "line_materials", "boq_breakdown", "work_programme", "material_totals", "procure_as_specified"}
 
 
 def _boq_breakdown(task: Dict[str, Any]) -> list:
@@ -214,6 +214,8 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
     if str(job.status.value) not in _APPROVED:
         raise ValueError("Approved PDF can only be generated after human approval")
 
+    from reports.client_safe import client_safe_bundle
+    evidence_bundle = client_safe_bundle(evidence_bundle)   # calculation basis is a trade secret: never printed
     out = io.BytesIO()
     base = getSampleStyleSheet()
     body = ParagraphStyle("Body", parent=base["BodyText"], fontSize=9, leading=12)
@@ -359,17 +361,17 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
             esc = lambda v: str(v if v not in (None, "") else "-").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             for b in breakdown:
                 note_ = b.get("drawing_note")
-                data = [[Paragraph(esc(_item_heading(b)), item_head), "", "", ""],
-                        [Paragraph(esc(_clip(b.get("description"), 400)), item_desc), "", "", ""]]
+                data = [[Paragraph(esc(_item_heading(b)), item_head), "", ""],
+                        [Paragraph(esc(_clip(b.get("description"), 400)), item_desc), "", ""]]
                 if note_:
-                    data.append([Paragraph("<b>From drawing:</b> " + esc(note_), item_desc), "", "", ""])
+                    data.append([Paragraph("<b>From drawing:</b> " + esc(note_), item_desc), "", ""])
                 data += [
-                        [Paragraph(h, sub_head) for h in ("Material", "Unit", "Qty", "Basis")]]
+                        [Paragraph(h, sub_head) for h in ("Material", "Unit", "Qty")]]
                 for m in b.get("materials") or []:
                     qty = m.get("quantity")
                     data.append([Paragraph(esc(m.get("material_name")), mat_cell), Paragraph(esc(m.get("unit")), mat_cell),
-                                 Paragraph(esc(_qty_text(qty, m.get("unit"))), mat_num), Paragraph(esc(m.get("basis")), ParagraphStyle("b", parent=mat_cell, fontSize=6.5, leading=8))])
-                t = Table(data, colWidths=[72 * mm, 14 * mm, 20 * mm, 74 * mm], repeatRows=0)
+                                 Paragraph(esc(_qty_text(qty, m.get("unit"))), mat_num)])
+                t = Table(data, colWidths=[130 * mm, 20 * mm, 30 * mm], repeatRows=0)
                 hdr_row = 3 if note_ else 2
                 t.setStyle(TableStyle([
                     ("SPAN", (0, 0), (-1, 0)), ("SPAN", (0, 1), (-1, 1))] + ([("SPAN", (0, 2), (-1, 2)), ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#fff4d6"))] if note_ else []) + [
@@ -384,7 +386,7 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
         if totals_:
             story.append(PageBreak())   # the consolidated list is a stand-alone page for purchasing
             story.append(Paragraph("Consolidated material list (all BOQ items together)", task_h))
-            story.append(Paragraph("Each material is added up across every BOQ item, grouped by trade, so it can be used as one purchase list. Quantities include wastage. Supporting materials (fasteners, adhesives, tapes, sealants and similar) use standard starter factors to be confirmed by the engineer.", small))
+            story.append(Paragraph("Each material is added up across every BOQ item, grouped by trade, so it can be used as one purchase list. Quantities include wastage. Supporting materials (fasteners, adhesives, tapes, sealants and similar) are indicative and to be confirmed by the engineer.", small))
             story.append(Spacer(1, 3))
             c_cell = ParagraphStyle("c_cell", parent=cell, fontSize=7.5, leading=9.5)
             c_num = ParagraphStyle("c_num", parent=c_cell, alignment=2)
@@ -410,6 +412,36 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
             ct = Table(data, colWidths=[9 * mm, 66 * mm, 13 * mm, 22 * mm, 20 * mm, 50 * mm], repeatRows=1)
             ct.setStyle(TableStyle(style))
             story.append(ct)
+            story.append(Spacer(1, 6))
+        proc_ = (task.get("engineering_result") or {}).get("procure_as_specified") or []
+        if proc_:
+            story.append(PageBreak())
+            story.append(Paragraph("Equipment and lump-sum items - procure as specified", task_h))
+            story.append(Paragraph("These items are bought to the specification in the BOQ and have no material takeoff. Identical items are combined; the BOQ item numbers are shown for reference.", small))
+            story.append(Spacer(1, 3))
+            p_cell = ParagraphStyle("p_cell", parent=cell, fontSize=7.5, leading=9.5)
+            p_num = ParagraphStyle("p_num", parent=p_cell, alignment=2)
+            p_head = ParagraphStyle("p_head", parent=cell_b, fontSize=7.5, leading=9, textColor=colors.white)
+            p_grp = ParagraphStyle("p_grp", parent=cell_b, fontSize=8, leading=10)
+            escp = lambda v: str(v if v not in (None, "") else "-").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            pdata = [[Paragraph(h, p_head) for h in ("No.", "Item (as specified)", "Unit", "Qty", "BOQ items")]]
+            pstyle = [("BACKGROUND", (0, 0), (-1, 0), _ACCENT), ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c2cf")),
+                      ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]
+            last_g, n = None, 0
+            for r in proc_:
+                g = str(r.get("group") or "Other equipment and lump-sum items")
+                if g != last_g:
+                    pdata.append([Paragraph(escp(g.upper()), p_grp), "", "", "", ""])
+                    pstyle += [("SPAN", (0, len(pdata) - 1), (-1, len(pdata) - 1)), ("BACKGROUND", (0, len(pdata) - 1), (-1, len(pdata) - 1), colors.HexColor("#dde4ee")),
+                               ("NOSPLIT", (0, len(pdata) - 1), (-1, len(pdata)))]
+                    last_g = g
+                n += 1
+                pdata.append([Paragraph(str(n), p_cell), Paragraph(escp(_clip(r.get("description"), 170)), p_cell), Paragraph(escp(r.get("unit")), p_cell),
+                              Paragraph(escp(_qty_text(r.get("quantity"), r.get("unit"))), p_num),
+                              Paragraph(escp(_clip(r.get("item_nos"), 60)), ParagraphStyle("p_src", parent=p_cell, fontSize=6.5, leading=8))])
+            pt = Table(pdata, colWidths=[9 * mm, 98 * mm, 13 * mm, 18 * mm, 42 * mm], repeatRows=1)
+            pt.setStyle(TableStyle(pstyle))
+            story.append(pt)
             story.append(Spacer(1, 6))
         prog = _programme_rows(task)
         if prog:
@@ -549,6 +581,8 @@ def build_approved_pdf(*, job, evidence_bundle: Dict[str, Any], watermark: str =
 
 def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
     from openpyxl.styles import Alignment, Font, PatternFill
+    from reports.client_safe import client_safe_bundle
+    evidence_bundle = client_safe_bundle(evidence_bundle)   # calculation basis is a trade secret: never written
 
     wb = Workbook()
     header_fill = PatternFill("solid", fgColor="1F3A5F")
@@ -642,12 +676,12 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
         if not breakdown:
             continue
         sh = wb.create_sheet("BOQ Item Materials")
-        sh.append(["Item / Material", "Unit", "Quantity (incl. wastage)", "Basis"])
+        sh.append(["Item / Material", "Unit", "Quantity (incl. wastage)"])
         for c in sh[1]:
             c.fill, c.font, c.alignment = header_fill, header_font, wrap
         item_fill = PatternFill("solid", fgColor="D9E1F2")
         for b in breakdown:
-            sh.append([f"{_item_heading(b)}  -  {b.get('description') or ''}", b.get("boq_unit"), b.get("boq_quantity"), b.get("recipe_name")])
+            sh.append([f"{_item_heading(b)}  -  {b.get('description') or ''}", b.get("boq_unit"), b.get("boq_quantity")])
             r = sh.max_row
             for c in sh[r]:
                 c.fill, c.font, c.alignment = item_fill, Font(bold=True), wrap
@@ -656,12 +690,12 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
                 sh.cell(sh.max_row, 1).font = Font(italic=True, color="7A5200")
                 sh.cell(sh.max_row, 1).alignment = wrap
             for m in b.get("materials") or []:
-                sh.append(["    " + str(m.get("material_name")), m.get("unit"), (round(m["quantity"], 2) if isinstance(m.get("quantity"), (int, float)) else m.get("quantity")), m.get("basis")])
+                sh.append(["    " + str(m.get("material_name")), m.get("unit"), (round(m["quantity"], 2) if isinstance(m.get("quantity"), (int, float)) else m.get("quantity"))])
                 for c in sh[sh.max_row]:
                     c.alignment = wrap
                 sh.cell(sh.max_row, 3).number_format = "#,##0.00"
             sh.append([])
-        for col, w in zip("ABCD", (80, 12, 22, 60)):
+        for col, w in zip("ABC", (90, 12, 24)):
             sh.column_dimensions[col].width = w
         sh.freeze_panes = "A2"
         break
@@ -684,6 +718,23 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
             sh.column_dimensions[col].width = w
         sh.freeze_panes = "A2"
         sh.auto_filter.ref = f"A1:G{sh.max_row}"
+        break
+    for index, t in enumerate(tasks, 1):
+        proc_ = (t.get("engineering_result") or {}).get("procure_as_specified") or []
+        if not proc_:
+            continue
+        sh = wb.create_sheet("Procure As Specified")
+        sh.append(["No.", "Group", "Item (as specified)", "Unit", "Quantity", "BOQ items"])
+        for c in sh[1]:
+            c.fill, c.font, c.alignment = header_fill, header_font, wrap
+        for n, r in enumerate(proc_, 1):
+            sh.append([n, r.get("group"), r.get("description"), r.get("unit"), r.get("quantity"), r.get("item_nos")])
+            for c in sh[sh.max_row]:
+                c.alignment = wrap
+        for col, w in zip("ABCDEF", (6, 34, 90, 8, 10, 30)):
+            sh.column_dimensions[col].width = w
+        sh.freeze_panes = "A2"
+        sh.auto_filter.ref = f"A1:F{sh.max_row}"
         break
     for index, t in enumerate(tasks, 1):
         prog = _programme_rows(t)
@@ -716,7 +767,7 @@ def build_evidence_xlsx(*, job, evidence_bundle: Dict[str, Any]) -> bytes:
                 c.alignment = wrap
         sh.append([])
         sh.append(["Estimated site duration", f"{total_days} working days (about {(t.get('engineering_result') or {}).get('total_duration_weeks')} weeks, {wd_}-day week)"])
-        sh.append(["Basis", "Indicative programme for planning; red = critical path. To be confirmed with the site team."])
+        sh.append(["Note", "Indicative programme for planning; red = critical path. To be confirmed with the site team."])
         for i, w in enumerate((7, 50, 16, 24, 10, 8, 7, 11, 9, 9, 12, 10) + ((12, 12) if has_dates else ())):
             sh.column_dimensions[sh.cell(1, i + 1).column_letter].width = w
         for w in range(n_weeks):

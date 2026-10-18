@@ -418,3 +418,7 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 ## Checkpoint 2026-10-18
 - Download fix: the page opened the signed file URL with window.open after a ~20 s wait, which Chrome blocks as a pop-up (server logs showed 200 OK). downloadArtifact now downloads in the same tab via an anchor and also shows a visible link. Artifact endpoint no longer loads the whole job, and selects only file columns (faster).
 - Consolidated material list: material_totals now carries trade + Main/Supporting type; PDF has a stand-alone "Consolidated material list" page (grouped by trade), Excel has a "Consolidated Materials" sheet, dashboard BOQ view shows the table. 548 tests passing.
+
+## 2026-10-18 evening: trade secret + consolidated procure list
+- Client PDF/Excel no longer show calculation basis: Basis columns, recipe names, recipe factors, programme basis, calculation steps and unvalidated-defaults note are stripped by `reports/client_safe.py` (applied at the start of build_approved_pdf / build_evidence_xlsx). Stored job record and owner data are unchanged.
+- Procure-as-specified lines are merged (same description+unit, qty summed, item numbers listed) and grouped by equipment category (`skills/commercial/boq_takeoff/procure.py`); new PDF page and Excel sheet "Procure As Specified".
