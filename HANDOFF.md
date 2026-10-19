@@ -436,3 +436,8 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 
 ## 2026-10-19: thumb rule
 - CLAUDE.md now holds the rule: trial after every push. `python scripts/post_push_trial.py` runs the standard requests end to end (routing, job, approval, PDF, Excel, basis-leak check). Add a case whenever a request type is added.
+
+## 2026-10-19 - 50-prompt trial pack
+- `scripts/trial_prompts.py`: 5 complex prompts x 10 verticals; all run routing -> job -> approval -> PDF/Excel via `scripts/post_push_trial.py` (52 cases PASS locally).
+- `orchestrator/natural_inputs.py` reads supported natural wording per skill; study/hvac_boq routes made explicit. Without an AI key only supported wording is read.
+- Not verified: live Render run, AI plan-image reading (OpenAI credit pending).

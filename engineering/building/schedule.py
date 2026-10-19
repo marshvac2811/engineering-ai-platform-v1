@@ -160,6 +160,8 @@ def extract_dxf_candidate_rooms(data: bytes) -> Dict[str, Any]:
 
 _BUILDING_WORDS = (
     ("hospital", ("hospital", "ward", "icu", "operation theatre", "operating room", "clinic", "patient room")),
+    ("educational", ("school", "college", "classroom", "university", "institute", "campus")),
+    ("hotel", ("hotel", "resort", "guest room")),
     ("retail", ("retail", "showroom", "shop", "mall", "store")),
     ("office", ("office", "meeting room", "conference", "boardroom", "cabin", "workstation", "commercial")),
 )

@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from jobs.service import JobService
 from jobs.store import InMemoryJobStore
@@ -34,7 +35,10 @@ Open office | 250 sqm | 60 people
 Conference room | 40 sqm | 20 people
 Pantry | 30 sqm | 10 people"""),
 ]
-LEAK = re.compile(r"recipe|unvalidated default|sqm_per|persons_per|starter norm|consumption per unit|rule.of.thumb|benchmark|wastage|diversity|cfm per|per tr\b|calculation step|how the result was calculated|ai_boundary|orchestrat|internal-governed|deterministic", re.I)
+from trial_prompts import P as _PACK
+_EXPECTED = ["hvac_design_package", "hvac_design_package", "preliminary_load_estimation", "cooling_coil_load", "ventilation_rate", "chiller_selection_advisor", "cooling_tower", "duct_sizing", "pump_head", "expansion_tank_sizing", "energy_payback", "vfd_energy_savings", "hvac_decarbonisation", "energy_optimisation_study", "retrofit_study", "transformer_sizing", "generator_sizing", "cable_voltage_drop", "vfd_derating", "harmonic_screening", "fire_water_storage", "sprinkler_demand", "fire_water_storage", "fire_water_storage", "sprinkler_demand", "domestic_water_tank_sizing", "plumbing_water_demand", "hot_water_heater_sizing", "rainwater_drainage", "domestic_water_tank_sizing", "bms_controller_sizing", "bms_alarm_evaluation", "bms_points_generation", "bms_cost_estimation", "bms_controller_sizing", "boq_takeoff", "boq_takeoff", "deviation_statement", "hvac_boq", "boq_takeoff", "mep_building_package", "mep_building_package", "mep_building_package", "mep_building_package", "mep_building_package", "cleanroom_ach", "vrf_sizing", "refrigerant_pipe_sizing", "facade_u_factor", "insulation_condensation"]
+CASES += [(e, t) for e, t in zip(_EXPECTED, [t for ps in _PACK.values() for t in ps])]
+LEAK = re.compile(r"recipe|unvalidated default|sqm_per|persons_per|starter norm|consumption per unit|rule.of.thumb|benchmark|wastage|diversity|cfm per|calculation step|how the result was calculated|ai_boundary|orchestrat|internal-governed|deterministic", re.I)
 
 
 def run(expected: str, text: str) -> list[str]:

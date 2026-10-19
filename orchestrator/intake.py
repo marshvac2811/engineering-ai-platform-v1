@@ -122,7 +122,7 @@ ROUTING_RULES: Dict[str, Sequence[str]] = {
     "hvac_boq": ("boq", "bill of quantities", "quantity estimate", "hvac estimate", "tender estimate", "hvac boq", "boq for", "boq covering", "boq outline"),
     "boq_takeoff": ("boq takeoff", "quantity takeoff", "material takeoff", "materials required for boq", "boq material"),
     "retrofit_study": ("retrofit study", "retrofit report", "retrofit assessment", "retrofit options", "retrofit survey", "existing plant retrofit"),
-    "energy_optimisation_study": ("energy optimisation study", "energy optimization study", "energy study", "energy saving measures", "decarbonisation roadmap", "decarbonization roadmap", "energy audit measures", "ranked energy measures"),
+    "energy_optimisation_study": ("energy optimisation study", "energy optimization study", "energy study", "energy saving measures", "energy audit measures", "ranked energy measures"),
     "deviation_statement": ("deviation statement", "compliance statement", "technical compliance", "tender compliance", "deviates on", "technical deviation"),
     "fire_water_storage": ("fire water storage", "fire tank volume", "fire reserve", "fire water requirement"),
     "mep_building_package": ("mep boq for", "mep package for", "mep design for", "boq and layout", "mep boq from plan", "mep boq and layout", "mep boq for building", "generate mep boq", "mep boq", "mep layout drawings"),
@@ -509,6 +509,14 @@ class RuleBasedIntentProvider:
             return requested_skill_id, [IntentCandidate(requested_skill_id, 999, ["Explicit skill_id supplied by caller."])], 1.0
 
         t = text.lower()
+        # Whole-study and priced-BOQ requests mention VFDs, pipes and so on only as parts of one job.
+        for sid, pat, why in (
+            ("retrofit_study", r"retrofit\s+(?:study|assessment|report)|energy\s+audit\s+of\s+an?\s+existing", "Explicit retrofit-study objective."),
+            ("energy_optimisation_study", r"energy\s+(?:optimi[sz]ation\s+study|study|audit\s+study)", "Explicit energy-study objective."),
+            ("hvac_boq", r"\bhvac\s+boq\b|priced\s+boq|boq\s+with\s+(?:rates|contingency)", "Explicit priced HVAC BOQ objective."),
+        ):
+            if re.search(pat, t):
+                return sid, [IntentCandidate(sid, 100, [why])], 0.99
         # High-confidence natural-language energy/HVAC rescue. This runs before
         # generic phrase scoring so a valid client request cannot fall through to
         # "unsupported" merely because it also mentions adjacent options such as
@@ -575,6 +583,15 @@ class RuleBasedIntentProvider:
         # It must stay one design package and not be taken over by a single-calculator phrase.
         if any(m in t for m in ("hvac design package", "design package", "room by room load", "room-by-room load")):
             return "hvac_design_package", [IntentCandidate("hvac_design_package", 100, ["Explicit HVAC design-package objective."])], 0.99
+
+        # Explicit single-purpose objectives that general vocabulary (pipe, water, size) must not take over.
+        for sid, pat, why in (
+            ("boq_takeoff", r"\btake-?\s?off\b", "Explicit material/quantity takeoff objective."),
+            ("insulation_condensation", r"condensation|sweating|insulation\s+thickness|dew\s*point", "Explicit pipe-condensation / insulation objective."),
+            ("generator_sizing", r"\b(?:size|sizing)\b[^.;]{0,20}\b(?:generator|dg set|genset)\b|\bgenerator\s+(?:for|sizing)\b", "Explicit generator-sizing objective."),
+        ):
+            if re.search(pat, t):
+                return sid, [IntentCandidate(sid, 100, [why])], 0.99
 
         # Phrasing-tolerant explicit objectives ("Size the BMS controllers", "Size a
         # rectangular supply air duct", "Calculate the facade U-factor"). A sizing/
@@ -976,6 +993,11 @@ def build_plan(
     prose_inputs = extract_catalogue_inputs(skill_id, text) if skill_id else {}
     if prose_inputs:
         merged = {**prose_inputs, **merged}
+    if skill_id:
+        from orchestrator.natural_inputs import read_inputs as _natural_inputs
+        natural = _natural_inputs(skill_id, text)
+        if natural:
+            merged = {**natural, **merged}
     assumption_resolved, input_assumptions, assumption_blockers = resolve_input_assumptions(
         skill_id,
         merged,
