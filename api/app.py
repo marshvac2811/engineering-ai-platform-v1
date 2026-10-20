@@ -63,6 +63,10 @@ from integrations.providers.gmail import (
 
 # External dashboard contract.
 DASHBOARD_PATH = Path(__file__).resolve().parents[1] / "web" / "app.html"
+try:
+    _CLIENT_FORM_HTML = (Path(__file__).resolve().parents[1] / "web" / "client_form.html").read_bytes()
+except OSError:  # pragma: no cover
+    _CLIENT_FORM_HTML = b"<p>Form unavailable.</p>"
 _SUPABASE_AUTH_LOCK = threading.Lock()
 
 class APIApp:
@@ -256,6 +260,38 @@ class APIApp:
         kind = (design or {}).get("drawing_kind") or "hvac-design"
         return f"{kind}-schematic-{job_id}.dxf"
 
+    def _public_form(self, environ, start_response, token: str, method: str):
+        from intake_forms import form_for
+        from intake_forms.answers import assemble, find_job
+        tenant_id = str(os.getenv("SUPABASE_DEFAULT_TENANT_ID") or os.getenv("DEFAULT_TENANT_ID")
+                        or "00000000-0000-0000-0000-000000000001").strip()
+        service = self.service_factory(tenant_id)
+        job = find_job(service, token)
+        if not job:
+            return self._json(start_response, "404 Not Found", {"error": "This form link is not valid."})
+        skill_id = (job.project_context.get("client_form") or {}).get("skill_id")
+        form = form_for(skill_id) if skill_id else None
+        if not form:
+            return self._json(start_response, "404 Not Found", {"error": "This form link is not valid."})
+        open_now = job.status.value == "awaiting_information"
+        if method == "GET":
+            fields = [{k: v for k, v in f.items() if k in {"key", "label", "type", "required", "choices", "hint", "structured"}}
+                      for f in form["fields"] if f.get("client", True)]
+            return self._json(start_response, "200 OK", {"title": form["title"], "fields": fields, "open": open_now,
+                                                         "client": (job.project_context or {}).get("client_name", "")})
+        if not open_now:
+            return self._json(start_response, "200 OK", {"ok": True, "message": "Thank you. We have your details and are working on your request."})
+        body = self._read_json(environ)
+        answers = body.get("answers") if isinstance(body.get("answers"), dict) else {}
+        scalars, text, problems = assemble(skill_id, answers)
+        if problems:
+            return self._json(start_response, "400 Bad Request", {"ok": False, "problems": problems})
+        job = service.provide_client_answers(job.job_id, scalars, text)
+        if job.status.value == "awaiting_information":
+            issues = [str(e).split(": ", 1)[-1] for e in (job.errors or [])][:5] or ["Some details are still missing."]
+            return self._json(start_response, "400 Bad Request", {"ok": False, "problems": issues})
+        return self._json(start_response, "200 OK", {"ok": True, "message": "Thank you. We have your details and will send your report after our engineer has reviewed it."})
+
     def _gmail_sync(self, service, tenant_id: str, *, q: str, max_results: int, download_attachments: bool) -> dict:
         """Poll Gmail, de-duplicate, and create one reviewable engineering job per new message."""
         ids = self.gmail_client.list_message_ids(tenant_id, q=q, max_results=max_results)
@@ -294,6 +330,8 @@ class APIApp:
                     )
                     job = service.create_from_plan(plan)
                     result.update({"job_created": True, "job_id": job.job_id, "job_status": job.status.value, "selected_skill_id": plan.selected_skill_id})
+                    from intake_forms.autosend import maybe_send_form
+                    result.update(maybe_send_form(service, job, plan, gmail_client=self.gmail_client, tenant_id=tenant_id, subject=subject))
                     if download_attachments:
                         downloaded = []
                         for attachment in payload.get("attachments", []):
@@ -421,6 +459,16 @@ class APIApp:
             start_response("204 No Content", [("Content-Length", "0")])
             return [b""]
 
+        # Public client information form: reached only through an unguessable per-job link; no sign-in.
+        if path.startswith("/form/") and method == "GET":
+            data = _CLIENT_FORM_HTML
+            start_response("200 OK", [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(data))),
+                                      ("Cache-Control", "no-store"), ("X-Robots-Tag", "noindex")])
+            return [data]
+
+        if path.startswith("/v1/public/forms/") and method in {"GET", "POST"}:
+            return self._public_form(environ, start_response, path.rsplit("/", 1)[-1], method)
+
         if path in {"/", "/app"} and method == "GET":
             try:
                 data = DASHBOARD_PATH.read_bytes()
@@ -533,8 +581,14 @@ class APIApp:
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "intake-gaps" and method == "GET":
                 ctx.require_scope("jobs:read")
                 from intake_forms import new_skill_needed
-                gaps = new_skill_needed(service.list_jobs())
-                return self._json(start_response, "200 OK", {"gaps": gaps, "count": len(gaps)})
+                jobs_all = service.list_jobs()
+                gaps = new_skill_needed(jobs_all)
+                paste = []
+                for j in jobs_all:
+                    cf = (j.project_context or {}).get("client_form") or {}
+                    if cf.get("channel") == "marketplace" and not cf.get("submitted_at"):
+                        paste.append({"job_id": j.job_id, "message": cf.get("message", ""), "url": cf.get("url", "")})
+                return self._json(start_response, "200 OK", {"gaps": gaps, "count": len(gaps), "marketplace_messages": paste})
 
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "intake" and method == "POST":
                 message = str(body.get("message", "")).strip()

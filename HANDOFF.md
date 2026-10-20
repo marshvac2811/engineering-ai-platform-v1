@@ -446,3 +446,10 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 - `intake_forms/`: one client form per executable skill (50), built from registry inputs with client-safe wording (LABELS), engineering settings hidden (ENGINEER_FILLS), reply text for the owner to approve. `new_skill_needed(jobs)` lists unmatched requests.
 - API: GET /v1/intake-forms, /v1/intake-forms/{skill_id}?client=, /v1/intake-gaps. Dashboard: Gmail Intake tab shows both.
 - Not built yet: public client form page, auto draft reply to Gmail, saving client answers into the job.
+
+## 2026-10-21 - automatic client form, public page, answers into the job
+- Gmail sync: when an enquiry matches a skill but lacks details, `intake_forms/autosend.py` emails the client a private form link automatically (no owner approval). Skipped for no-reply/automated senders, same sender within 24 h, requests with no matching skill, and skills in NO_CLIENT_FORM. Upwork/Fiverr senders are not emailed: message + link appear in dashboard (Gmail Intake tab) to paste into the marketplace chat. AUTO_SEND_FORMS=0 turns it off.
+- Public page `/form/<token>` (web/client_form.html) + `/v1/public/forms/<token>` (uses default tenant). Answers -> `JobService.provide_client_answers` -> job runs to human_review. Report sending still owner-triggered.
+- Engineering settings are applied from ENGINEER_DEFAULTS and not shown to the client. 4 skills have no enquiry form (fault diagnosis, alarm evaluation, BMS cost, duct leakage).
+- Needs: Gmail send permission granted on the connected account; PUBLIC_BASE_URL (or Render's RENDER_EXTERNAL_URL) for links.
+- Not built: revisions mapped to contract/order, marketplace order mapping, profile/gig updates.

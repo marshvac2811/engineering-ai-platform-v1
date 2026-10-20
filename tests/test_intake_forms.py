@@ -65,3 +65,24 @@ def test_new_skill_needed_ignores_jobs_with_a_skill():
     jobs = [{"job_id": "a", "status": "awaiting_information", "orchestration": {"selected_skill_id": "duct_sizing"}},
             {"job_id": "b", "status": "awaiting_information", "orchestration": {"normalized_request": "x"}}]
     assert [g["job_id"] for g in new_skill_needed(jobs)] == ["b"]
+
+
+def test_every_client_form_can_be_completed_with_valid_answers():
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from form_samples import run_all
+    bad = [(s, o) for s, o in run_all() if o != "ok"]
+    assert not bad, bad
+
+
+def test_skills_without_an_enquiry_form_are_marked():
+    marked = {f["skill_id"] for f in all_forms() if not f.get("client_form", True)}
+    assert marked == {"hvac_fault_diagnosis", "bms_alarm_evaluation", "bms_cost_estimation", "duct_leakage"}
+
+
+def test_duct_airflow_form_states_and_sends_its_unit():
+    from intake_forms.answers import assemble
+    assert "m³/h" in render_text(form_for("duct_sizing"))
+    scalars, _, _ = assemble("duct_sizing", {"airflow": "3600", "method": "velocity", "duct_type": "round"})
+    assert scalars["airflow"] == 3600.0 and scalars["airflow_unit"] == "m3/h"

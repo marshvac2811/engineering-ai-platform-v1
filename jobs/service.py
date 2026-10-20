@@ -19,7 +19,7 @@ from ingestion.service import IngestionService
 from reports.service import ReportService
 from reports.evidence import build_evidence_bundle, refresh_evidence_bundle
 
-from .models import Job, JobStatus
+from .models import Job, JobStatus, now_iso
 from .store import JobStore
 
 
@@ -211,6 +211,40 @@ class JobService:
         # not a replacement for the engineering objective; otherwise a follow-up such as
         # "annual energy 2,500,000 kWh, tariff ₹8.50/kWh" can make the job unroutable.
         plan.normalized_request = continuation_request or job.orchestration.get("normalized_request", "")
+        job.orchestration = plan.to_dict()
+        if plan.status == "ready_for_execution":
+            job.transition(JobStatus.QUEUED, "All required inputs supplied; job returned to queue.")
+            job = self.process(job.job_id)
+        else:
+            job.add_event("orchestration_replanned", "Additional required inputs remain missing.", missing_inputs=plan.missing_inputs)
+        self.store.save(job)
+        return job
+
+    def provide_client_answers(self, job_id: str, scalars: Dict[str, Any], text: str = "") -> Job:
+        """Apply answers from the client's form: plain values plus any typed lists, then re-plan and run."""
+        job = self._get(job_id)
+        if job.status != JobStatus.AWAITING_INFORMATION:
+            raise ValueError("Job is not awaiting information")
+        updates = self._normalize_numeric_inputs(job, dict(scalars or {}))
+        job.inputs.update(updates)
+        cf = job.project_context.setdefault("client_form", {})
+        cf["submitted_at"] = now_iso()
+        job.add_event("client_form_submitted", "Client supplied the requested details through the information form.", fields=list(updates))
+        from orchestrator.intake import build_plan
+        original = str(job.orchestration.get("normalized_request", "")).strip()
+        plan = build_plan(
+            (original + "\n" + text).strip() if text else original,
+            requested_skill_id=job.requested_skill_id or job.orchestration.get("selected_skill_id"),
+            provided_inputs=job.inputs,
+            project_context=job.project_context,
+            standards_context=job.standards_context,
+            assumptions_context=job.assumptions_context,
+        )
+        plan.normalized_request = original
+        # Lists typed by the client (rooms, zones, items) were read from the text; keep them as job inputs.
+        for item in plan.work_items:
+            for k, v in dict(getattr(item, "extracted_inputs", None) or {}).items():
+                job.inputs.setdefault(k, v)
         job.orchestration = plan.to_dict()
         if plan.status == "ready_for_execution":
             job.transition(JobStatus.QUEUED, "All required inputs supplied; job returned to queue.")

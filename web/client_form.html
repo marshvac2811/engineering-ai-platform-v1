@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Project information - Mars Engineering Solutions</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}
+main{max-width:640px;margin:0 auto;padding:20px 16px 48px}
+.card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 8px 28px rgba(0,0,0,.08)}
+h1{font-size:22px;margin:0 0 6px}p.muted{color:#687386;margin:0 0 18px}
+label{display:block;margin:16px 0 6px;font-weight:600}
+input,select,textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid #ccd3df;border-radius:8px;font-size:15px;font-family:inherit}
+textarea{min-height:110px}.hint{font-size:12px;color:#8993a3;margin-top:4px;white-space:pre-wrap}
+button{margin-top:22px;width:100%;padding:13px;border:0;border-radius:8px;background:#1769e0;color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+button:disabled{opacity:.6}.msg{margin-top:16px;padding:12px;border-radius:8px;display:none}
+.ok{display:block;background:#e8f7ee;color:#176b3a}.err{display:block;background:#fdecec;color:#a12626}
+</style></head><body><main><div class="card">
+<h1 id="title">Project information</h1>
+<p class="muted">Mars Engineering Solutions. Please fill in the details below so we can prepare your work. Fields marked * are needed.</p>
+<form id="f"></form><div id="msg" class="msg"></div>
+</div></main>
+<script>
+const token=location.pathname.split("/").filter(Boolean).pop();
+const api="/v1/public/forms/"+encodeURIComponent(token);
+const f=document.getElementById("f"),msg=document.getElementById("msg");
+function show(t,c){msg.textContent=t;msg.className="msg "+c;}
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+fetch(api).then(r=>r.json()).then(d=>{
+ if(d.error){show(d.error,"err");return;}
+ document.getElementById("title").textContent="Information for: "+d.title;
+ if(!d.open){show("Thank you. We already have your details.","ok");return;}
+ f.innerHTML=d.fields.map(x=>{
+  const id="k_"+x.key,req=x.required?" *":"";
+  let ctl;
+  if(x.choices&&x.choices.length)ctl='<select id="'+id+'" name="'+esc(x.key)+'"><option value="">Select</option>'+x.choices.map(c=>'<option>'+esc(c)+'</option>').join("")+'</select>';
+  else if(x.structured)ctl='<textarea id="'+id+'" name="'+esc(x.key)+'"></textarea>';
+  else ctl='<input id="'+id+'" name="'+esc(x.key)+'" '+(x.type==="number"?'inputmode="decimal"':"")+'>';
+  return '<label for="'+id+'">'+esc(x.label)+req+'</label>'+ctl+(x.hint?'<div class="hint">Example:\n'+esc(x.hint)+'</div>':"");
+ }).join("")+'<button type="submit" id="go">Submit details</button>';
+}).catch(()=>show("This page could not be loaded. Please try again later.","err"));
+f.addEventListener("submit",async e=>{
+ e.preventDefault();const go=document.getElementById("go");go.disabled=true;
+ const answers={};new FormData(f).forEach((v,k)=>{answers[k]=v;});
+ try{
+  const r=await fetch(api,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({answers})});
+  const d=await r.json();
+  if(r.ok&&d.ok){f.style.display="none";show(d.message,"ok");}
+  else{show((d.problems||[d.error||"Something went wrong."]).join("\n"),"err");msg.style.whiteSpace="pre-wrap";go.disabled=false;}
+ }catch(x){show("Could not send. Please try again.","err");go.disabled=false;}
+});
+</script></body></html>

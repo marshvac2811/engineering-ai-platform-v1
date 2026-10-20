@@ -75,17 +75,46 @@ LABELS.update({
     "values": "Measured readings from the equipment",
     "rule_id": "Fault you want checked",
 })
+LABELS.update({"airflow": "Required airflow (m³/h)", "suction_velocity": "Required suction-line velocity (m/s)",
+               "liquid_velocity": "Required liquid-line velocity (m/s)", "suction_length": "Suction-line length (m)",
+               "liquid_length": "Liquid-line length (m)", "investment": "Investment cost (currency of your choice)"})
 LABELS["tariff_per_kwh"] = "Electricity tariff (per kWh)"
+# Structured answers are typed by the client as plain lines. Each has a header the platform reads and an example.
+STRUCTURED: dict[str, dict[str, str]] = {
+    "rooms": {"header": "Rooms:", "example": "Reception, 60 sqm, 10 people\nOpen office, 250 sqm, 60 people"},
+    "zones": {"header": "Zones:", "example": "Zone A, 120 sqm, 150 W/sqm\nZone B, 80 sqm, 180 W/sqm"},
+    "floors": {"header": "Floor: Typical floor x5", "example": "Open office | 250 sqm | 60 people\nConference room | 40 sqm | 20 people\n(change 'Typical floor x5' to your floor name and count)"},
+    "boq_items": {"header": "", "example": "gypsum false ceiling 1200 sqft, vitrified tile flooring 800 sqft"},
+    "categories": {"header": "", "example": "Category: Ducting\nGI sheet metal duct | kg | 4500 | 220"},
+    "rows": {"header": "", "example": "Clause 4.1 Chiller COP | 5.8 | 5.6 | partial | note\nClause 4.2 Capacity | 450 TR | 450 TR | comply"},
+    "components": {"header": "", "example": "Double glazed unit, 450 sqm, U 1.8\nSpandrel panel, 120 sqm, U 0.6"},
+    "fixtures": {"header": "", "example": "20 water closets at 10 lpm, 10 urinals at 6 lpm"},
+    "equipment_counts": {"header": "", "example": "6 AHUs, 2 chillers and 4 pumps"},
+    "measures": {"header": "Measures:", "example": "VFD on pumps | vfd | 55 kW | speed reduction 20% | static head 30% | 6000 hours | investment Rs 4 lakh"},
+    "survey": {"header": "Survey:", "example": "Chiller 1 | 400 kW | load factor 70% | 4500 hours"},
+    "sections": {"header": "", "example": "Section 1, 40 sqm"},
+}
+# Skills that cannot be completed by an enquiry form: they need the owner's rate card or live site data.
+NO_CLIENT_FORM = {"hvac_fault_diagnosis", "bms_alarm_evaluation", "bms_cost_estimation", "duct_leakage"}
+# Extra client questions that the registry lists only as conditional inputs.
+EXTRA_FIELDS: dict[str, list[dict[str, Any]]] = {
+    "cooling_tower": [{"name": "direct_load_kw", "description": "Heat rejection load (kW)", "data_type": "number"}],
+    "duct_pressure_drop": [{"name": "width_mm", "description": "Duct width (mm)", "data_type": "number"},
+                           {"name": "height_mm", "description": "Duct height (mm)", "data_type": "number"}],
+}
 # Engineering settings we choose ourselves. They stay in the form spec but are not asked of the client.
 ENGINEER_FILLS = {"margin_pct", "coc", "drift_pct", "combination_ratio", "points_per_controller", "controllers_per_panel",
                   "cost_per_point", "cost_per_controller", "cost_per_panel", "bms_software_cost", "engineering_pct",
-                  "rule_id", "static_head_fraction", "efficiency_new_default"}
+                  "rule_id", "static_head_fraction", "load_method"}
+# Technical settings applied when the client form is submitted. The engineer reviews them before the report is issued.
+ENGINEER_DEFAULTS: dict[str, Any] = {"margin_pct": 10, "coc": 4, "drift_pct": 0.02, "combination_ratio": 100,
+                                     "points_per_controller": 40, "controllers_per_panel": 6, "static_head_fraction": 0.3, "load_method": "direct"}
 # Optional inputs a client can reasonably supply. All other optional inputs are engineering settings we handle.
-CLIENT_OPTIONAL = {"material", "fittings", "altitude_m", "space_type", "climate_zone", "floor_height_m",
+CLIENT_OPTIONAL = {"material", "altitude_m", "space_type", "climate_zone", "floor_height_m",
                    "voltage_v", "power_factor", "water_temp_c", "length_m", "min_temp_c", "cold_water_c",
-                   "hot_water_c", "rows", "sections", "boq_items", "floors"}
+                   "hot_water_c", "rows", "sections", "boq_items", "floors", "rooms"}
 # Skills whose real requirement is "this or that": the client-facing input is promoted to required.
-PROMOTE = {"boq_takeoff": {"boq_items"}, "mep_building_package": {"floors"}}
+PROMOTE = {"boq_takeoff": {"boq_items"}, "mep_building_package": {"floors"}, "hvac_design_package": {"rooms"}}
 _CUT = re.compile(r"\s*(\(default|, default|; |\. Deterministic|\. Supply|\. Each zone| - validated)", re.I)
 _INTERNAL = re.compile(r"deterministic|governed|source-ref|engine|internal|validated|[a-z]+_[a-z_]+", re.I)
 
@@ -101,18 +130,52 @@ def _label(spec: dict[str, Any]) -> str:
     return text.replace("?C", "°C")
 
 
+def _dynamic_choices(name: str) -> list[str] | None:
+    """Exact accepted values for fields where the calculation only knows a fixed list."""
+    try:
+        if name == "room_type":
+            from skills.hvac.cleanroom_ach.source_calculator import ROOM_TYPES
+            return list(ROOM_TYPES)
+        if name == "refrigerant":
+            from skills.hvac.refrigerant_pipe_sizing import source_calculator as _e
+            return list(_e.PROPS)
+    except Exception:  # noqa: BLE001 - a missing list only means the client types the value
+        return None
+    return None
+
+
+_UNITS = (("_m3hr", "m³/h"), ("_m3h", "m³/h"), ("_lpm", "L/min"), ("_ls", "L/s"), ("_kwh", "kWh"), ("_kva", "kVA"), ("_kw", "kW"),
+          ("_kwp", "kWp"), ("_mm", "mm"), ("_m2", "m²"), ("_ms", "m/s"), ("_m", "m"), ("_c", "°C"), ("_pct", "%"), ("_pa", "Pa"),
+          ("_bar_g", "bar(g)"), ("_l", "L"), ("_tr", "TR"), ("_h", "h"), ("_years", "years"), ("_sqft", "sq ft"))
+
+
+def _with_unit(key: str, label: str) -> str:
+    if "(" in label or "," in label:
+        return label
+    for suffix, unit in _UNITS:
+        if key.endswith(suffix):
+            return label if unit.lower() in label.lower() else f"{label} ({unit})"
+    return label
+
+
 def _field(spec: dict[str, Any], required: bool) -> dict[str, Any]:
     name = str(spec.get("name", ""))
     out = {
         "key": name,
-        "label": _label(spec),
+        "label": _with_unit(name, _label(spec)),
         "type": spec.get("data_type", "string"),
         "required": required,
         "client": name not in ENGINEER_FILLS,
     }
     if name == "tariff_per_kwh":
         out["label"] = LABELS["tariff_per_kwh"]
-    if spec.get("allowed_values"):
+    exact = _dynamic_choices(name)
+    if exact:
+        out["choices"], out["exact"] = exact, True
+    if name in STRUCTURED:
+        out["structured"] = True
+        out["hint"] = STRUCTURED[name]["example"]
+    if spec.get("allowed_values") and "exact" not in out:
         out["choices"] = [str(c).replace("_", " ") for c in spec["allowed_values"]]
     if spec.get("unit"):
         out["unit"] = spec["unit"]
@@ -124,10 +187,11 @@ def form_for(skill_id: str) -> dict[str, Any] | None:
         if s.get("skill_id") == skill_id and "required_inputs" in s:
             fields = [_field(f, True) for f in s.get("required_inputs", [])]
             fields += [_field(f, False) for f in s.get("optional_inputs", []) or [] if f.get("name") in CLIENT_OPTIONAL]
+            fields += [_field(f, True) for f in EXTRA_FIELDS.get(skill_id, [])]
             for f in fields:
                 if f["key"] in PROMOTE.get(skill_id, ()):
                     f["required"] = True
-            return {"skill_id": skill_id, "title": _title(skill_id), "domain": s.get("domain"), "fields": fields}
+            return {"skill_id": skill_id, "client_form": skill_id not in NO_CLIENT_FORM, "title": _title(skill_id), "domain": s.get("domain"), "fields": fields}
     return None
 
 

@@ -90,7 +90,13 @@ def forms_check() -> int:
         if LEAK.search(body) or re.search(r"[a-z]+_[a-z]+|\?C", body):
             print("FAIL form", f["skill_id"]); bad += 1
     print(("PASS " if not bad and len(forms) >= 50 else "FAIL ") + f"client forms ({len(forms)})")
-    return int(bool(bad) or len(forms) < 50)
+    from form_samples import run_all
+    done = run_all()
+    wrong = [(sk, o) for sk, o in done if o != "ok"]
+    for sk, o in wrong:
+        print("FAIL form completion", sk, o)
+    print(("PASS " if not wrong else "FAIL ") + f"every client form completes to a report ({len(done)} forms)")
+    return int(bool(bad) or len(forms) < 50 or bool(wrong))
 
 
 def main() -> int:
