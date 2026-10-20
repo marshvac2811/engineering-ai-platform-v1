@@ -394,6 +394,14 @@ header .strap{margin-top:8px;font-size:13px;opacity:.8;max-width:560px;line-heig
 <div id="stMsg" class="msg"></div></section>
 </div>
 <div class="tabpanel" data-panel="gmail">
+<section class="card" id="formsCard">
+<h2>Client forms and new skills needed</h2>
+<p class="muted">Each skill has a client form listing the details we need. Pick a skill to get a ready reply text, then check it before sending. Requests that match no skill are listed under <strong>New skill needed</strong>.</p>
+<div class="actions" style="margin-bottom:10px"><select id="formSkill" style="min-width:260px;padding:9px;border:1px solid #d9e0e9;border-radius:8px"></select> <input id="formClient" placeholder="Client name (optional)" style="padding:9px;border:1px solid #d9e0e9;border-radius:8px"> <button type="button" id="formShow">Show reply text</button></div>
+<pre id="formText" style="white-space:pre-wrap;background:#f6f8fb;padding:12px;border-radius:8px;display:none"></pre>
+<h3 style="margin-top:18px">New skill needed</h3>
+<div id="gapList" class="empty">Open this tab to load.</div>
+</section>
 <section class="card" id="gmailCard">
 <h2>Gmail Intake</h2>
 <p class="muted">Client emails become reviewable engineering jobs. Only messages matching the filter below are read; nothing is sent automatically. Approved results are saved as a Gmail <strong>draft</strong> reply for you to check and send.</p>
@@ -1699,6 +1707,32 @@ loadAccount();loadJobs();
   finally{setTimeout(()=>{btn.disabled=false;},3000);}
  });
  if((location.hash||"")==="#crm"||(function(){try{return localStorage.getItem("mars.tab")==="crm"}catch(e){return false}})())load();
+})();
+</script>
+<script>
+(function(){
+ let loaded=false;
+ async function loadFormsAndGaps(){
+  try{
+   if(!loaded){
+    const r=await api("/v1/intake-forms");const d=await r.json();
+    const sel=document.getElementById("formSkill");
+    sel.innerHTML=(d.forms||[]).map(f=>'<option value="'+esc(f.skill_id)+'">'+esc(f.title)+' ('+esc(f.domain||"")+')</option>').join("");
+    loaded=true;
+   }
+   const g=await (await api("/v1/intake-gaps")).json();
+   const box=document.getElementById("gapList");
+   box.innerHTML=(g.gaps||[]).length?(g.gaps||[]).map(x=>'<div class="queue-note"><strong>'+esc(String(x.job_id).slice(0,8))+'</strong> '+esc(x.client||"")+' '+esc(x.project||"")+'<br>'+esc(x.request)+'</div>').join(""):"No unmatched requests.";
+  }catch(e){document.getElementById("gapList").textContent="Unavailable: "+e.message;}
+ }
+ document.addEventListener("click",async e=>{
+  if(e.target.closest('.tab[data-tab="gmail"]'))loadFormsAndGaps();
+  if(e.target.id==="formShow"){
+   const k=document.getElementById("formSkill").value,c=encodeURIComponent(document.getElementById("formClient").value||"");
+   const d=await (await api("/v1/intake-forms/"+encodeURIComponent(k)+"?client="+c)).json();
+   const pre=document.getElementById("formText");pre.textContent=d.reply_text||d.error||"";pre.style.display="block";
+  }
+ });
 })();
 </script>
 </body>

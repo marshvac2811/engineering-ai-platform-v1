@@ -441,3 +441,8 @@ docs/docker/Dockerfile written but NOT built/tested and NOT active. To switch: b
 - `scripts/trial_prompts.py`: 5 complex prompts x 10 verticals; all run routing -> job -> approval -> PDF/Excel via `scripts/post_push_trial.py` (52 cases PASS locally).
 - `orchestrator/natural_inputs.py` reads supported natural wording per skill; study/hvac_boq routes made explicit. Without an AI key only supported wording is read.
 - Not verified: live Render run, AI plan-image reading (OpenAI credit pending).
+
+## 2026-10-21 - client forms and "new skill needed" list
+- `intake_forms/`: one client form per executable skill (50), built from registry inputs with client-safe wording (LABELS), engineering settings hidden (ENGINEER_FILLS), reply text for the owner to approve. `new_skill_needed(jobs)` lists unmatched requests.
+- API: GET /v1/intake-forms, /v1/intake-forms/{skill_id}?client=, /v1/intake-gaps. Dashboard: Gmail Intake tab shows both.
+- Not built yet: public client form page, auto draft reply to Gmail, saving client answers into the job.

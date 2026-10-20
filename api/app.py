@@ -515,6 +515,27 @@ class APIApp:
                     },
                 )
 
+            if len(parts) == 2 and parts[0] == "v1" and parts[1] == "intake-forms" and method == "GET":
+                ctx.require_scope("jobs:read")
+                from intake_forms import all_forms
+                forms = all_forms()
+                return self._json(start_response, "200 OK", {"forms": forms, "count": len(forms)})
+
+            if len(parts) == 3 and parts[0] == "v1" and parts[1] == "intake-forms" and method == "GET":
+                ctx.require_scope("jobs:read")
+                from intake_forms import form_for, render_text
+                form = form_for(parts[2])
+                if not form:
+                    return self._json(start_response, "404 Not Found", {"error": "no form for that skill"})
+                client = (query.get("client") or [""])[0]
+                return self._json(start_response, "200 OK", {"form": form, "reply_text": render_text(form, client)})
+
+            if len(parts) == 2 and parts[0] == "v1" and parts[1] == "intake-gaps" and method == "GET":
+                ctx.require_scope("jobs:read")
+                from intake_forms import new_skill_needed
+                gaps = new_skill_needed(service.list_jobs())
+                return self._json(start_response, "200 OK", {"gaps": gaps, "count": len(gaps)})
+
             if len(parts) == 2 and parts[0] == "v1" and parts[1] == "intake" and method == "POST":
                 message = str(body.get("message", "")).strip()
                 if not message:

@@ -81,8 +81,20 @@ def run(expected: str, text: str) -> list[str]:
     return problems
 
 
+def forms_check() -> int:
+    from intake_forms import all_forms, render_text
+    bad = 0
+    forms = all_forms()
+    for f in forms:
+        body = render_text(f).split("Required:", 1)[1].split("Drawings,", 1)[0]
+        if LEAK.search(body) or re.search(r"[a-z]+_[a-z]+|\?C", body):
+            print("FAIL form", f["skill_id"]); bad += 1
+    print(("PASS " if not bad and len(forms) >= 50 else "FAIL ") + f"client forms ({len(forms)})")
+    return int(bool(bad) or len(forms) < 50)
+
+
 def main() -> int:
-    failed = 0
+    failed = forms_check()
     for expected, text in CASES:
         try:
             problems = run(expected, text)
